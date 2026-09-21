@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detail calibration</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --rust: #cf6a40; --good: #86b6a2; --bad: #cf6a40;
+    --z: 2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1320px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 6px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 26px 0 8px; }
+  p { max-width: 88ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .bar button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; }
+  .bar button.on { color: var(--amber); border-color: var(--amber); }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; margin: 10px 0 4px; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 5px; max-width: 60ch; }
+  figcaption .k { color: var(--ink); }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+  .arrow { align-self: center; color: var(--faint); font-size: 18px; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 12px; width: 100%; max-width: 980px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--amber); font-weight: 600; letter-spacing: .05em; }
+  td:first-child { color: var(--ink); }
+  .verdict { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 980px; }
+  .verdict p { margin: 4px 0; }
+  .tablewrap { overflow-x: auto; }
+  ul { color: var(--dim); max-width: 88ch; padding-left: 20px; } li { margin: 3px 0; }
+  a { color: var(--teal); }
+</style>
+<body>
+<main>
+<h1>Detail calibration v15 &mdash; getting richness back</h1>
+<p class="lead">Feedback on v14: the rooms have <b>simple backgrounds, a flat look, too little colour and shadow/highlight variation, and no dithering</b>. The first
+school layout was the only one that looked right. This round finds out why, and fixes it without losing the flat side view.</p>
+
+<div class="verdict">
+  <p><b>The cause is the guide, not the prompt.</b> The blockout guides are drawn in about 12 flat colours, and PixelLab carries the start image's palette into
+     the result. The v14 clinic came back with <b>8 colours</b>, the superior suite with 14. Rewriting the prompt for detail and dithering alone barely helps (column A below).</p>
+  <p><b>The fix: a lit, dithered guide.</b> The same blockout, redrawn with four lighting bands and an ordered dither between them, so the guide carries ~35 colours and a
+     warm-to-cool falloff. Rooms come back with <b>22&ndash;44 colours and much stronger contrast</b>, dithered shading and busy, textured walls.</p>
+  <p><b>The catch: perspective.</b> At strength 50 the rich guide pulls rooms into interiors seen from inside (floor planes, a window). At <b>strength 75</b> it holds
+     the flat side view and keeps the richness. That is the recommended recipe.</p>
+  <p><b>Cost of this calibration:</b> 14 generations.</p>
+</div>
+
+<h2>The recipe that works</h2>
+<p>v14 on the left, the new recipe on the right: lit dithered guide, <code>shading: detailed shading</code>, <code>detail: highly detailed</code>, strength 75, and a
+prompt that asks for dithered shading, strong light and shadow, colour variation and a textured back wall. It still ends with the flat-elevation and no-people tail.</p>
+<figure><img src="before-after.png" alt="v14 vs new recipe" style="max-width:100%"></figure>
+
+<h2>Step 1 &mdash; prompt and shading knobs only</h2>
+<p>A: detailed shading at strength 50. B: medium shading at strength 35. Colour counts stay at 8&ndash;16 with the flat guide. B has more freedom, but the canteen turns into a
+room seen from inside and the clinic collapses into a small box.</p>
+<figure><img src="calibration.png" alt="calibration" style="max-width:100%"></figure>
+
+<h2>Step 2 &mdash; the lit dithered guide</h2>
+<p>Same prompt and seed as A, only the guide changed. Colours and contrast jump, but at strength 50 both rooms become perspective interiors.</p>
+<figure><img src="guide-test.png" alt="rich guide test" style="max-width:100%"></figure>
+
+<h2>Step 3 &mdash; holding the flat view</h2>
+<p>(i) the lit guide at strength 75: flat and rich. (ii) an evenly textured guide with lamp pools but no top-to-bottom falloff, at strength 60: still rich, but the floor plane
+comes back, and the suite gains a window with sky (banned). Keep (i).</p>
+<figure><img src="guide-test2.png" alt="perspective control" style="max-width:100%"></figure>
+
+<p><a href="../v14/index.html">&larr; v14</a></p>
+</main>
+</body>
+</html>

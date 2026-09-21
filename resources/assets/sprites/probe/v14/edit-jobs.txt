@@ -1,0 +1,10 @@
+d5f4dec8-069c-425d-987b-60f5ba074662 workshop-off scrubber-bank-off reclamation-plant-off oxygen-garden-off
+5cdfb403-6503-4cb9-827c-9a780f5b4898 archive-off clinic-off
+f40d1dad-41d0-41e8-b838-92b4d3d83101 school-off security-post-off battery-bank-off
+cad15b71-fc40-442e-aeca-bc631f5fcdd7 canteen-off
+7b190a9f-a2ee-4c3c-b37f-5fa2ec874111 superior-suite-off
+2faba3d3-abb1-4eb4-8a02-4363287cfb9d workshop-broken scrubber-bank-broken reclamation-plant-broken oxygen-garden-broken
+89d4c4af-7d3e-455b-ad24-a4c875af10a5 archive-broken clinic-broken
+14ef0420-f7b6-4557-8e56-10160f291a89 school-broken security-post-broken battery-bank-broken
+457867db-fcb4-46eb-907b-b6ba4e7299f4 canteen-broken
+70571736-3539-466a-acdc-49752c1512a8 superior-suite-broken

@@ -1,0 +1,112 @@
+{
+ "canteen": {
+  "width": 192,
+  "floorY": 88,
+  "detected": 88,
+  "on_lum": 79,
+  "off_lum": 24,
+  "off_diff": 55.7,
+  "broken_lum": 79,
+  "broken_diff": 13.9
+ },
+ "superior-suite": {
+  "width": 192,
+  "floorY": 88,
+  "detected": 88,
+  "on_lum": 69,
+  "off_lum": 17,
+  "off_diff": 52.5,
+  "broken_lum": 54,
+  "broken_diff": 19.7
+ },
+ "archive": {
+  "width": 128,
+  "floorY": 92,
+  "detected": 92,
+  "on_lum": 66,
+  "off_lum": 28,
+  "off_diff": 38.8,
+  "broken_lum": 60,
+  "broken_diff": 15.4
+ },
+ "clinic": {
+  "width": 128,
+  "floorY": 88,
+  "detected": 88,
+  "on_lum": 74,
+  "off_lum": 21,
+  "off_diff": 53.3,
+  "broken_lum": 62,
+  "broken_diff": 17.1
+ },
+ "workshop": {
+  "width": 128,
+  "floorY": 89,
+  "detected": 89,
+  "on_lum": 72,
+  "off_lum": 23,
+  "off_diff": 49.3,
+  "broken_lum": 69,
+  "broken_diff": 17.0
+ },
+ "scrubber-bank": {
+  "width": 128,
+  "floorY": 90,
+  "detected": 90,
+  "on_lum": 64,
+  "off_lum": 20,
+  "off_diff": 44.4,
+  "broken_lum": 62,
+  "broken_diff": 14.3
+ },
+ "oxygen-garden": {
+  "width": 128,
+  "floorY": 88,
+  "detected": 70,
+  "on_lum": 70,
+  "off_lum": 19,
+  "off_diff": 51.6,
+  "broken_lum": 65,
+  "broken_diff": 15.7
+ },
+ "reclamation-plant": {
+  "width": 128,
+  "floorY": 88,
+  "detected": 88,
+  "on_lum": 70,
+  "off_lum": 17,
+  "off_diff": 53.1,
+  "broken_lum": 66,
+  "broken_diff": 13.3
+ },
+ "school": {
+  "width": 64,
+  "floorY": 88,
+  "detected": 79,
+  "on_lum": 57,
+  "off_lum": 18,
+  "off_diff": 39.3,
+  "broken_lum": 59,
+  "broken_diff": 18.8
+ },
+ "security-post": {
+  "width": 64,
+  "floorY": 93,
+  "detected": 93,
+  "on_lum": 69,
+  "off_lum": 23,
+  "off_diff": 46.1,
+  "broken_lum": 66,
+  "broken_diff": 10.9
+ },
+ "battery-bank": {
+  "width": 64,
+  "floorY": 91,
+  "detected": 91,
+  "on_lum": 69,
+  "off_lum": 22,
+  "off_diff": 47.1,
+  "broken_lum": 63,
+  "broken_diff": 19.3
+ }
+}

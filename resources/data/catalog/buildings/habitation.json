@@ -105,7 +105,7 @@
       "id": "canteen",
       "name": "Canteen",
       "zone": "habitation",
-      "slots": 1,
+      "slots": 3,
       "levelConstraint": null,
       "priorityClass": "residential",
       "powerDraw": 30,

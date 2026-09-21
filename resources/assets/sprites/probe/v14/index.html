@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ten more rooms</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --good: #86b6a2; --bad: #cf6a40;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 30px 0 6px; }
+  h3 small { color: var(--faint); letter-spacing: 0; text-transform: none; font-size: 11px; margin-left: 8px; }
+  p { max-width: 90ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  a { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .seg { display: inline-flex; gap: 0; }
+  .seg button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { color: var(--amber); border-color: var(--amber); position: relative; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .summary p { margin: 4px 0; }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+
+  /* Shaft view: 640 × (levels × 104) reference pixels, scaled by an integer zoom. */
+  .shaftwrap { overflow-x: auto; padding-bottom: 6px; }
+  .shaft { position: relative; image-rendering: pixelated; background: #010202; transform-origin: top left; }
+  .shaft > * { position: absolute; }
+  .shaft img { image-rendering: pixelated; display: block; }
+  .rock { background-repeat: repeat; image-rendering: pixelated; }
+  .col { background: #120d15; border-left: 1px solid #241c26; border-right: 1px solid #241c26; }
+  .slab { background: #4f4148; border-top: 1px solid #8e7870; }
+  .tag { font: 6px/1 ui-monospace, monospace; color: #8e7870; z-index: 3; white-space: nowrap; }
+
+  .pipe { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; margin: 8px 0; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; max-width: 42ch; }
+  figcaption .k { color: var(--ink); }
+  .note { font-size: 12px; color: var(--dim); max-width: 100ch; margin: 2px 0 0; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 12px; width: 100%; max-width: 1000px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--amber); font-weight: 600; }
+  td:first-child { color: var(--ink); }
+  .tablewrap { overflow-x: auto; }
+  ul { color: var(--dim); max-width: 95ch; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+<body>
+<main>
+<h1>Ten more rooms &mdash; and the canteen at three slots</h1>
+<p class="lead">Eleven buildings made with the <b>cheaper workflow</b> (spec &sect;2.4): <b>blockout &rarr; layout = on &rarr; off / broken with the edit tool</b>.
+The expensive inpaint step was skipped for every room, because each approved layout was already good enough to ship. The canteen is re-rendered at its new
+catalog size, 3 slots (192&times;96). The shaft below also holds the nine rooms saved from the first batch, so twenty buildings stand together.</p>
+
+<div class="bar">
+  <span>Zoom</span>
+  <span class="seg" id="zoom"><button data-z="1">1&times;</button><button data-z="2" class="on">2&times;</button><button data-z="3">3&times;</button></span>
+  <span>State</span>
+  <span class="seg" id="state"><button data-s="on" class="on">on</button><button data-s="off">off</button><button data-s="broken">broken</button></span>
+  <label class="chk"><input type="checkbox" id="figs" checked> figures</label>
+  <span>&middot;</span>
+  <a href="#shaft">Shaft</a><a href="#rooms">Rooms</a><a href="#findings">Findings</a><a href="#cost">Cost</a>
+</div>
+
+<div class="summary">
+  <p><b>What changed since v13.</b> The canteen is now <b>3 slots</b> in <code>resources/data/catalog/buildings/habitation.json</code> (tests pass). The nine approved
+     v13 rooms are <b>saved</b> as shipping assets in <code>resources/assets/sprites/buildings/</code> (27 files, on/off/broken), each listed in
+     <code>resources/assets/manifest.json</code> with its <code>floorY</code>.</p>
+  <p><b>This batch.</b> Ten new buildings plus the canteen: all flat side views, no people, and each has on, off and broken. Off rooms are properly dark
+     (brightness 17&ndash;28 against 57&ndash;79 lit). Two layouts needed a second try: the <b>school</b> came back in perspective, and the <b>canteen</b> was too thin.</p>
+  <p><b>Cost: 213 generations for eleven buildings, about 19 each</b>, against 46 per building in v13. 1,119 left this cycle.</p>
+</div>
+
+<h2 id="shaft">In the shaft &mdash; all twenty</h2>
+<p>Six levels. The nine saved rooms come from <code>sprites/buildings/</code>; the eleven new ones from this folder. Use the <b>state</b> switch above to flip every room.</p>
+<div class="shaftwrap"><div class="shaft" id="shaftview"></div></div>
+
+<h2 id="rooms">The eleven new rooms</h2>
+<p>For each room: the blockout (step 1), the layout render, which is also the shipping <b>on</b> (step 2, 1 generation), then <b>off</b> and <b>broken</b>
+(step 4, edit tool, batched by width) and <b>on</b> with figures. There is no step 3 in this batch.</p>
+<div id="rooms-list"></div>
+
+<h2 id="findings">Findings</h2>
+<ul>
+  <li><b class="ok">Skipping step 3 works.</b> Every layout could ship as the on render as it came out. The rooms are cleaner and less grimy than the v13 inpainted masters.</li>
+  <li><b class="ok">Batched state edits hold up.</b> Four 128-px rooms or three 64-px rooms per call, and every state stayed in register (difference from on 11&ndash;20
+      for broken). No white edge columns this time.</li>
+  <li><b class="no">School:</b> the first layout (strength 70) came back with receding floorboards and angled walls. At strength 85 with "stage set" wording it is flatter, but the
+      floor still reads slightly as a plane. It is the weakest room of the batch.</li>
+  <li><b>Canteen:</b> the first 3-slot layout had a door where the kitchen belongs, and little on the counter. The retry at strength 55 has the range, hood, counter and a
+      communal table. It also gained some fake lettering on the menu board and a graffiti tag, which can be inpainted out if unwanted.</li>
+  <li><b>Floor lines:</b> 88&ndash;93. The archive (92), security post (93) and battery bank (91) are outside the 86&ndash;90 tolerance. They are recorded in
+      <code>meta.json</code> and work with <code>floorY</code>, but the tolerance should either widen to 86&ndash;93 or those rooms get a re-roll.</li>
+  <li><b>Sparse rooms:</b> the clinic and superior suite read clearly, but a lot of wall is empty. That leaves room for figures, but it is less dense than the v13 machine rooms.</li>
+  <li><b>Oxygen garden:</b> the moss wall behind a frame reads a little like a window. Worth checking against the no-exterior rule.</li>
+</ul>
+
+<h2 id="cost">Cost</h2>
+<div class="tablewrap"><table>
+  <tr><th>Step</th><th>Calls</th><th>Generations</th><th>Note</th></tr>
+  <tr><td>1 &middot; Blockout</td><td>11</td><td>0</td><td><code>tools/roomGuide.mjs</code>, 11 new layouts</td></tr>
+  <tr><td>2 &middot; Layout = on</td><td>13</td><td>13</td><td>two retries (school, canteen)</td></tr>
+  <tr><td>3 &middot; Master (inpaint)</td><td>0</td><td>0</td><td>skipped: every layout shipped as is</td></tr>
+  <tr><td>4 &middot; States (edit tool)</td><td>10</td><td>200</td><td>128 px &times;4 per call, 64 px &times;3, 192 px one each</td></tr>
+  <tr><td><b>Total</b></td><td></td><td><b>213</b></td><td>&asymp;19 per building (v13: &asymp;46) &middot; 1,119 left, resets 11 October</td></tr>
+</table></div>
+<p>The 3-slot rooms are now the expensive ones: each state is a whole edit call (~20). Grouping 128-px rooms four to a call makes them about 11 per building.
+The remaining 16 catalog buildings would cost roughly 250&ndash;350 at this rate.</p>
+<p><a href="../v13/index.html">&larr; v13: the first ten rooms</a></p>
+</main>
+
+<script>
+const NEW = [
+  { id: 'canteen',           name: 'Canteen (3 slots)',  band: 'mid',     w: 192, layout: 'canteen-layout2.png', first: 'canteen-layout.png', guide: 'guides/192-room-canteen.png',
+    note: 'Second layout (strength 55). First try kept for comparison; the old 1-slot canteen is in ../v13.' },
+  { id: 'superior-suite',    name: 'Superior suite',     band: 'mid',     w: 192, layout: 'superior-suite-layout.png', guide: 'guides/192-room-superior-suite.png',
+    note: 'First suite tier with timber fittings: sideboard, dining table, bed. Tidy, a little sparse.' },
+  { id: 'archive',           name: 'Archive',            band: 'shallow', w: 128, layout: 'archive-layout.png', guide: 'guides/128-room-archive.png',
+    note: 'Ledgers, card catalogue, green desk lamp. Floor on row 92.' },
+  { id: 'clinic',            name: 'Clinic',             band: 'mid',     w: 128, layout: 'clinic-layout.png', guide: 'guides/128-room-clinic.png',
+    note: 'Bed, curtain, drip stand, teal cross. Off reads especially well: the cabinet still glows faintly.' },
+  { id: 'workshop',          name: 'Workshop',           band: 'deep',    w: 128, layout: 'workshop-layout.png', guide: 'guides/128-room-workshop.png',
+    note: 'Pegboard of tools, bench and lathe. The richest room of the batch.' },
+  { id: 'scrubber-bank',     name: 'Scrubber bank',      band: 'mid',     w: 128, layout: 'scrubber-bank-layout.png', guide: 'guides/128-room-scrubber-bank.png',
+    note: 'Two carbon columns and the fan. Broken cracks a column and vents smoke.' },
+  { id: 'oxygen-garden',     name: 'Oxygen garden',      band: 'shallow', w: 128, layout: 'oxygen-garden-layout.png', guide: 'guides/128-room-oxygen-garden.png',
+    note: 'Planters under grow lamps in front of a moss wall. Check that the framed moss wall does not read as a window.' },
+  { id: 'reclamation-plant', name: 'Reclamation plant',  band: 'deep',    w: 128, layout: 'reclamation-plant-layout.png', guide: 'guides/128-room-reclamation-plant.png',
+    note: 'Settling vat and pipework; the filter press became a stained wall panel.' },
+  { id: 'school',            name: 'School',             band: 'mid',     w: 64,  layout: 'school-layout2.png', first: 'school-layout.png', guide: 'guides/64-room-school.png',
+    note: 'Second layout (strength 85). The first came back in perspective. Still the weakest room.' },
+  { id: 'security-post',     name: 'Security post',      band: 'mid',     w: 64,  layout: 'security-post-layout.png', guide: 'guides/64-room-security-post.png',
+    note: 'Notice board, desk, telephone, helmet. Floor on row 93.' },
+  { id: 'battery-bank',      name: 'Battery bank',       band: 'deep',    w: 64,  layout: 'battery-bank-layout.png', guide: 'guides/64-room-battery-bank.png',
+    note: 'Three stacked banks of cells with cabling. Floor on row 91.' },
+];
+const SAVED = { 'main-generator': 192, 'dig-face': 128, smelter: 128, 'deep-pump': 128, 'hydroponics-bay': 128, 'simple-suite': 128,
+                'council-chamber': 128, grove: 192, 'presidential-suite': 256 };
+const WIDTH = { ...SAVED, ...Object.fromEntries(NEW.map((r) => [r.id, r.w])) };
+const LEVELS = [
+  { n: 4,  band: 'shallow', slots: ['presidential-suite', 'council-chamber', 'archive'] },
+  { n: 6,  band: 'shallow', slots: ['oxygen-garden', 'grove', 'superior-suite'] },
+  { n: 22, band: 'mid',     slots: ['canteen', 'simple-suite', 'clinic', 'school'] },
+  { n: 24, band: 'mid',     slots: ['hydroponics-bay', 'scrubber-bank', 'security-post', 'smelter', null] },
+  { n: 34, band: 'deep',    slots: ['main-generator', 'battery-bank', 'workshop', 'reclamation-plant'] },
+  { n: 40, band: 'deep',    slots: ['deep-pump', 'dig-face', null, null, null, null] },
+];
+let META = {};
+let state = 'on', zoom = 2, figures = true;
+
+function src(id, s) {
+  if (id in SAVED) return s === 'on' && figures ? `../v13/${id}-figures.png` : `../../buildings/${id}-${s}.png`;
+  return s === 'on' && figures ? `${id}-figures.png` : `${id}-${s}.png`;
+}
+
+function buildShaft() {
+  const el = document.getElementById('shaftview');
+  el.innerHTML = '';
+  el.style.width = `${640 * zoom}px`; el.style.height = `${LEVELS.length * 104 * zoom}px`;
+  const px = (v) => `${v * zoom}px`;
+  const add = (tag, cls, x, y, w, h, extra = {}) => {
+    const n = document.createElement(tag); n.className = cls;
+    Object.assign(n.style, { left: px(x), top: px(y), width: px(w), height: px(h) }, extra.style || {});
+    if (extra.src) n.src = extra.src; if (extra.text) n.textContent = extra.text;
+    el.appendChild(n); return n;
+  };
+  LEVELS.forEach((lv, i) => {
+    const y = i * 104;
+    add('div', 'col', 0, y, 64, 104);
+    add('div', 'col', 576, y, 64, 104);
+    add('div', 'rock', 64, y, 512, 96, { style: { backgroundImage: `url(${lv.band}-rock.png)`, backgroundSize: `${64 * zoom}px ${104 * zoom}px` } });
+    let x = 64;
+    for (const id of lv.slots) {
+      if (!id) { x += 64; continue; }
+      add('img', '', x, y, WIDTH[id], 96, { src: src(id, state) });
+      x += WIDTH[id];
+    }
+    add('div', 'slab', 0, y + 96, 640, 8);
+    add('div', 'tag', 3, y + 3, 60, 8, { text: `L${lv.n} · ${lv.band}`, style: { fontSize: `${6 * zoom}px` } });
+  });
+}
+
+const fig = (file, cap, w) => `<figure><img src="${file}" data-w="${w}" alt=""><figcaption>${cap}</figcaption></figure>`;
+
+function buildRooms() {
+  document.getElementById('rooms-list').innerHTML = NEW.map((r) => {
+    const m = META[r.id] || {};
+    return `<h3>${r.name}<small>${r.id} · ${r.band} · ${r.w}×96 · ${r.w / 64} slot${r.w > 64 ? 's' : ''} · floorY ${m.floorY ?? '?'}</small></h3>
+      <div class="pipe">
+        ${fig(r.guide, '<span class="k">1 · blockout</span>', r.w)}
+        ${r.first ? fig(r.first, '<span class="k">first layout</span> · rejected', r.w) : ''}
+        ${fig(r.layout, `<span class="k">2 · layout = on</span> · lum ${m.on_lum ?? ''}`, r.w)}
+        ${fig(`${r.id}-off.png`, `<span class="k">off</span> · lum ${m.off_lum ?? ''} · diff ${m.off_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-broken.png`, `<span class="k">broken</span> · lum ${m.broken_lum ?? ''} · diff ${m.broken_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-figures.png`, '<span class="k">on + figures</span>', r.w)}
+      </div>
+      <p class="note">${r.note}</p>`;
+  }).join('');
+  sizeFigures();
+}
+
+function sizeFigures() {
+  document.querySelectorAll('figure img').forEach((img) => { img.style.width = `${Number(img.dataset.w) * zoom}px`; });
+}
+
+function seg(id, key, fn) {
+  document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x === b));
+    fn(b.dataset[key]);
+  }));
+}
+seg('zoom', 'z', (z) => { zoom = Number(z); buildShaft(); sizeFigures(); });
+seg('state', 's', (s) => { state = s; buildShaft(); });
+document.getElementById('figs').addEventListener('change', (e) => { figures = e.target.checked; buildShaft(); });
+
+fetch('meta.json').then((r) => r.json()).catch(() => ({})).then((m) => { META = m; buildRooms(); });
+buildShaft();
+</script>
+</body>
+</html>

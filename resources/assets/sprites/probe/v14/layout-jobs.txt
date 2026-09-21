@@ -1,0 +1,11 @@
+canteen-layout 6c31b687-7013-4fdb-94bf-0790b5544d39
+archive-layout 9b84d3a2-ff8a-4503-8815-c1a1a8ff1349
+clinic-layout 700f0b66-34cd-4969-98e5-c7ea312b0bff
+workshop-layout a37c65c0-9ad4-4d42-bc26-489f23ba5946
+scrubber-bank-layout 0f7bd465-c0d8-4ed5-8457-04eb57594ff0
+oxygen-garden-layout 06b8dde2-fef9-4ec2-a2e4-fe2370a6ae2e
+reclamation-plant-layout f3b74a03-795b-4076-96c4-93cdb4731b36
+superior-suite-layout d4a4fb4b-2db2-409f-b63a-e75060e26ef7
+school-layout 02865fe2-c2a8-4d57-a0e2-e4717e46400b
+security-post-layout 00365e45-2d72-41f9-8f58-655da8a04e26
+battery-bank-layout 01bd20dd-3355-45c0-a8fb-cd007829324c

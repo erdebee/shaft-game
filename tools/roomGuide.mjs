@@ -183,17 +183,167 @@ const LAYOUTS = {
     ['rect', 92, 36, 118, 39, P.mauve],             // shelf
     ['rect', 96, 74, 118, 87, P.sand],              // storage crates
   ],
+  // 3 slots (192 px) since 2026-09-21; the 1-slot version is kept in probe/v13.
   canteen: [
-    ['circle', 40, 16, 2, P.amber],                 // hanging lamp
-    ['rect', 30, 22, 52, 36, P.tealDeep],           // menu board
-    ['rect', 33, 26, 48, 26, P.cream],
-    ['rect', 33, 30, 44, 30, P.cream],
-    ['rect', 12, 48, 24, 58, P.ink],                // soup pot
-    ['rect', 8, 58, 32, 60, P.sand],                // counter top
-    ['rect', 8, 61, 32, 87, P.mauve],               // counter
-    ['rect', 36, 70, 56, 73, P.rust],               // table
-    ['rect', 38, 74, 40, 87, P.rust],
-    ['rect', 52, 74, 54, 87, P.rust],
+    ['rect', 12, 30, 38, 40, P.plum],               // extractor hood
+    ['rect', 10, 56, 40, 87, P.ink],                // kitchen range
+    ['circle', 18, 52, 4, P.mauve],                 // pots
+    ['circle', 32, 52, 4, P.mauve],
+    ['rect', 50, 22, 80, 38, P.tealDeep],           // menu board
+    ['rect', 54, 26, 76, 26, P.cream],
+    ['rect', 54, 30, 70, 30, P.cream],
+    ['rect', 54, 34, 74, 34, P.cream],
+    ['rect', 44, 58, 84, 60, P.sand],               // serving counter top
+    ['rect', 44, 61, 84, 87, P.mauve],              // serving counter
+    ['rect', 110, 10, 110, 16, P.taupe],            // lamp drops
+    ['rect', 150, 10, 150, 16, P.taupe],
+    ['circle', 110, 18, 2, P.amber],                // hanging lamps
+    ['circle', 150, 18, 2, P.amber],
+    ['circle', 130, 32, 5, P.cream],                // wall clock
+    ['rect', 96, 68, 176, 71, P.rust],              // long table
+    ['rect', 100, 72, 102, 87, P.rust],
+    ['rect', 170, 72, 172, 87, P.rust],
+    ['rect', 94, 78, 178, 80, P.sand],              // benches
+  ],
+  archive: [
+    ['rect', 10, 16, 40, 87, P.plum],               // ledger shelves
+    ['rect', 10, 30, 40, 31, P.mauve],
+    ['rect', 10, 46, 40, 47, P.mauve],
+    ['rect', 10, 62, 40, 63, P.mauve],
+    ['rect', 12, 22, 38, 29, P.terracotta],         // ledgers
+    ['rect', 12, 38, 38, 45, P.sand],
+    ['rect', 12, 54, 38, 61, P.rust],
+    ['rect', 42, 20, 44, 87, P.sand],               // library ladder
+    ['rect', 48, 50, 70, 87, P.rust],               // card catalogue
+    ['rect', 76, 66, 106, 69, P.rust],              // reading desk
+    ['rect', 78, 70, 80, 87, P.rust],
+    ['rect', 102, 70, 104, 87, P.rust],
+    ['circle', 92, 60, 3, P.amber],                 // desk lamp
+    ['rect', 108, 16, 120, 87, P.plum],             // second shelf
+  ],
+  clinic: [
+    ['rect', 10, 20, 48, 21, P.taupe],              // curtain rail
+    ['rect', 46, 22, 50, 70, P.mint],               // curtain
+    ['rect', 12, 70, 44, 78, P.cream],              // bed
+    ['rect', 12, 78, 44, 87, P.mauve],
+    ['rect', 50, 40, 51, 87, P.taupe],              // drip stand
+    ['rect', 48, 40, 53, 48, P.mint],
+    ['rect', 58, 26, 82, 50, P.cream],              // medicine cabinet
+    ['rect', 68, 30, 72, 44, P.tealLit],
+    ['rect', 62, 35, 78, 39, P.tealLit],
+    ['rect', 88, 66, 116, 69, P.sand],              // desk
+    ['rect', 90, 70, 92, 87, P.sand],
+    ['rect', 112, 70, 114, 87, P.sand],
+    ['circle', 100, 20, 2, P.amber],                // lamp
+  ],
+  workshop: [
+    ['circle', 42, 18, 2, P.amber],                 // lamp
+    ['rect', 14, 24, 70, 50, P.mauve],              // tool pegboard
+    ['rect', 18, 28, 22, 44, P.slate],
+    ['rect', 28, 30, 40, 34, P.slate],
+    ['rect', 48, 28, 52, 46, P.slate],
+    ['rect', 14, 62, 70, 66, P.rust],               // workbench
+    ['rect', 16, 67, 18, 87, P.rust],
+    ['rect', 66, 67, 68, 87, P.rust],
+    ['rect', 60, 56, 66, 62, P.slate],              // vice
+    ['rect', 20, 76, 40, 87, P.sand],               // parts bins
+    ['rect', 78, 58, 114, 80, P.teal],              // lathe
+    ['rect', 76, 80, 116, 87, P.plum],
+  ],
+  'scrubber-bank': [
+    ['rect', 8, 12, 119, 18, P.taupe],              // duct
+    ['rect', 16, 20, 42, 87, P.teal],               // filter columns
+    ['rect', 58, 20, 84, 87, P.teal],
+    ['rect', 16, 40, 42, 42, P.tealDeep],
+    ['rect', 16, 60, 42, 62, P.tealDeep],
+    ['rect', 58, 40, 84, 42, P.tealDeep],
+    ['rect', 58, 60, 84, 62, P.tealDeep],
+    ['circle', 29, 30, 2, P.cream],                 // gauges
+    ['circle', 71, 30, 2, P.cream],
+    ['circle', 104, 48, 12, P.mauve],               // fan housing
+    ['circle', 104, 48, 3, P.ink],
+    ['rect', 92, 72, 118, 87, P.plum],              // carbon sacks
+  ],
+  'oxygen-garden': [
+    ['rect', 10, 24, 118, 50, P.tealDeep],          // moss wall
+    ['circle', 24, 32, 3, P.mint],
+    ['circle', 58, 40, 3, P.mint],
+    ['circle', 92, 30, 3, P.mint],
+    ['rect', 14, 18, 114, 19, P.amber],             // grow lamps
+    ['rect', 8, 54, 119, 55, P.sand],               // brass pipe
+    ['circle', 22, 62, 9, P.mint],                  // ferns
+    ['circle', 46, 60, 10, P.tealLit],
+    ['circle', 72, 62, 9, P.mint],
+    ['circle', 98, 60, 10, P.tealLit],
+    ['rect', 10, 70, 118, 87, P.rust],              // planters
+  ],
+  'reclamation-plant': [
+    ['rect', 8, 14, 119, 18, P.taupe],              // pipe run
+    ['rect', 10, 34, 62, 37, P.tealLit],            // settling vat rim
+    ['rect', 12, 38, 60, 87, P.teal],               // settling vat
+    ['rect', 60, 44, 70, 48, P.taupe],              // transfer pipe
+    ['rect', 70, 50, 110, 84, P.slate],             // filter press
+    ['rect', 74, 54, 76, 80, P.mauve],
+    ['rect', 82, 54, 84, 80, P.mauve],
+    ['rect', 90, 54, 92, 80, P.mauve],
+    ['rect', 98, 54, 100, 80, P.mauve],
+    ['circle', 90, 40, 3, P.cream],                 // gauge
+    ['rect', 112, 70, 120, 87, P.rust],             // sludge drum
+  ],
+  school: [
+    ['circle', 32, 16, 2, P.amber],                 // lamp
+    ['rect', 12, 24, 52, 44, P.tealDeep],           // chalkboard
+    ['rect', 16, 28, 40, 28, P.cream],
+    ['rect', 16, 32, 46, 32, P.cream],
+    ['rect', 16, 36, 34, 36, P.cream],
+    ['rect', 12, 72, 28, 75, P.sand],               // pupils' desks
+    ['rect', 14, 76, 16, 87, P.sand],
+    ['rect', 24, 76, 26, 87, P.sand],
+    ['rect', 34, 72, 50, 75, P.sand],
+    ['rect', 36, 76, 38, 87, P.sand],
+    ['rect', 46, 76, 48, 87, P.sand],
+    ['circle', 46, 62, 4, P.tealLit],               // globe
+  ],
+  'security-post': [
+    ['circle', 26, 16, 2, P.amber],                 // lamp
+    ['rect', 12, 24, 40, 44, P.sand],               // notice board
+    ['rect', 15, 27, 23, 35, P.cream],
+    ['rect', 27, 29, 36, 38, P.cream],
+    ['rect', 44, 30, 54, 58, P.plum],               // baton rack
+    ['rect', 44, 60, 56, 87, P.plum],               // locker
+    ['rect', 10, 66, 40, 69, P.slate],              // desk
+    ['rect', 12, 70, 14, 87, P.slate],
+    ['rect', 36, 70, 38, 87, P.slate],
+    ['rect', 30, 58, 38, 66, P.ink],                // telephone
+  ],
+  'battery-bank': [
+    ['rect', 30, 10, 32, 30, P.ink],                // main cable
+    ['rect', 12, 20, 26, 26, P.terracotta],         // warning plate
+    ['circle', 50, 22, 3, P.cream],                 // gauge
+    ['rect', 10, 30, 54, 44, P.teal],               // battery cells
+    ['rect', 10, 48, 54, 62, P.teal],
+    ['rect', 10, 66, 54, 87, P.teal],
+    ['rect', 14, 28, 18, 30, P.cream],              // terminals
+    ['rect', 46, 28, 50, 30, P.cream],
+    ['rect', 14, 46, 18, 48, P.cream],
+    ['rect', 46, 46, 50, 48, P.cream],
+  ],
+  'superior-suite': [
+    ['rect', 10, 60, 40, 87, P.rust],               // sideboard
+    ['rect', 14, 54, 20, 60, P.cream],              // dishes
+    ['rect', 26, 54, 34, 60, P.mint],
+    ['circle', 25, 38, 5, P.cream],                 // wall clock
+    ['rect', 80, 28, 108, 44, P.sand],              // family portrait
+    ['circle', 95, 18, 3, P.amber],                 // lamp
+    ['rect', 66, 56, 70, 87, P.rust],               // chair
+    ['rect', 120, 56, 124, 87, P.rust],             // chair
+    ['rect', 70, 66, 120, 69, P.rust],              // dining table
+    ['rect', 74, 70, 76, 87, P.rust],
+    ['rect', 114, 70, 116, 87, P.rust],
+    ['rect', 132, 30, 154, 87, P.plum],             // wardrobe
+    ['rect', 180, 56, 184, 87, P.rust],             // headboard
+    ['rect', 156, 70, 184, 80, P.terracotta],       // bed
+    ['rect', 156, 80, 184, 87, P.plum],
   ],
   // Open area (spec §2.2).
   grove: [

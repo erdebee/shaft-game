@@ -1,0 +1,8 @@
+canteen-A 010e0c55-5bbb-4a2b-ab10-82938161591c
+canteen-B 6f40a730-3689-4a35-8608-21e68da35302
+superior-suite-A dcd945b2-0a6b-4336-9612-88bb7e7e5fda
+superior-suite-B 23d5c661-43cf-4652-a0fd-38ee0eafaaaf
+school-A ab3189f7-a02b-442e-9fd7-48be9834af71
+school-B d027dd9d-3330-42cc-9616-47d0c3c24f36
+clinic-A 650240c2-8e2e-46ac-81fb-3c2f00e7117b
+clinic-B 31041b01-0bc4-420f-8241-f9dbf629145b
