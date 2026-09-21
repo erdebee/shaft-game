@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First ten rooms</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --good: #86b6a2; --bad: #cf6a40;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 30px 0 6px; }
+  h3 small { color: var(--faint); letter-spacing: 0; text-transform: none; font-size: 11px; margin-left: 8px; }
+  p { max-width: 90ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  a { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .seg { display: inline-flex; gap: 0; }
+  .seg button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { color: var(--amber); border-color: var(--amber); position: relative; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .summary p { margin: 4px 0; }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+
+  /* Shaft view: 640 × (levels × 104) reference pixels, scaled by an integer zoom. */
+  .shaftwrap { overflow-x: auto; padding-bottom: 6px; }
+  .shaft { position: relative; image-rendering: pixelated; background: #010202; transform-origin: top left; }
+  .shaft > * { position: absolute; }
+  .shaft img { image-rendering: pixelated; display: block; }
+  .rock { background-repeat: repeat; image-rendering: pixelated; }
+  .col { background: #120d15; border-left: 1px solid #241c26; border-right: 1px solid #241c26; }
+  .slab { background: #4f4148; border-top: 1px solid #8e7870; }
+  .tag { font: 6px/1 ui-monospace, monospace; color: #8e7870; z-index: 3; white-space: nowrap; }
+
+  .pipe { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; margin: 8px 0; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; max-width: 42ch; }
+  figcaption .k { color: var(--ink); }
+  .note { font-size: 12px; color: var(--dim); max-width: 100ch; margin: 2px 0 0; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 12px; width: 100%; max-width: 1000px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--amber); font-weight: 600; }
+  td:first-child { color: var(--ink); }
+  .tablewrap { overflow-x: auto; }
+  ul { color: var(--dim); max-width: 95ch; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+<body>
+<main>
+<h1>First ten rooms &mdash; the new ruleset, end to end</h1>
+<p class="lead">Ten catalog buildings made with the adopted workflow (spec &sect;2.4): <b>blockout &rarr; layout &rarr; inpainted master &rarr; state renders</b>.
+Eastward style, no palette forcing, no people in the rooms, figures added from the figure layer. Every building has
+<b>on</b>, <b>off</b> and <b>broken</b>.</p>
+
+<div class="bar">
+  <span>Zoom</span>
+  <span class="seg" id="zoom"><button data-z="1">1&times;</button><button data-z="2" class="on">2&times;</button><button data-z="3">3&times;</button></span>
+  <span>State</span>
+  <span class="seg" id="state"><button data-s="on" class="on">on</button><button data-s="off">off</button><button data-s="broken">broken</button></span>
+  <label class="chk"><input type="checkbox" id="figs" checked> figures</label>
+  <span>&middot;</span>
+  <a href="#shaft">Shaft</a><a href="#rooms">Rooms</a><a href="#findings">Findings</a><a href="#cost">Cost</a>
+</div>
+
+<div class="summary">
+  <p><b>What worked.</b> All ten rooms are flat side views with their floor on rows 88&ndash;92, no people in them, and all 20 state
+     renders stay in register with their master. <b>Dropping the palette helped</b>: the renders are richer and read as one set anyway.
+     <b>States made with the edit tool are convincing</b>: <i>off</i> rooms are genuinely dark (brightness 22&ndash;43 vs 66&ndash;103 lit),
+     and <i>broken</i> rooms show steam, scorch, tape and debris on an unchanged room.</p>
+  <p><b>What changed from the plan.</b> (1) Inpainting over the approved layout <b>does not keep the layout</b>: it redraws the room from the
+     description. (2) Image-to-image states <b>did not work</b>: at strength 300 nothing changed, and at 150 the room was destroyed. The edit
+     tool replaced it. See <a href="#findings">Findings</a>.</p>
+  <p><b>Cost:</b> 458 generations for ten buildings (about 46 each). 1,332 left this cycle.</p>
+</div>
+
+<h2 id="shaft">In the shaft</h2>
+<p>Rooms placed in their slots on four levels, with the rock tiles in empty slots and placeholder stairwell and lift columns. Use the
+<b>state</b> switch above to flip every room between on, off and broken; <i>figures</i> only show in the on state.</p>
+<div class="shaftwrap"><div class="shaft" id="shaftview"></div></div>
+
+<h2 id="rooms">The ten rooms &mdash; every step</h2>
+<p>For each room: the blockout guide (step 1), the layout render (step 2, 1 generation), the inpainted master = <b>on</b> (step 3, ~20),
+<b>off</b> and <b>broken</b> (step 4, edit tool), and <b>on</b> with spec figures on the measured floor line. Captions give brightness and,
+for states, the mean difference from <b>on</b>.</p>
+<div id="rooms-list"></div>
+
+<h2 id="findings">Findings</h2>
+<ul>
+  <li><b class="ok">No palette is better.</b> Without forcing, colours stay in the Eastward family on their own (20&ndash;49 colours per room)
+      and the rooms look richer. Keep it off.</li>
+  <li><b class="no">Step 3 does not carry the layout.</b> The generator, deep pump and hydroponics masters have different compositions
+      from their approved layouts. Inpainting follows the text, not the pixels underneath. The masters also came back <b>grimier and more
+      textured</b>. For the hydroponics bay and the canteen the <b>layout render is arguably the better room</b>.</li>
+  <li><b class="ok">States: use the edit tool.</b> <code>edit_image</code> keeps the room and only changes light and damage. It batches
+      up to <b>four 128-px rooms per call</b> for the same price, so states cost ~5&ndash;20 per room instead of 20 each. Image-to-image
+      is rejected (kept in <code>rejected/</code>).</li>
+  <li><b class="no">Canteen master</b> came back with a floor plane (a pale floor receding to the back). It fails &sect;2 and needs another
+      master.</li>
+  <li><b class="no">Simple suite floor is on row 92</b>, outside the 86&ndash;90 tolerance, because the layout's floor band came out thin.
+      It works with <code>floorY</code> recorded, but it should be tightened.</li>
+  <li><b>Hydroponics broken</b> drifted more than the others (difference 47 vs 11&ndash;28): the whole wall darkened, not just the damage.</li>
+  <li><b>Presidential suite</b> needed a second layout at strength 70: the first (strength 50) came back with a carpeted floor plane and angled
+      furniture. The edit tool also left a 1-px white column on both edges of its <i>off</i> state; repaired by copying the neighbouring
+      column (raw version in <code>rejected/</code>).</li>
+  <li><b>Figures</b> hold one scale everywhere. The teal engineer still disappears against teal machinery, and councillors against dark wood.</li>
+</ul>
+
+<h2 id="cost">Cost</h2>
+<div class="tablewrap"><table>
+  <tr><th>Step</th><th>Calls</th><th>Generations</th><th>Note</th></tr>
+  <tr><td>1 · Blockout</td><td>10</td><td>0</td><td>local, <code>tools/roomGuide.mjs</code></td></tr>
+  <tr><td>2 · Layout</td><td>11</td><td>11</td><td>one retry (presidential suite)</td></tr>
+  <tr><td>3 · Master (inpaint)</td><td>10</td><td>~200</td><td>~20 each regardless of width</td></tr>
+  <tr><td>4 · States (edit tool)</td><td>12</td><td>~240</td><td>incl. one test; 128-px rooms batched 4 per call</td></tr>
+  <tr><td>Rejected state tests</td><td>7</td><td>7</td><td>image-to-image at strength 300 and 150</td></tr>
+  <tr><td><b>Total</b></td><td></td><td><b>458</b></td><td>≈46 per building · 1,332 left, resets 11 October</td></tr>
+</table></div>
+<p>At this rate the whole catalog (36 buildings) is ~1,650 generations, more than one cycle. Two savings are on the table:
+<b>skip step 3</b> when the layout render is already good (saves ~20 per room: the hydroponics and canteen layouts, for instance), and
+<b>batch states harder</b>: all 128-px rooms four at a time for <i>off</i> and <i>broken</i> brings states to ~10 per room.
+With both, a building costs ~12&ndash;30.</p>
+<p><a href="../v12/index.html">&larr; v12: the envelope test</a></p>
+</main>
+
+<script>
+const ROOMS = [
+  { id: 'main-generator',    name: 'Main generator',    band: 'deep',    w: 192, layout: 'main-generator-layout.png',    guide: 'guides/192-room-main-generator.png',
+    note: 'Master redrew the engine smaller and added clutter; rust-streaked plate wall. Broken: steam from a burst pipe, scorch, chevron tape.' },
+  { id: 'dig-face',          name: 'Dig face (mines)',  band: 'deep',    w: 128, layout: 'dig-face-layout.png',          guide: 'guides/128-open-dig-face.png', open: true,
+    note: 'Open area (no side walls). The master finally has a real rock face with ore, which the layout lacked.' },
+  { id: 'smelter',           name: 'Smelter',           band: 'deep',    w: 128, layout: 'smelter-layout.png',           guide: 'guides/128-room-smelter.png',
+    note: 'Off puts the furnace out completely. Broken cracks the furnace and vents smoke.' },
+  { id: 'deep-pump',         name: 'Deep pump',         band: 'deep',    w: 128, layout: 'deep-pump-layout.png',         guide: 'guides/128-room-deep-pump.png',
+    note: 'Master replaced the round pump housing with a horizontal pump; still clear. Broken: steam jet and tape.' },
+  { id: 'hydroponics-bay',   name: 'Hydroponics bay',   band: 'mid',     w: 128, layout: 'hydroponics-bay-layout.png',   guide: 'guides/128-room-hydroponics-bay.png',
+    note: 'The layout render is the nicer room here. Broken drifted most of the ten (whole wall darkened).' },
+  { id: 'simple-suite',      name: 'Simple suite',      band: 'mid',     w: 128, layout: 'simple-suite-layout.png',      guide: 'guides/128-room-simple-suite.png',
+    note: 'Cramped family home: bunk bed, stove, laundry line. Floor on row 92, outside tolerance.' },
+  { id: 'canteen',           name: 'Canteen',           band: 'mid',     w: 64,  layout: 'canteen-layout.png',           guide: 'guides/64-room-canteen.png',
+    note: 'The 1-slot test. Master has a receding pale floor, which fails §2. The layout render is better.' },
+  { id: 'council-chamber',   name: 'Council chamber',   band: 'shallow', w: 128, layout: 'council-chamber-layout.png',   guide: 'guides/128-room-council-chamber.png',
+    note: 'Symmetrical and dark; the seal and sconces carry it. Councillors are hard to see against the wood.' },
+  { id: 'grove',             name: 'Grove (arboretum)', band: 'shallow', w: 192, layout: 'grove-layout.png',             guide: 'guides/192-open-grove.png', open: true,
+    note: 'Open area. Alternating teal and russet canopies under grow lamps. Broken: burst irrigation pipe, trees wilting.' },
+  { id: 'presidential-suite',name: 'Presidential suite',band: 'shallow', w: 256, layout: 'presidential-suite-layout2.png',guide: 'guides/256-room-presidential-suite.png',
+    note: 'The 4-slot test. Second layout (strength 70) after the first came back in perspective. The widest and grandest room.' },
+];
+const LEVELS = [
+  { n: 4,  band: 'shallow', slots: ['presidential-suite', 'council-chamber', null, null] },
+  { n: 11, band: 'shallow', slots: ['grove', null, 'hydroponics-bay', null, null] },
+  { n: 22, band: 'mid',     slots: ['simple-suite', 'canteen', 'smelter', null, null, null] },
+  { n: 34, band: 'deep',    slots: ['main-generator', 'deep-pump', 'dig-face', null] },
+];
+const byId = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
+let META = {};
+let state = 'on', zoom = 2, figures = true;
+
+const src = (id, s) => (s === 'on' && figures ? `${id}-figures.png` : `${id}-${s}.png`);
+
+function buildShaft() {
+  const el = document.getElementById("shaftview");
+  el.innerHTML = '';
+  const H = LEVELS.length * 104;
+  el.style.width = `${640 * zoom}px`; el.style.height = `${H * zoom}px`;
+  const px = (v) => `${v * zoom}px`;
+  const add = (tag, cls, x, y, w, h, extra = {}) => {
+    const n = document.createElement(tag); n.className = cls;
+    Object.assign(n.style, { left: px(x), top: px(y), width: px(w), height: px(h) }, extra.style || {});
+    if (extra.src) n.src = extra.src; if (extra.text) n.textContent = extra.text;
+    el.appendChild(n); return n;
+  };
+  LEVELS.forEach((lv, i) => {
+    const y = i * 104;
+    add('div', 'col', 0, y, 64, 104);
+    add('div', 'col', 576, y, 64, 104);
+    add('div', 'rock', 64, y, 512, 96, { style: { backgroundImage: `url(${lv.band}-rock.png)`, backgroundSize: `${64 * zoom}px ${104 * zoom}px` } });
+    let x = 64;
+    for (const id of lv.slots) {
+      if (!id) { x += 64; continue; }
+      const r = byId[id];
+      add('img', '', x, y, r.w, 96, { src: src(id, state) });
+      x += r.w;
+    }
+    add('div', 'slab', 0, y + 96, 640, 8);
+    add('div', 'tag', 3, y + 3, 60, 8, { text: `L${lv.n} · ${lv.band}`, style: { fontSize: `${6 * zoom}px` } });
+  });
+}
+
+const fig = (file, cap, w) => `<figure><img src="${file}" data-w="${w}" alt=""><figcaption>${cap}</figcaption></figure>`;
+
+function buildRooms() {
+  document.getElementById('rooms-list').innerHTML = ROOMS.map((r) => {
+    const m = META[r.id] || {};
+    return `<h3>${r.name}<small>${r.id} · ${r.band} · ${r.w}×96 · ${r.w / 64} slot${r.w > 64 ? 's' : ''}${r.open ? ' · open area' : ''} · floorY ${m.floorY ?? '?'}</small></h3>
+      <div class="pipe">
+        ${fig(r.guide, '<span class="k">1 · blockout</span>', r.w)}
+        ${fig(r.layout, `<span class="k">2 · layout</span> · lum ${m.layout_lum ?? ''}`, r.w)}
+        ${fig(`${r.id}-on.png`, `<span class="k">3 · master = on</span> · lum ${m.on_lum ?? ''}`, r.w)}
+        ${fig(`${r.id}-off.png`, `<span class="k">off</span> · lum ${m.off_lum ?? ''} · diff ${m.off_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-broken.png`, `<span class="k">broken</span> · lum ${m.broken_lum ?? ''} · diff ${m.broken_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-figures.png`, '<span class="k">on + figures</span>', r.w)}
+      </div>
+      <p class="note">${r.note}</p>`;
+  }).join('');
+  sizeFigures();
+}
+
+function sizeFigures() {
+  document.querySelectorAll('figure img').forEach((img) => { img.style.width = `${Number(img.dataset.w) * zoom}px`; });
+}
+
+function seg(id, key, fn) {
+  document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x === b));
+    fn(b.dataset[key]);
+  }));
+}
+seg('zoom', 'z', (z) => { zoom = Number(z); buildShaft(); sizeFigures(); });
+seg('state', 's', (s) => { state = s; buildShaft(); });
+document.getElementById('figs').addEventListener('change', (e) => { figures = e.target.checked; buildShaft(); });
+
+fetch('meta.json').then((r) => r.json()).catch(() => ({})).then((m) => { META = m; buildRooms(); });
+buildShaft();
+</script>
+</body>
+</html>

@@ -230,9 +230,9 @@ Only light, activity and damage change.
 | **Broken** | `-broken` | yes | Visible damage: burst pipe, scorch, a dead or flickering lamp, a part stopped mid-stroke |
 | **Damaged** | `-damaged` | optional | Degraded but still working: grime, rust, a lamp out. Without one, the shared grime/rust overlays sit over `on` |
 
-`on` is generated first and approved. Every other state is generated **from** it,
-with `init_image` = the approved `on` render and a high `init_image_strength`,
-and a prompt that describes only the change. Then check that the state
+`on` is generated first and approved. Every other state is made **from** it with
+`edit_image` and an instruction that describes only the change (§2.4, step 4).
+Image-to-image with `init_image` was tried and rejected in v13. Then check that the state
 **registers**: diff it against `on` and confirm nothing moved outside the lamps,
 the activity and the damage. A state that shifted the room is regenerated, because
 the renderer crossfades between states and any drift shows as the room jumping.
@@ -247,22 +247,31 @@ from row 81 to 90. So every room goes through four steps, cheap ones first:
 |---|---|---|---|
 | 1. Blockout | Add the building's main masses to `LAYOUTS` in `tools/roomGuide.mjs` (about 15 flat shapes), then run `node tools/roomGuide.mjs <width> room <building-id>` | local | 0 |
 | 2. Layout | `create_image_pixflux` with `init_image` = the blockout guide at strength **50** (70 for rooms of small furniture, such as the house). Try seeds and adjust the blockout until the layout is approved | pixflux | 1 per try |
-| 3. Master | `inpaint_image` over the envelope guide (`roomGuide.mjs <width> room`), masking only the interior: `mask_x 7, mask_y 10, mask_width width − 14, mask_height 78`. The ceiling, side walls and floor line cannot move. The description names the approved layout's contents, left to right | inpaint | ~20 |
-| 4. States | `off`, `broken` (and `damaged`) from the approved master with pixflux `init_image`, as in §2.3 | pixflux | 1 each |
+| 3. Master *(optional)* | Only when the layout render is not good enough to ship. `inpaint_image` over the approved layout, masking only the interior: `mask_x 7, mask_y 10, mask_width width − 14, mask_height 78` (open areas: `mask_x 0`, full width). The ceiling, side walls and floor line cannot move. **It redraws the room from the description; it does not keep the layout** (v13) | inpaint | ~20 |
+| 4. States | `off`, `broken` (and `damaged`) with **`edit_image`** on the `on` render: a text instruction that changes only light or damage. Up to **four rooms of ≤128 px per call** for the same price; 192 and 256 px rooms go one per call | edit | ~20 per call |
 
-Roughly 25 generations per building, or about 800 for the full catalog.
+v13 measured **~46 generations per building** with every step, including one inpaint per room and unbatched states for the wide rooms. Skipping step 3 when the layout is good, and batching states four at a time, brings a 128-px building down to about 11 (1 layout + 10 for two batched edits).
 
 - **Open areas** (§2.2) use the `open` guide in steps 1–3, with no side walls. The
   end walls are then added by inpainting the end strips.
-- **The floor line holds in both steps**: rows 88–90 in step 2, and locked in
-  step 3. Record the exact row as `floorY` (§2.1).
-- **Untested:** in v12 the master was inpainted into an *empty* envelope, and it
-  followed the description, not a layout. Whether inpainting over the approved
-  step-2 render (interior masked) carries that layout through is not known yet.
-  The first building made this way will show which to use.
+- **The floor line mostly holds**: rows 88–92 across the ten v13 rooms. The simple
+  suite (92) and presidential suite (91) fall outside the 86–90 tolerance because
+  their layout's floor band came out thin. Step 3 locks whatever step 2 produced, so
+  check the floor at step 2. Record the exact row as `floorY` (§2.1).
+- **Tested in v13 (ten rooms, `probe/v13/index.html`).** Inpainting over the approved
+  layout redrew the composition from the text (the generator, the deep pump and the
+  hydroponics bay all changed). The results were also grimier than their layouts. For
+  the hydroponics bay and the canteen the layout render was the better room, and the
+  canteen's master even gained a receding floor. So step 3 is a fallback, not a
+  default.
+- **States: the edit tool, not image-to-image.** pixflux `init_image` at strength 300
+  left lamps lit and fires burning (brightness unchanged). At 150 it destroyed the
+  room. `edit_image` gave genuinely dark `off` rooms (brightness 22–43 vs 66–103 lit)
+  and damaged `broken` rooms, with the room unchanged. Check the edges of edit output:
+  one 256-px render came back with a 1-px white column on each side.
 
-**No palette forcing for now** (§6). Neither step passes `color_image_base64`, and
-inpaint output is not snapped to a palette.
+**No palette forcing for now** (§6). No step passes `color_image_base64`, and
+inpaint or edit output is not snapped to a palette.
 
 ---
 
@@ -310,8 +319,8 @@ anything gated; `lazy` for the rest.
 | Asset | Tool | Key arguments |
 |---|---|---|
 | Building layout | **`tools/roomGuide.mjs`** → `create_image_pixflux` | `init_image` = the blockout guide at strength 50–70, `view: "side"`, **`no_background: false`** (rooms are opaque — see §2.1), fixed `seed`. See §2.4 |
-| Building `on` render (master) | `inpaint_image` over the envelope guide | interior masked, envelope locked. See §2.4 |
-| Building `off` / `broken` / `damaged` renders | `create_image_pixflux` with `init_image_url` = the approved `on` | high `init_image_strength` (~350) so geometry registers; the prompt describes only the change (§2.3) |
+| Building `on` render (master) | the approved layout render, or `inpaint_image` over it as a fallback | interior masked, envelope locked. See §2.4 |
+| Building `off` / `broken` / `damaged` renders | `edit_image` on the approved `on` | text instruction that changes only light or damage; batch up to four ≤128-px rooms per call (§2.4) |
 | Open-area end walls | `inpaint_image` over the approved `none` master | Repaint only the end strip that gets a wall (§2.2) |
 | Rock mass, back wall | **`tools/rockTile.mjs`** | Procedural, seamless, per band. Not generated — see §4.1 |
 | Floor slab, edges | `create_sidescroller_tileset` | 32 px tiles; platform set, so it gives the slab its top surface and end caps |

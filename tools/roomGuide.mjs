@@ -12,7 +12,7 @@
  *
  *   node tools/roomGuide.mjs <width> [room|open] [layout]
  *
- * width is 64, 128 or 192. "room" (default) draws slanted side walls at both
+ * width is 64, 128, 192 or 256 (1–4 slots). "room" (default) draws slanted side walls at both
  * edges; "open" draws none, for the none-master of an open area (spec §2.2).
  * layout adds a blockout of the building's main masses (see LAYOUTS).
  * Writes resources/assets/room-guide-<width>-<kind>[-<layout>].png.
@@ -110,6 +110,133 @@ const LAYOUTS = {
     ['rect', 26, 64, 101, 68, P.mauve],             // table top
     ['rect', 28, 68, 99, 87, P.plum],               // table front
   ],
+  // Open area (spec §2.2): drawn with the "open" envelope, so it runs to both edges.
+  'dig-face': [
+    ['circle', 30, 44, 18, P.plum],                 // rock masses in the face
+    ['circle', 92, 38, 22, P.plum],
+    ['circle', 62, 60, 16, P.ink],
+    ['circle', 28, 40, 3, P.sand],                  // ore veins
+    ['circle', 88, 30, 3, P.terracotta],
+    ['circle', 64, 54, 2, P.sand],
+    ['rect', 0, 10, 127, 14, P.rust],               // header beam
+    ['rect', 18, 10, 23, 87, P.rust],               // pit prop
+    ['rect', 104, 10, 109, 87, P.rust],             // pit prop
+    ['circle', 44, 22, 2, P.amber],                 // hanging lamp
+    ['rect', 84, 48, 91, 84, P.tealDeep],           // drill rig
+    ['rect', 74, 58, 84, 61, P.tealLit],            // drill arm
+    ['rect', 46, 72, 70, 83, P.slate],              // ore cart
+    ['circle', 51, 85, 2, P.ink],
+    ['circle', 65, 85, 2, P.ink],
+    ['rect', 0, 86, 127, 87, P.taupe],              // rail
+    ['rect', 6, 80, 16, 87, P.mauve],               // rubble
+  ],
+  smelter: [
+    ['rect', 8, 12, 119, 15, P.taupe],              // ceiling pipe
+    ['rect', 34, 16, 46, 30, P.slate],              // chimney
+    ['rect', 20, 30, 60, 87, P.rust],               // furnace
+    ['rect', 32, 58, 48, 76, P.amber],              // furnace mouth
+    ['rect', 76, 16, 78, 40, P.plum],               // ladle chain
+    ['rect', 70, 40, 84, 52, P.ink],                // ladle
+    ['rect', 68, 80, 78, 87, P.slate],              // moulds
+    ['rect', 86, 80, 96, 87, P.slate],
+    ['rect', 102, 74, 118, 87, P.sand],             // ingot stack
+  ],
+  'deep-pump': [
+    ['rect', 14, 10, 20, 87, P.taupe],              // riser
+    ['rect', 104, 10, 110, 87, P.taupe],            // riser
+    ['rect', 14, 30, 110, 35, P.taupe],             // manifold
+    ['circle', 80, 32, 5, P.rust],                  // valve wheel
+    ['circle', 44, 58, 20, P.teal],                 // pump housing
+    ['circle', 44, 58, 7, P.tealDeep],
+    ['rect', 64, 50, 96, 79, P.tealDeep],           // motor
+    ['circle', 100, 50, 3, P.cream],                // gauge
+    ['rect', 24, 80, 100, 87, P.plum],              // plinth
+  ],
+  'hydroponics-bay': [
+    ['rect', 8, 10, 10, 87, P.taupe],               // feed pipe
+    ['rect', 104, 40, 118, 87, P.teal],             // nutrient tank
+    ['rect', 14, 20, 98, 21, P.amber],              // grow lamps
+    ['rect', 14, 42, 98, 43, P.amber],
+    ['rect', 14, 64, 98, 65, P.amber],
+    ['rect', 14, 24, 98, 30, P.mint],               // crops
+    ['rect', 14, 46, 98, 52, P.tealLit],
+    ['rect', 14, 68, 98, 74, P.mint],
+    ['rect', 12, 30, 100, 33, P.slate],             // trays
+    ['rect', 12, 52, 100, 55, P.slate],
+    ['rect', 12, 74, 100, 77, P.slate],
+  ],
+  'simple-suite': [
+    ['rect', 44, 20, 120, 21, P.taupe],             // laundry line
+    ['rect', 50, 22, 56, 30, P.cream],              // laundry
+    ['rect', 64, 22, 70, 32, P.mint],
+    ['rect', 80, 22, 86, 30, P.terracotta],
+    ['rect', 10, 45, 11, 87, P.plum],               // bunk posts
+    ['rect', 39, 45, 40, 87, P.plum],
+    ['rect', 10, 50, 40, 60, P.terracotta],         // upper bunk
+    ['rect', 10, 72, 40, 82, P.terracotta],         // lower bunk
+    ['rect', 42, 40, 46, 87, P.rust],               // curtain divider
+    ['rect', 54, 10, 56, 64, P.plum],               // stove pipe
+    ['rect', 50, 64, 60, 87, P.ink],                // stove
+    ['rect', 66, 70, 86, 73, P.rust],               // table
+    ['rect', 68, 74, 70, 87, P.rust],
+    ['rect', 82, 74, 84, 87, P.rust],
+    ['rect', 92, 36, 118, 39, P.mauve],             // shelf
+    ['rect', 96, 74, 118, 87, P.sand],              // storage crates
+  ],
+  canteen: [
+    ['circle', 40, 16, 2, P.amber],                 // hanging lamp
+    ['rect', 30, 22, 52, 36, P.tealDeep],           // menu board
+    ['rect', 33, 26, 48, 26, P.cream],
+    ['rect', 33, 30, 44, 30, P.cream],
+    ['rect', 12, 48, 24, 58, P.ink],                // soup pot
+    ['rect', 8, 58, 32, 60, P.sand],                // counter top
+    ['rect', 8, 61, 32, 87, P.mauve],               // counter
+    ['rect', 36, 70, 56, 73, P.rust],               // table
+    ['rect', 38, 74, 40, 87, P.rust],
+    ['rect', 52, 74, 54, 87, P.rust],
+  ],
+  // Open area (spec §2.2).
+  grove: [
+    ['rect', 0, 64, 191, 87, P.plum],               // wainscot
+    ['rect', 46, 10, 46, 18, P.taupe],              // lamp drops
+    ['rect', 94, 10, 94, 18, P.taupe],
+    ['rect', 142, 10, 142, 18, P.taupe],
+    ['circle', 46, 20, 2, P.amber],                 // grow lamps
+    ['circle', 94, 20, 2, P.amber],
+    ['circle', 142, 20, 2, P.amber],
+    ['circle', 22, 48, 14, P.teal],                 // canopies
+    ['circle', 70, 46, 15, P.tealLit],
+    ['circle', 118, 48, 14, P.teal],
+    ['circle', 166, 46, 15, P.tealLit],
+    ['rect', 20, 58, 24, 70, P.plum],               // trunks
+    ['rect', 68, 58, 72, 70, P.plum],
+    ['rect', 116, 58, 120, 70, P.plum],
+    ['rect', 164, 58, 168, 70, P.plum],
+    ['rect', 10, 70, 34, 87, P.rust],               // planters
+    ['rect', 58, 70, 82, 87, P.rust],
+    ['rect', 106, 70, 130, 87, P.rust],
+    ['rect', 154, 70, 178, 87, P.rust],
+    ['rect', 86, 76, 102, 80, P.sand],              // bench
+  ],
+  'presidential-suite': [
+    ['rect', 14, 24, 44, 87, P.plum],               // bookcase
+    ['rect', 17, 30, 41, 34, P.terracotta],
+    ['rect', 17, 44, 41, 48, P.mint],
+    ['rect', 17, 58, 41, 62, P.sand],
+    ['rect', 52, 50, 80, 87, P.mauve],              // fireplace
+    ['rect', 60, 70, 72, 84, P.amber],              // fire
+    ['rect', 90, 10, 94, 87, P.mauve],              // pilasters
+    ['rect', 160, 10, 164, 87, P.mauve],
+    ['rect', 128, 10, 128, 14, P.taupe],            // chandelier chain
+    ['circle', 128, 20, 6, P.amber],                // chandelier
+    ['rect', 102, 28, 150, 46, P.sand],             // painting
+    ['rect', 98, 68, 152, 87, P.teal],              // sofa
+    ['rect', 176, 26, 240, 30, P.rust],             // bed canopy
+    ['rect', 180, 40, 186, 87, P.rust],             // headboard
+    ['rect', 186, 64, 236, 80, P.terracotta],       // bed
+    ['rect', 186, 60, 196, 64, P.cream],            // pillow
+    ['rect', 186, 80, 236, 87, P.plum],             // bed frame
+  ],
 };
 
 export function roomGuide(width, kind = 'room', layout = null) {
@@ -148,7 +275,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const width = Number(process.argv[2]);
   const kind = process.argv[3] ?? 'room';
   const layout = process.argv[4] ?? null;
-  if (![64, 128, 192].includes(width)) throw new Error('width must be 64, 128 or 192');
+  if (![64, 128, 192, 256].includes(width)) throw new Error("width must be 64, 128, 192 or 256");
   if (!['room', 'open'].includes(kind)) throw new Error('kind must be room or open');
   const name = layout ? `${width}-${kind}-${layout}` : `${width}-${kind}`;
   const out = resolve(ROOT, `resources/assets/room-guide-${name}.png`);

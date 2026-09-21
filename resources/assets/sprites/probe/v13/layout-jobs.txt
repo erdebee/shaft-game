@@ -1,0 +1,10 @@
+main-generator 9079e271-94e2-44e4-a425-8f9c9a730a03
+dig-face b17eb7db-31c5-4e5d-a173-2605a71c5b3e
+smelter e07e6d8f-dee5-4872-9cda-6671d7811022
+deep-pump e2067f8b-9d30-4cba-9f8a-abda067cf8ea
+hydroponics-bay 493aa362-bca6-49cf-83c9-04a481523717
+simple-suite c4a7b34e-c42b-473a-ba01-f6598456be0f
+canteen bd8ad35f-4ec1-4887-aad8-6280ca59ae11
+council-chamber 43deaa67-75ec-4db8-aafd-c12cfaf0a941
+grove 7e362b2c-a5fb-4d0d-82ff-a194a1b28150
+presidential-suite 919753af-011f-4c8e-9d97-118a92c785fb

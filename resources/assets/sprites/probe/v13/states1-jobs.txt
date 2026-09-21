@@ -1,0 +1,6 @@
+main-generator-off ac7cbfc3-6291-4bce-9e9d-cb12a3168037
+main-generator-broken 06e8ec76-0c8a-4781-b6fa-31936d063116
+dig-face-off 8a7bf461-6ee5-4768-a676-2e1ee74a3cff
+dig-face-broken 2ab3f01b-9a14-4523-b6bf-831d897269b5
+smelter-off 80b421af-8772-40cf-acc7-8b1f88d66089
+smelter-broken fe818bef-cea0-4548-a0de-6ef3009206b3

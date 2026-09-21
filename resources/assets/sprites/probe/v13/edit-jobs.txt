@@ -1,0 +1,11 @@
+738ed5e9-ff13-4fa7-a40d-d4b7538975bd dig-face-off smelter-off deep-pump-off hydroponics-bay-off
+9febcdb9-ab66-4569-87e9-ca97a9d86edf simple-suite-off council-chamber-off
+bcb3d052-e14c-4c4f-8be9-72b9bd221696 canteen-off
+8c2d1f39-4701-4c62-80b9-6a660ff71cac grove-off
+96724fcb-042e-4579-a32d-529349d14afd presidential-suite-off
+79bf29c6-70ba-4bae-9f6b-45c3a214dea9 dig-face-broken smelter-broken deep-pump-broken hydroponics-bay-broken
+7d3360af-0369-4856-9b90-56cff360e632 simple-suite-broken council-chamber-broken
+690f7fca-29cd-4622-a0ef-30a3204174c1 main-generator-broken
+2b0d080d-d159-4192-905a-70e7a4f67cbb canteen-broken
+8eb1dd80-b7e6-4305-b0ae-cd692827a1ba grove-broken
+e15f8872-bf0f-412f-a34f-767f7ca8f247 presidential-suite-broken
