@@ -1,0 +1,106 @@
+{
+  "_note": "The six meters that drive every consequence in the game. 0-100 integers. scope 'global' means one value on gameState.meters; 'per-board-member' means one value per roster entry. failsAt null means the meter cannot end the run — board-doubt fails capabilities instead, per design-document §3.",
+  "meters": [
+    {
+      "id": "stability",
+      "name": "Stability",
+      "governs": "Resistance to unrest",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 62,
+      "failsAt": { "below": 10, "state": "rebellion" },
+      "chapters": [1, 2],
+      "enabled": true
+    },
+    {
+      "id": "trust",
+      "name": "Trust",
+      "governs": "Population belief in leadership's good faith",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 55,
+      "failsAt": { "below": 10, "state": "rebellion" },
+      "chapters": [1, 2],
+      "enabled": true
+    },
+    {
+      "id": "freedom",
+      "name": "Freedom",
+      "governs": "Civil liberties; inversely tied to control",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 70,
+      "failsAt": null,
+      "_note": "No failure state of its own. Low freedom angers factions and feeds unrest, which fails through stability.",
+      "chapters": [1, 2],
+      "enabled": true
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "governs": "Economic output across the Shaft",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 65,
+      "failsAt": { "below": 15, "state": "resource-collapse" },
+      "chapters": [1, 2],
+      "enabled": true
+    },
+    {
+      "id": "structural-integrity",
+      "name": "Structural integrity",
+      "governs": "Physical soundness of the Shaft",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 100,
+      "failsAt": { "below": 20, "state": "collapse" },
+      "_note": "Degrades with excavation and neglect. Crossing collapseRiskThreshold fires level-loss events before the failure state.",
+      "chapters": [1, 2],
+      "enabled": true
+    },
+    {
+      "id": "morale",
+      "name": "Morale",
+      "governs": "Population contentment; feeds stability and productivity",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 60,
+      "failsAt": null,
+      "chapters": [1, 2],
+      "enabled": true,
+      "_note": "NOT in the design document's headline meter table, but referenced constantly in its effect tables ('−morale') and as a population attribute. Declared here as a secondary axis so effects can target it and validation can resolve it. Worth confirming whether this is a first-class meter or a derived read of population state — see the open question in CONVENTIONS.md's companion notes."
+    },
+    {
+      "id": "legitimacy",
+      "name": "Legitimacy",
+      "governs": "Perceived right to rule, distinct from belief in good faith",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 50,
+      "failsAt": null,
+      "chapters": [1, 2],
+      "enabled": true,
+      "_note": "Same status as morale: named in systems-reference §4 (ceremonial fittings, Board chamber, memorials feed it) but absent from the meter table. Distinct from trust — a Chair can be believed sincere and still be seen as having no standing."
+    },
+    {
+      "id": "board-doubt",
+      "name": "Board doubt",
+      "governs": "Advisory Board suspicion, tracked per member",
+      "scope": "per-board-member",
+      "min": 0,
+      "max": 100,
+      "start": 0,
+      "failsAt": null,
+      "_note": "Does not fail the run. Above doubtFreezeThreshold a member stops implementing revelations in their domain; above doubtInquiryThreshold they demand the physical text. Chapter 2 only — chapter1.json patches enabled=false.",
+      "chapters": [2],
+      "enabled": true
+    }
+  ]
+}

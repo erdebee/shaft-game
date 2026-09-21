@@ -1,0 +1,10 @@
+01-metal-slug a244c6fd-8ba9-44e2-bdeb-6d6326a30cb3
+02-link-to-the-past 4c0aaafa-3e00-458e-a811-4fdf4a87ffff
+03-final-fantasy-vi 4ecf6a17-b219-4005-9946-f7badbd2de61
+04-chrono-trigger 7d1fdd39-01eb-4d1a-bed6-ae96e218d050
+05-super-metroid 7143e4e3-55a4-4623-a780-11a7d1991b0d
+06-blackthorne 15c7c4aa-8f2f-4c55-b2bf-aac1b3a75653
+07-earthbound 0b56dd34-bd0e-421e-b602-b62d31f57958
+08-streets-of-rage-2 2bf3dc4c-2573-43f2-adf1-a72b96ab9e09
+09-eastward a52ba801-e0b5-4413-a218-ad6ee5768ccc
+10-contra-iii 0c1beac3-6a75-4774-a626-15c6432d2272

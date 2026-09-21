@@ -1,0 +1,94 @@
+{
+  "_note": "The plant-and-payoff table from narrative-spine.md, as data. This file drives nothing on its own — it exists so that a playtest report can show whether each seeded thread was actually planted in a given run, and so that removing a lead or document that a later beat depends on shows up as a broken thread rather than a mystery. Treat it as the narrative equivalent of a schema.",
+  "threads": [
+    {
+      "id": "thread-catalyst",
+      "name": "The scrubber catalyst nobody mines",
+      "planted": {
+        "chapter": 1,
+        "mechanism": "ambient",
+        "via": ["lead-catalyst-provenance", "external-provision", "fc-founder-stores-unaudited"]
+      },
+      "paidOff": {
+        "chapter": 2,
+        "via": ["ch2-demonstration", "catalyst-interruption"]
+      },
+      "requiredForEnding": true,
+      "_note": "The load-bearing thread. Planting is ambient — the player notices they never mine it whether or not they buy the lead — so payoff never depends on a purchase."
+    },
+    {
+      "id": "thread-hidden-passage",
+      "name": "The hidden passage",
+      "planted": {
+        "chapter": 2,
+        "mechanism": "schematic-oddity",
+        "via": ["doc-lower-schematic"]
+      },
+      "paidOff": {
+        "chapter": 2,
+        "via": ["ch2-takeover"]
+      },
+      "requiredForEnding": false,
+      "_note": "Optional plant, mandatory payoff. A player who never read the schematic still gets the entry; they just do not get the click of recognition."
+    },
+    {
+      "id": "thread-mole",
+      "name": "The mole on the Board",
+      "planted": {
+        "chapter": 2,
+        "mechanism": "emergent",
+        "via": ["members.json:moleEligible", "board/credibility.json"]
+      },
+      "paidOff": {
+        "chapter": 2,
+        "via": ["ch2-takeover:board.revealMole"]
+      },
+      "requiredForEnding": true,
+      "_note": "Planted by the player's own behaviour rather than by content: the mole is whoever they trusted most. Nothing to write, and the strongest thread in the game."
+    },
+    {
+      "id": "thread-founder-clauses",
+      "name": "Founder-era clauses favouring the Presidium",
+      "planted": {
+        "chapter": 1,
+        "mechanism": "accord-investigation",
+        "via": ["hidden-clauses.json", "lead-founder-stores-clause"]
+      },
+      "paidOff": {
+        "chapter": 2,
+        "via": ["ch2-demonstration", "doc-founding-inventory"]
+      },
+      "requiredForEnding": false
+    },
+    {
+      "id": "thread-video-feed",
+      "name": "The video feed of the surface",
+      "planted": {
+        "chapter": 1,
+        "mechanism": "ambient",
+        "via": ["lead-video-feed"]
+      },
+      "paidOff": {
+        "chapter": 3,
+        "via": []
+      },
+      "requiredForEnding": false,
+      "_note": "Deliberately unpaid in v1. paidOff.via is empty because Chapter 3 does not exist yet — that emptiness is correct, not a gap to fill."
+    },
+    {
+      "id": "thread-facility-vocabulary",
+      "name": "The word 'Facility'",
+      "planted": {
+        "chapter": 2,
+        "mechanism": "vocabulary",
+        "via": ["nexus/directives.json", "core-mandate.json", "doc-facility-register"]
+      },
+      "paidOff": {
+        "chapter": 2,
+        "via": ["epilogue-coryphaeus"]
+      },
+      "requiredForEnding": true,
+      "_note": "The theme hiding in a piece of vocabulary. The Nexus must NEVER say 'Shaft' — every directive and mandate clause says Facility and a number. This is the one thread enforced by a writing rule rather than a mechanism, which is why it is listed here: so the rule has somewhere to live."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "_layer": "shaft",
+  "_note": "Rising groundwater. Pumping costs spiral and the lower levels are being lost one at a time — the water is free and the power to move it is not. Chapter 3 material.",
+  "id": "rising-water",
+  "name": "Facility 19",
+  "facilityNumber": 19,
+
+  "tunables": {
+    "water": {
+      "groundwaterIntakePerTick": 260,
+      "pumpPowerPerLevelLifted": 2.1
+    },
+    "structure": {
+      "collapseRiskThreshold": 48
+    },
+    "mining": {
+      "depthWaterIngressPerLevel": 3.4
+    }
+  },
+
+  "layout": {
+    "levels": 37,
+    "deepestHabitedLevel": 24,
+    "digFaceLevel": 29,
+    "floodedBelowLevel": 33
+  },
+
+  "veins": [
+    { "id": "iron-ore", "abundance": 0.9 },
+    { "id": "limestone", "abundance": 1.2, "_note": "Plentiful, and needed constantly for shoring." }
+  ]
+}

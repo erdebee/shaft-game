@@ -1,0 +1,51 @@
+{
+  "_note": "Stock resources are moved by assigned porters, and distance in levels equals labour time. Placement is therefore permanent: a hydroponics bay twenty levels from the canteen burns porter-hours every day, forever.",
+  "methods": [
+    {
+      "id": "stairwell",
+      "name": "Stairwell",
+      "speed": "slow",
+      "ticksPerLevel": 2,
+      "powerPerTrip": 0,
+      "capacityPerTrip": 4,
+      "concurrentTrips": null,
+      "_concurrentNote": "null means unlimited — a stairwell takes as many people as you can put on it, which is exactly why it is the fallback that never fails.",
+      "requiresBuilding": null,
+      "breakdownProne": false,
+      "constraints": ["worker-fatigue", "shift-change-congestion"],
+      "fatiguePerLevel": 0.01,
+      "_note": "Free and always available. The cost is paid in worker condition and in congestion at shift change, when everyone is on the stairs at once."
+    },
+    {
+      "id": "freight-elevator",
+      "name": "Freight elevator",
+      "speed": "fast",
+      "ticksPerLevel": 0.5,
+      "powerPerTrip": 12,
+      "capacityPerTrip": 20,
+      "concurrentTrips": 1,
+      "_concurrentNote": "One car per elevator building. This is what 'limited-cars' actually means, and it is what pushes overflow onto the stairwell — a Shaft with one elevator and a lot to move has people on the stairs whether it likes it or not.",
+      "requiresBuilding": "freight-elevator",
+      "breakdownProne": true,
+      "constraints": ["limited-cars", "needs-parts", "power-dependent"],
+      "fatiguePerLevel": 0,
+      "repairCost": [{ "id": "electrical-components", "qty": 2 }, { "id": "basic-parts", "qty": 3 }],
+      "_note": "The only method that makes a tall Shaft workable, and the one that stops working exactly when the grid is under strain — which is when hauling matters most."
+    },
+    {
+      "id": "dumbwaiter",
+      "name": "Dumbwaiter",
+      "speed": "medium",
+      "ticksPerLevel": 1,
+      "powerPerTrip": 3,
+      "capacityPerTrip": 3,
+      "concurrentTrips": 1,
+      "requiresBuilding": "dumbwaiter",
+      "breakdownProne": false,
+      "constraints": ["small-loads-only"],
+      "fatiguePerLevel": 0,
+      "repairCost": [{ "id": "basic-parts", "qty": 1 }],
+      "_note": "Cheap and reliable for small, constant flows — rations to a canteen, parts to a workshop. Useless for ore."
+    }
+  ]
+}

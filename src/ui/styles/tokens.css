@@ -1,0 +1,163 @@
+/* Design tokens. Palette, type scale and spacing live here only —
+   no raw hex values in component stylesheets.
+
+   PALETTE v2 — the locked visual direction (concept/visual-design-principles.md).
+   Sampled from two approved images: resources/assets/style-image.png, which sets
+   the drawing style and the neutral ramps, and the "sodium industrial" probe,
+   which sets the light. Cool steel and concrete as material; warm sodium as the
+   only light source.
+
+   This file is also the SOURCE the asset palette is generated from —
+   tools/palettePng.mjs reads it and emits the PNG that every PixelLab generation
+   is forced to. Changing a colour here changes every future sprite, and assets
+   generated against an older version must be regenerated (spec §6).
+
+   Chapter 2 layers a cold blue terminal on top, switched by [data-chapter]. */
+
+:root {
+  /* ---- Structure and void -------------------------------------------------
+     The near-black is 28% of the reference image by area: it is the outline
+     colour, the rock, and the space between rooms, all at once. Nothing in the
+     game is allowed to be darker — the inhabited levels are always the
+     brightest thing on screen. */
+  --rock:          #010202;
+  --rock-cut:      #12141d;
+  --rock-deep:     #030709;
+  --floor:         #0c0e11;
+
+  /* ---- Cool steel: the primary material ramp ---- */
+  --steel-darkest: #1e1d27;
+  --steel-dark:    #2f323e;
+  --steel:         #3a434c;
+  --steel-lit:     #4f5b61;
+  --steel-pale:    #667272;
+  --steel-bright:  #7e8c8d;
+  --steel-highlight: #9ca8a3;
+
+  /* ---- Warm grey: concrete and worn paint ---- */
+  --concrete-dark: #3d3436;
+  --concrete:      #4b4240;
+  --concrete-lit:  #706b62;
+  --concrete-pale: #777973;
+  --concrete-bright: #9a9283;
+
+  /* ---- Sodium light. RESERVED: amber means powered ------------------------
+     The only light source in Chapter 1. Because light is the state signal, a
+     level that browns out simply loses these colours and goes cold grey — no
+     extra art, no extra sprite (principles §7). Never use amber decoratively. */
+  --sodium-core:   #fcf5b4;
+  --sodium-lamp:   #f4d6bd;
+  --sodium:        #c58c5e;
+  --sodium-spill:  #e6b6a1;
+  --sodium-dim:    #8b6a4a;
+  --amber:         #c58c5e;
+  --amber-dim:     #8b6a4a;
+
+  /* ---- Rust and oxide ---- */
+  --rust-bright:   #b46741;
+  --rust:          #8c442e;
+  --rust-dark:     #744431;
+  --rust-deep:     #59483f;
+
+  /* ---- Reserved meaning. Each of these is a budget, not a colour ---------- */
+  --terminal:      #546d58;   /* a terminal is on */
+  --terminal-lit:  #bcccbb;
+  --cool:          #2a4566;   /* the Nexus, and the outside. Chapter 2 only */
+  --cool-lit:      #79a2bb;
+  --cool-dim:      #242e42;
+  --critical:      #96472f;   /* alarm. Nothing else */
+  --warn:          #c58c5e;
+  --ok:            #7c867b;
+  --hot:           #b46741;
+  --dead:          #2f323e;
+
+  /* ---- Depth-band ramps (principles §4) -----------------------------------
+     The Shaft gets grander as it rises. `deep` is scrappy and repaired,
+     `shallow` is panelled and brass-fitted — but muted, in family, and never
+     brighter than the sodium. */
+
+  /* shallow — The Crown: administration, archive, grove */
+  --brass:         #8f7a45;
+  --brass-dark:    #6b5c33;
+  --bronze:        #7a5a38;
+  --oxblood:       #684d3e;
+  --enamel-green:  #546d58;
+  --wood-lacquer:  #59483f;
+  --wood-dark:     #3d3436;
+  --cream:         #9a9283;
+
+  /* mid — The Body: habitation and cultivation */
+  --steel-paint:     #495459;
+  --steel-paint-lit: #596061;
+
+  /* deep — The Works: generator, pumps, reclamation, dig face */
+  --soot:          #030709;
+  --ash:           #504d4f;
+  --steam:         #869493;
+
+  /* ---- People ---- */
+  --figure:        #b3bbb3;
+  --figure-dim:    #6b7577;
+  --cargo:         #8b7b75;
+
+  /* ---- Text ---- */
+  --ink:           #b3bbb3;
+  --ink-dim:       #7e8787;
+  --ink-faint:     #5e6572;
+
+  /* ---- Surfaces ---- */
+  --panel:         #12141d;
+  --panel-raised:  #1e1d27;
+  --panel-edge:    #2f323e;
+
+  /* ---- The sprite palette (v3) --------------------------------------------
+     Sprites are forced to a SUBSET of the tokens above: 16 colours, as a
+     shared core plus five accents per depth band.
+
+     Why a subset. The full token set carries UI needs the art does not have —
+     meter states, panel surfaces, text greys. Forcing sprites to all of it
+     lets a generation reach for a colour that means something elsewhere. 16 is
+     also simply the look that was chosen: fewer shades per material, flatter,
+     chunkier reading forms.
+
+     Why per band. A single 16-colour palette would be steel and rust
+     throughout, and `shallow` would lose the brass and wood that make the
+     depth gradient legible (principles §4). Core + accents keeps every band in
+     one family while letting the top and bottom of the Shaft stay distinct.
+
+     tools/palettePng.mjs parses these lists and emits one PNG per band. The
+     names must match tokens declared above, or generation fails loudly. */
+
+  --sprite-core: rock, rock-cut, steel-darkest, steel-dark, steel, steel-lit,
+                 steel-pale, concrete, sodium, sodium-lamp, figure;
+
+  --sprite-deep:    rust, rust-bright, soot, ash, steel-bright;
+  --sprite-mid:     steel-paint, steel-paint-lit, concrete-lit, concrete-bright, terminal;
+  --sprite-shallow: brass, bronze, oxblood, wood-lacquer, cream;
+
+  /* ---- Type ---- */
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-ui:   var(--font-mono);
+  --size-xs:   0.6875rem;
+  --size-sm:   0.8125rem;
+  --size-md:   0.9375rem;
+  --size-lg:   1.25rem;
+
+  /* ---- Spacing ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+
+  --border: 1px solid var(--panel-edge);
+}
+
+/* Chapter 2 adds the cold hidden-terminal layer over the same structure. */
+:root[data-chapter="2"] {
+  --amber:      #cf8a2f;
+  --cool:       #6fa8c4;
+  --panel:      #12161a;
+  --panel-raised: #191f25;
+  --panel-edge: #24303a;
+}

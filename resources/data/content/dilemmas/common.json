@@ -1,0 +1,119 @@
+{
+  "_note": "Dilemmas that can fire in either chapter. Keep these free of chapter-specific vocabulary — a dilemma in here must read correctly whether the player is the Mayor or the Chair. Anything that assumes the Nexus, the Apocrypha or hidden authority belongs in chapter2.json.",
+  "dilemmas": [
+    {
+      "id": "clinic-or-workshop",
+      "chapter": null,
+      "theme": "health",
+      "weight": 8,
+      "cooldownTicks": 2400,
+      "hardPause": true,
+      "preconditions": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "flow.shortfall", "target": "power" },
+          { "pred": "building.exists", "target": "clinic" },
+          { "pred": "building.exists", "target": "workshop" }
+        ]
+      },
+      "prompt": "The ladder did what you told it to. The workshop kept its power and the clinic went dark for eleven hours, and a woman who would probably have lived did not. The ladder was set eight months ago, by you, on a quiet afternoon, and it was the right decision at the time.",
+      "options": [
+        {
+          "id": "reorder-the-ladder",
+          "label": "Reorder the ladder",
+          "detail": "Medical above industry, permanently. Accept the output cost.",
+          "leaning": "lenient",
+          "effects": [
+            { "op": "priority.reorder", "target": "medical", "value": 2 },
+            { "op": "meter.add", "target": "trust", "value": 6 },
+            { "op": "meter.add", "target": "productivity", "value": -5 },
+            { "op": "precedent.record", "theme": "health", "leaning": "lenient" }
+          ]
+        },
+        {
+          "id": "stand-by-it",
+          "label": "Stand by it",
+          "detail": "Say plainly that the order is correct and that this is what it costs.",
+          "leaning": "harsh",
+          "effects": [
+            { "op": "meter.add", "target": "trust", "value": -7 },
+            { "op": "meter.add", "target": "stability", "value": 4 },
+            { "op": "meter.add", "target": "legitimacy", "value": 3 },
+            { "op": "precedent.record", "theme": "health", "leaning": "harsh" }
+          ],
+          "_note": "Legitimacy rises while trust falls. Owning an unpopular decision reads as strength even to people it hurt — the clearest case for legitimacy being a separate axis from trust."
+        },
+        {
+          "id": "build-a-battery",
+          "label": "Fund a battery bank",
+          "detail": "Solve it with hardware instead of a policy. It will take a month.",
+          "leaning": "pragmatic",
+          "requires": [{ "pred": "stock.above", "target": "electrical-components", "value": 6 }],
+          "effects": [
+            { "op": "stock.add", "target": "electrical-components", "value": -6 },
+            { "op": "meter.add", "target": "trust", "value": 2 },
+            { "op": "faction.satisfaction", "target": "engineering", "value": 5 },
+            { "op": "precedent.record", "theme": "health", "leaning": "pragmatic" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grove-conversion",
+      "chapter": null,
+      "theme": "scarcity",
+      "weight": 7,
+      "cooldownTicks": 5400,
+      "hardPause": true,
+      "preconditions": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "building.exists", "target": "grove" },
+          { "pred": "stock.belowDaysOfSupply", "target": "food", "value": 8 }
+        ]
+      },
+      "prompt": "Cultivation has run the numbers unasked. Three slots of grove would feed ninety people. The trees were planted before anyone on the Board was born, by a committee that left a note about what they were for, and the note is in the archive if you want to read it.",
+      "options": [
+        {
+          "id": "clear-the-grove",
+          "label": "Clear it",
+          "detail": "Ninety people is ninety people.",
+          "leaning": "pragmatic",
+          "effects": [
+            { "op": "building.demolish", "target": "grove" },
+            { "op": "meter.add", "target": "morale", "value": -12 },
+            { "op": "meter.add", "target": "legitimacy", "value": -8 },
+            { "op": "faction.satisfaction", "target": "cultivation", "value": -10 },
+            { "op": "flag.set", "target": "grove-cleared" },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "pragmatic" }
+          ],
+          "_note": "Ends paper production for the rest of the run once existing wood runs out — which means it ends the Accord's supply line. The consequence nobody reads on the way past."
+        },
+        {
+          "id": "keep-the-grove",
+          "label": "Keep it",
+          "detail": "Find the food somewhere else.",
+          "leaning": "lenient",
+          "effects": [
+            { "op": "meter.add", "target": "morale", "value": 5 },
+            { "op": "meter.add", "target": "legitimacy", "value": 6 },
+            { "op": "meter.add", "target": "trust", "value": -4 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "lenient" }
+          ]
+        },
+        {
+          "id": "half-the-grove",
+          "label": "Take one slot",
+          "detail": "Thin it. Keep enough for paper and ceremony, and grow food in the rest.",
+          "leaning": "pragmatic",
+          "effects": [
+            { "op": "building.resize", "target": "grove", "value": -1 },
+            { "op": "meter.add", "target": "morale", "value": -4 },
+            { "op": "meter.add", "target": "legitimacy", "value": -2 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "pragmatic" }
+          ]
+        }
+      ]
+    }
+  ]
+}

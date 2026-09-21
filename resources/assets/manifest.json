@@ -1,0 +1,28 @@
+{
+  "_note": "Media manifest. Same constraint as the data manifest: no build step and no directory listing, so every file is enumerated. preloadGroup controls what is fetched before the first frame ('boot'), what is fetched on chapter entry ('chapter1'/'chapter2'), and what streams on demand ('lazy'). Empty arrays are correct — the visual direction is not set yet (README 'Next' item 4).",
+  "version": 1,
+
+  "palettes": {
+    "_note": "Chapter palettes live in src/ui/styles/tokens.css as CSS custom properties, switched by a data-chapter attribute on the root element — NOT in JSON. Colour belongs in the stylesheet; this entry exists only to say so, so nobody adds a second source of truth here.",
+    "definedIn": "src/ui/styles/tokens.css",
+    "switchedBy": "data-chapter"
+  },
+
+  "fonts": [],
+
+  "icons": [],
+
+  "sprites": [],
+
+  "audio": [],
+
+  "_plannedGroups": {
+    "_note": "The shape entries will take, recorded now so the first real asset does not have to invent it: { id, path, preloadGroup, chapter }. Ids are kebab-case and stable, like every other id in the project.",
+    "example": {
+      "id": "hum-loop",
+      "path": "audio/hum-loop.ogg",
+      "preloadGroup": "boot",
+      "chapter": null
+    }
+  }
+}

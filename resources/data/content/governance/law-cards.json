@@ -1,0 +1,160 @@
+{
+  "_note": "The hand of amendments offered during an amendment window, paid for with Authority. Controversial laws cost more; contradicting your own precedent costs more still (governance.contradictionSurchargePerLeaningStep). Repeal carries a flip-flop penalty scaled to how long the law stood. Categories match design-document §4.",
+  "cards": [
+    {
+      "id": "mandatory-curfew",
+      "title": "Mandatory curfew",
+      "category": "order-security",
+      "article": "assembly",
+      "authorityCost": 6,
+      "controversy": 0.5,
+      "leaningTheme": "dissent",
+      "leaning": "harsh",
+      "repealable": true,
+      "effects": [
+        { "op": "meter.add", "target": "stability", "value": 8 },
+        { "op": "meter.add", "target": "freedom", "value": -10 },
+        { "op": "meter.add", "target": "productivity", "value": -5 }
+      ]
+    },
+    {
+      "id": "restricted-zone",
+      "title": "Restricted zone designation",
+      "category": "order-security",
+      "article": "assembly",
+      "authorityCost": 5,
+      "controversy": 0.4,
+      "leaningTheme": "dissent",
+      "leaning": "harsh",
+      "repealable": true,
+      "requires": [{ "pred": "building.exists", "target": "security-post" }],
+      "effects": [
+        { "op": "risk.add", "target": "assembly", "value": -8 },
+        { "op": "zone.outputMultiply", "target": "designated", "value": 0.7 }
+      ]
+    },
+    {
+      "id": "rationing-quotas",
+      "title": "Rationing quotas",
+      "category": "economy",
+      "article": "rationing",
+      "authorityCost": 4,
+      "controversy": 0.6,
+      "leaningTheme": "scarcity",
+      "leaning": "harsh",
+      "repealable": true,
+      "effects": [
+        { "op": "consumption.multiply", "target": "food", "value": 0.8 },
+        { "op": "meter.add", "target": "morale", "value": -8 }
+      ],
+      "_note": "Reshapes future dilemmas rather than just moving numbers: with this active, the ration-theft dilemma fires with different flavour text and drops its harsh option, because the player's own law caused the strain."
+    },
+    {
+      "id": "overtime-mandate",
+      "title": "Overtime mandate",
+      "category": "economy",
+      "article": "labour-obligation",
+      "authorityCost": 5,
+      "controversy": 0.5,
+      "leaningTheme": "health",
+      "leaning": "pragmatic",
+      "repealable": true,
+      "effects": [
+        { "op": "meter.add", "target": "productivity", "value": 12 },
+        { "op": "population.healthRate", "target": "all", "value": -0.2 },
+        { "op": "faction.satisfaction", "target": "engineering", "value": -6 },
+        { "op": "faction.satisfaction", "target": "cultivation", "value": -6 }
+      ],
+      "_note": "Productivity now, health later. The delay is the trap — the cost arrives in a different amendment window from the benefit."
+    },
+    {
+      "id": "public-assembly-rights",
+      "title": "Public assembly rights",
+      "category": "freedom",
+      "article": "assembly",
+      "authorityCost": 7,
+      "controversy": 0.5,
+      "leaningTheme": "dissent",
+      "leaning": "lenient",
+      "repealable": true,
+      "effects": [
+        { "op": "meter.add", "target": "trust", "value": 10 },
+        { "op": "meter.add", "target": "freedom", "value": 8 },
+        { "op": "meter.add", "target": "stability", "value": -6 },
+        { "op": "faction.satisfaction", "target": "order", "value": -8 }
+      ],
+      "_note": "Proposing this after three harsh dissent rulings costs extra Authority and reads publicly as hypocrisy. That surcharge is the precedent system's teeth."
+    },
+    {
+      "id": "petition-system",
+      "title": "Petition system",
+      "category": "freedom",
+      "article": "assembly",
+      "authorityCost": 6,
+      "controversy": 0.2,
+      "leaningTheme": "dissent",
+      "leaning": "lenient",
+      "repealable": true,
+      "consumes": [{ "id": "paper", "qty": 1 }],
+      "effects": [
+        { "op": "meter.add", "target": "trust", "value": 7 },
+        { "op": "meter.add", "target": "stability", "value": 4 },
+        { "op": "capability.enable", "target": "petition-records" }
+      ],
+      "_note": "Both meters up and cheap on controversy — the rare unambiguously good law. It creates records, which costs paper forever and gives the Archive faction something to defend."
+    },
+    {
+      "id": "surveillance-expansion",
+      "title": "Surveillance expansion",
+      "category": "information",
+      "article": "archive-access",
+      "authorityCost": 7,
+      "controversy": 0.7,
+      "leaningTheme": "dissent",
+      "leaning": "harsh",
+      "repealable": true,
+      "consumes": [{ "id": "precision-components", "qty": 2 }],
+      "effects": [
+        { "op": "focus.add", "target": "focus", "value": 4 },
+        { "op": "meter.add", "target": "trust", "value": -9 },
+        { "op": "meter.add", "target": "freedom", "value": -8 },
+        { "op": "faction.satisfaction", "target": "archive", "value": -7 }
+      ],
+      "_note": "The cheapest route to Focus, and therefore to the story. Buying the truth with the population's trust is the Chapter 1 temptation in a single card."
+    },
+    {
+      "id": "archive-access-restricted",
+      "title": "Restricted access to the record",
+      "category": "information",
+      "article": "archive-access",
+      "authorityCost": 5,
+      "controversy": 0.6,
+      "leaningTheme": "dissent",
+      "leaning": "harsh",
+      "repealable": true,
+      "mandateAligned": true,
+      "effects": [
+        { "op": "meter.add", "target": "trust", "value": -6 },
+        { "op": "faction.satisfaction", "target": "archive", "value": -12 },
+        { "op": "doubt.add", "target": "all", "value": -3 }
+      ],
+      "_note": "mandateAligned: the Core Mandate wants this, so it lowers board doubt in Chapter 2 while angering the Archive faction. The first card where serving the Nexus and serving the Shaft visibly diverge."
+    },
+    {
+      "id": "fertility-lottery-reform",
+      "title": "Fertility lottery reform",
+      "category": "population",
+      "article": "fertility",
+      "authorityCost": 8,
+      "controversy": 0.5,
+      "leaningTheme": "scarcity",
+      "leaning": "pragmatic",
+      "repealable": true,
+      "effects": [
+        { "op": "lottery.slotsMultiply", "target": "birth-lottery", "value": 1.4 },
+        { "op": "meter.add", "target": "trust", "value": 0, "_note": "Resolved at runtime from perceived fairness, not fixed here." }
+      ],
+      "_note": "Trust effect is deliberately 0 in data. Reaction depends on perceived fairness, which is computed from the player's leaning history — the one card whose outcome cannot be read off its own definition."
+    }
+  ]
+}

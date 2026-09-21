@@ -1,0 +1,77 @@
+{
+  "_note": "The data layer's entry point. There is no build step and no directory listing over fetch(), so every file must be enumerated here — this is a hard constraint, not a convenience. One fetch of this file tells the loader everything else to fetch, and it doubles as the load-order record the diff export reports against.",
+  "version": 1,
+
+  "config": {
+    "_note": "Layers resolve in LAYER_ORDER: base -> chapter -> shaft -> mission -> event -> sandbox. Each layer file may carry a 'tunables' block (dot-path merged) and a 'patch' block (catalog entities addressed by id).",
+    "base": "config/base.json",
+    "chapters": {
+      "1": "config/chapters/chapter1.json",
+      "2": "config/chapters/chapter2.json"
+    },
+    "profiles": {
+      "default": "config/profiles/default.json",
+      "deep-cold": "config/profiles/deep-cold.json",
+      "rising-water": "config/profiles/rising-water.json"
+    },
+    "missions": {},
+    "sandbox": "config/sandbox.json"
+  },
+
+  "catalog": {
+    "_note": "Entity definitions. The key is the catalogue name used by 'patch' blocks and by cross-reference validation; the value lists every file contributing entities to it.",
+    "meters": ["catalog/meters.json"],
+    "flows": ["catalog/resources/flows.json"],
+    "stocks": ["catalog/resources/stocks.json"],
+    "abstracts": ["catalog/resources/abstracts.json"],
+    "minerals": ["catalog/resources/minerals.json"],
+    "components": ["catalog/resources/components.json"],
+    "recipes": ["catalog/resources/recipes.json"],
+    "buildings": [
+      "catalog/buildings/cultivation.json",
+      "catalog/buildings/water.json",
+      "catalog/buildings/air.json",
+      "catalog/buildings/power.json",
+      "catalog/buildings/mechanical.json",
+      "catalog/buildings/habitation.json",
+      "catalog/buildings/administration.json"
+    ],
+    "networks": ["catalog/infrastructure/networks.json"],
+    "haulage": ["catalog/infrastructure/haulage.json"],
+    "factions": ["catalog/population/factions.json"],
+    "jobs": ["catalog/population/jobs.json"],
+    "cohorts": ["catalog/population/cohorts.json"]
+  },
+
+  "content": {
+    "_note": "Narrative payloads. Additive — entities self-gate on their own 'chapter' field and preconditions rather than being switched on by a layer.",
+    "articles": ["content/governance/statutes.json"],
+    "lawCards": ["content/governance/law-cards.json"],
+    "hiddenClauses": ["content/governance/hidden-clauses.json"],
+    "mandateClauses": ["content/governance/core-mandate.json"],
+    "precedentThemes": ["content/governance/precedent-themes.json"],
+    "boardMembers": ["content/board/members.json"],
+    "credibility": ["content/board/credibility.json"],
+    "dilemmas": [
+      "content/dilemmas/common.json",
+      "content/dilemmas/chapter1.json",
+      "content/dilemmas/chapter2.json"
+    ],
+    "directives": ["content/nexus/directives.json"],
+    "framings": ["content/nexus/framings.json"],
+    "apocrypha": ["content/apocrypha/documents.json"],
+    "leads": ["content/investigation/leads.json"],
+    "beats": [
+      "content/beats/chapter1.json",
+      "content/beats/chapter2.json",
+      "content/beats/epilogue.json"
+    ],
+    "threads": ["content/threads.json"]
+  },
+
+  "tables": {
+    "_note": "Lookup tables, not entity collections — loaded verbatim and never id-indexed. Use this group for a file whose shape is pools or maps rather than a list of things with ids (CONVENTIONS.md §2). levels.json belongs here and not in catalog: it holds three unrelated shapes (depthBands, levelTemplate, excavation), so id-indexing it silently picks whichever array comes first.",
+    "names": "content/population/names.json",
+    "levels": "catalog/infrastructure/levels.json"
+  }
+}

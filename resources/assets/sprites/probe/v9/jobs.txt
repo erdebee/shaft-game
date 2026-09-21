@@ -1,0 +1,10 @@
+main-generator-on-a 9088bb60-501e-446c-93a8-61761a4bf6a3
+main-generator-on-b ba127a2c-59a0-4859-806e-c9f9f3341fff
+dig-face-on-none-a d6893125-c139-4b54-816b-a53351834ca5
+dig-face-on-none-b 3868ce4e-eb8b-40dc-8814-7bb7c722b6bb
+grove-on-none-a 461fa313-7ae4-4751-bd98-4ec0c0315a62
+grove-on-none-b 83a12638-b894-49cd-b03f-ac0029f54542
+council-chamber-on-a 9c43db40-c6eb-409f-a2e8-8f8298fe1fbc
+council-chamber-on-b 76c0130c-7ceb-44fa-82c1-85ae395f8653
+house-on-a 889189dc-b513-4490-a212-820e7054a1bb
+house-on-b 3fca4f81-3fc0-4793-beab-a1df00fd6642

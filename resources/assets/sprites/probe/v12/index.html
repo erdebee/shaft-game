@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room envelope test</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --rust: #cf6a40; --good: #86b6a2; --bad: #cf6a40;
+    --z: 2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1320px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 6px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 26px 0 8px; }
+  p { max-width: 88ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .bar button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; }
+  .bar button.on { color: var(--amber); border-color: var(--amber); }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; margin: 10px 0 4px; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 5px; max-width: 60ch; }
+  figcaption .k { color: var(--ink); }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+  .arrow { align-self: center; color: var(--faint); font-size: 18px; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 12px; width: 100%; max-width: 980px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--amber); font-weight: 600; letter-spacing: .05em; }
+  td:first-child { color: var(--ink); }
+  .verdict { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 980px; }
+  .verdict p { margin: 4px 0; }
+  .tablewrap { overflow-x: auto; }
+  ul { color: var(--dim); max-width: 88ch; padding-left: 20px; } li { margin: 3px 0; }
+  a { color: var(--teal); }
+</style>
+<body>
+<main>
+<h1>Room envelope test &mdash; option 1 vs option 2</h1>
+<p class="lead">How do we get rooms that are <b>flat side views</b>, with <b>slanted side walls</b>, a <b>floor line at row 88</b> and
+<b>no people</b> &mdash; and still full of stuff? Prompting alone could not do it (<a href="../v11/rooms-sheet.png">v11</a>). Two routes were tested on the
+same rooms: the generator, the house and the council chamber. Eastward style, palette v6/03, state <code>on</code>.</p>
+
+<div class="bar">
+  <span>Zoom</span>
+  <button data-z="1">1&times;</button><button data-z="2" class="on">2&times;</button><button data-z="3">3&times;</button>
+  <span>&middot;</span>
+  <a href="#verdict">Verdict</a><a href="#opt1">Option 1</a><a href="#opt2">Option 2</a><a href="#figures">With figures</a><a href="#compare">Comparison</a><a href="#history">Earlier rounds</a>
+</div>
+
+<div class="verdict" id="verdict">
+  <p><b>Both options work.</b> Both give flat side views with the envelope held and the floor on row 88 &plusmn;2.</p>
+  <p><b>Option 2 (inpaint in a locked shell)</b> gives the best rooms: dense, detailed and exactly in the envelope. It costs <b>~20 generations</b>
+     per render, does not force the palette (57 and 29 colours came back, snapped to 16 afterwards) and costs 20&times; more per state variant.</p>
+  <p><b>Option 1 (blockout guide)</b> costs <b>1 generation</b> and gives clean, flat, readable rooms, but they are simpler and more literal to the blockout.
+     Strength is a per-room dial: 70 suited the house, 50 the generator and council chamber.</p>
+  <p><b>Suggested workflow:</b> sketch a blockout per building and iterate cheaply with option 1. Once the layout is approved, spend option 2 on the
+     master <code>on</code> render only, then make <code>off</code> / <code>broken</code> from it with a 1-generation image-to-image pass (spec &sect;2.3).</p>
+</div>
+
+<h2 id="opt1">Option 1 &mdash; blockout guide as the start image (1 generation each)</h2>
+<p><code>tools/roomGuide.mjs &lt;width&gt; room &lt;layout&gt;</code> draws the envelope (ceiling band, bevelled side walls, floor band at rows 88&ndash;95) plus the building's
+main masses as flat shapes. That guide is the pixflux <code>init_image</code>. Low strength = more freedom, high = closer to the sketch.</p>
+<div id="opt1rows"></div>
+
+<h2 id="opt2">Option 2 &mdash; inpaint inside a locked envelope (~20 generations each)</h2>
+<p>The empty envelope is the image; only the interior (x 7 to width&minus;8, rows 10&ndash;87) is masked, so the ceiling, side walls and floor band
+<b>cannot move</b>. <code>inpaint_image</code> takes no palette, so the result is snapped to palette 03 afterwards (nearest colour, no dithering).</p>
+<div id="opt2rows"></div>
+
+<h2 id="figures">With figures &mdash; spec &sect;4.2 figures on each room's floor line</h2>
+<p>The same 22-px figures in every room, standing on the measured <code>floorY</code>. Two things to watch: the <b>teal engineer disappears against a teal
+room</b>, and the <b>councillors are hard to find in the dark chamber</b>. Costume colours need checking against the rooms each role works in.</p>
+<div class="row" id="figrow"></div>
+
+<h2 id="compare">Comparison</h2>
+<div class="tablewrap"><table>
+  <tr><th></th><th>Prompt only (v11)</th><th>Plain guide (v11)</th><th>Option 1 &mdash; blockout guide</th><th>Option 2 &mdash; inpaint</th></tr>
+  <tr><td>Cost per render</td><td>1</td><td>1</td><td>1</td><td class="no">~20 (billed 20&ndash;40 by size)</td></tr>
+  <tr><td>Flat side view</td><td class="no">4 of 5 perspective boxes</td><td>at strength &ge; 50</td><td class="ok">yes, all 6</td><td class="ok">yes, both</td></tr>
+  <tr><td>Floor line</td><td class="no">rows 81&ndash;90</td><td>88&ndash;93</td><td class="ok">88&ndash;90</td><td class="ok">88&ndash;89, envelope locked</td></tr>
+  <tr><td>Slanted side walls</td><td class="no">uncontrolled</td><td>kept</td><td>mostly kept; softened at 50</td><td class="ok">exact</td></tr>
+  <tr><td>Contents</td><td>full</td><td class="no">sparse or empty</td><td>good; simpler, follows the sketch</td><td class="ok">richest</td></tr>
+  <tr><td>Palette forced</td><td class="ok">yes</td><td class="ok">yes</td><td class="ok">yes</td><td class="no">no, snap afterwards</td></tr>
+  <tr><td>Extra work</td><td>&mdash;</td><td>&mdash;</td><td>a blockout per building (~15 shapes)</td><td>none, but budget</td></tr>
+  <tr><td>Full set: 33 buildings &times; 3 states</td><td>~99</td><td>~99</td><td class="ok">~99</td><td class="no">~1,980 if every state is inpainted; ~730 if only the 33 masters are and the states use img2img</td></tr>
+</table></div>
+<p>Budget: 2,000 generations per cycle, 1,790 left (137 used across these rounds, 46 of them in this one). The allowance resets on 11 October.</p>
+
+<h2 id="history">Earlier rounds</h2>
+<ul>
+  <li><a href="../v4/index.html">v4</a> &mdash; ten style directions for the generator</li>
+  <li><a href="../v5/index.html">v5</a> &mdash; game references (Eastward picked)</li>
+  <li><a href="../v6/index.html">v6</a> &mdash; Eastward palettes (03 picked)</li>
+  <li><a href="../v7/index.html">v7</a> &mdash; scale and detail (04 + 06 picked)</li>
+  <li><a href="../v8/index.html">v8</a> &mdash; monumental + clutter, lamps off, speckle clean-up</li>
+  <li><a href="../v9/index.html">v9</a> &mdash; five rooms, two seeds each</li>
+  <li><a href="../v10/lineup-8x.png">v10</a> &mdash; figure mannequin, and <a href="../v10/scale-check.png">scale check</a></li>
+  <li><a href="../v11/rooms-sheet.png">v11</a> &mdash; people-free rooms, plain guide, <a href="../v11/test-rooms-with-figures.png">figures in rooms</a></li>
+</ul>
+</main>
+
+<script>
+const fig = (src, caption) => `<figure><img src="${src}" data-src="${src}" alt=""><figcaption>${caption}</figcaption></figure>`;
+const arrow = '<span class="arrow">&rarr;</span>';
+
+const OPT1 = [
+  ['main-generator', 'Main generator · 192×96',
+    ['<span class="k">strength 50</span> · floor 88 · 16 col. <span class="ok">Best of option 1:</span> a real engine, flat, full width. The side-wall bevel softened into the wall.',
+     '<span class="k">strength 70</span> · floor 88 · 16 col. Too literal: the engine is still the sketch\'s box.']],
+  ['house', 'House · 128×96',
+    ['<span class="k">strength 50</span> · floor 90 · 12 col. <span class="no">Contents shrink to props on the floor.</span>',
+     '<span class="k">strength 70</span> · floor 88 · 15 col. <span class="ok">Best house so far at 1 generation:</span> stove, table, bed, picture, lamp, bevelled walls.']],
+  ['council-chamber', 'Council chamber · 128×96',
+    ['<span class="k">strength 50</span> · floor 88 · 15 col. <span class="ok">Symmetrical and grand</span>: seal, sconces, pilasters, speaker\'s chair, flat.',
+     '<span class="k">strength 70</span> · floor 90 · 9 col. Flat and tidy, but sparse and close to the sketch.']],
+];
+document.getElementById('opt1rows').innerHTML = OPT1.map(([id, title, caps]) => `
+  <h3>${title}</h3>
+  <div class="row">
+    ${fig(`guide-${id}.png`, '<span class="k">blockout guide</span> · <code>roomGuide.mjs</code>')}${arrow}
+    ${fig(`${id}-blockout50.png`, caps[0])}
+    ${fig(`${id}-blockout70.png`, caps[1])}
+  </div>`).join('');
+
+const OPT2 = [
+  ['main-generator', 192, 'Main generator · 192×96',
+    '<span class="k">raw inpaint</span> · 57 colours · floor 89',
+    '<span class="k">snapped to palette 03</span> · 15 colours. <span class="ok">The strongest generator of the whole exploration:</span> flywheel, engine, pipework, cabinet, crates, rust.'],
+  ['house', 128, 'House · 128×96',
+    '<span class="k">raw inpaint</span> · 29 colours · floor 88',
+    '<span class="k">snapped to palette 03</span> · 14 colours. <span class="ok">Dense and domestic:</span> stove, shelves, laundry line, picture, table, bed.'],
+];
+document.getElementById('opt2rows').innerHTML = OPT2.map(([id, w, title, c1, c2]) => `
+  <h3>${title}</h3>
+  <div class="row">
+    ${fig(`guide-envelope-${w}.png`, '<span class="k">locked envelope</span> · interior masked')}${arrow}
+    ${fig(`${id}-inpaint.png`, c1)}
+    ${fig(`${id}-inpaint-palette.png`, c2)}
+  </div>`).join('');
+
+document.getElementById('figrow').innerHTML = [
+  ['main-generator-inpaint-palette-figures', 'Generator · option 2'],
+  ['main-generator-blockout50-figures', 'Generator · option 1 (50)'],
+  ['house-inpaint-palette-figures', 'House · option 2'],
+  ['house-blockout70-figures', 'House · option 1 (70)'],
+  ['council-chamber-blockout50-figures', 'Council chamber · option 1 (50)'],
+].map(([f, c]) => fig(`${f}.png`, c)).join('');
+
+// Integer zoom only (spec §1): size every sprite to naturalWidth × z.
+function applyZoom(z) {
+  document.documentElement.style.setProperty('--z', z);
+  document.querySelectorAll('figure img').forEach((img) => {
+    const set = () => { img.style.width = `${img.naturalWidth * z}px`; };
+    img.complete ? set() : img.addEventListener('load', set, { once: true });
+  });
+  document.querySelectorAll('.bar button').forEach((b) => b.classList.toggle('on', Number(b.dataset.z) === z));
+}
+document.querySelectorAll('.bar button').forEach((b) => b.addEventListener('click', () => applyZoom(Number(b.dataset.z))));
+applyZoom(2);
+</script>
+</body>
+</html>

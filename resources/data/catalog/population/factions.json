@@ -1,0 +1,64 @@
+{
+  "_note": "The four departments. Dissatisfied factions slow output and become sabotage-prone; satisfied factions are reliable and will warn the player about brewing trouble early. Each holds a board seat, so faction satisfaction and board doubt are related but distinct pressures.",
+  "factions": [
+    {
+      "id": "cultivation",
+      "name": "Cultivation",
+      "controls": ["hydroponics-bay", "protein-vats", "food-processing", "seed-vault", "grove"],
+      "boardSeat": true,
+      "agenda": "Protect growing space and resist converting Cultivation slots to anything else",
+      "satisfiedBy": [
+        { "pred": "stock.aboveDaysOfSupply", "target": "food", "value": 14 },
+        { "pred": "not", "of": [{ "pred": "statute.active", "target": "rationing-quotas" }] }
+      ],
+      "angeredBy": ["grove-demolition", "rationing-quotas", "overtime-mandate"],
+      "sabotageBehaviour": "Quiet under-reporting of yields",
+      "warningBehaviour": "Flags a failing crop a full cycle before the shortfall lands"
+    },
+    {
+      "id": "engineering",
+      "name": "Engineering",
+      "controls": ["workshop", "smelter", "recycler", "dig-face", "machine-shop", "freight-elevator", "main-generator"],
+      "boardSeat": true,
+      "agenda": "Keep the maintenance economy funded; resent being asked to run equipment past its condition thresholds",
+      "satisfiedBy": [
+        { "pred": "stock.above", "target": "basic-parts", "value": 40 },
+        { "pred": "buildings.noneBelowCondition", "value": 0.4 }
+      ],
+      "angeredBy": ["deferred-repairs", "power-priority-demotion", "overtime-mandate"],
+      "sabotageBehaviour": "Work-to-rule; repairs take the maximum allowable time",
+      "warningBehaviour": "Names the specific building that will break next",
+      "_note": "The faction with the most leverage, because the maintenance economy runs thirty days behind the visible one. Their warnings are the player's only early sight of it."
+    },
+    {
+      "id": "order",
+      "name": "Order",
+      "controls": ["security-post", "holding-cells"],
+      "boardSeat": true,
+      "agenda": "Expand enforcement authority; treat Freedom as a risk surface",
+      "satisfiedBy": [
+        { "pred": "meter.above", "target": "stability", "value": 55 },
+        { "pred": "meter.below", "target": "freedom", "value": 70 }
+      ],
+      "angeredBy": ["public-assembly-rights", "petition-system", "lenient-dissent-rulings"],
+      "sabotageBehaviour": "Selective enforcement — laws they dislike stop being applied",
+      "warningBehaviour": "Reports named agitators before unrest crosses the threshold",
+      "_note": "The only faction whose satisfaction condition is partly ANTI-correlated with a meter the player wants high. Keeping Order happy and keeping Freedom high are structurally in tension."
+    },
+    {
+      "id": "archive",
+      "name": "Archive",
+      "controls": ["archive", "school", "council-chamber"],
+      "boardSeat": true,
+      "agenda": "Preserve the record and resist restrictions on access to it",
+      "satisfiedBy": [
+        { "pred": "stock.above", "target": "paper", "value": 30 },
+        { "pred": "not", "of": [{ "pred": "statute.active", "target": "archive-access-restricted" }] }
+      ],
+      "angeredBy": ["archive-access-restricted", "surveillance-expansion", "paper-shortage"],
+      "sabotageBehaviour": "Records go missing; investigation leads cost more Focus",
+      "warningBehaviour": "Surfaces an archive inconsistency unprompted",
+      "_note": "Gates the investigation thread. An angry Archive makes the story itself more expensive to uncover, which is a sharper punishment than a production penalty."
+    }
+  ]
+}

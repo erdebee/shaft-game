@@ -1,0 +1,11 @@
+{
+  "name": "underground-sim",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Placeholder manifest. No bundler and no runtime dependencies by design — this exists so Node's test runner treats .js files as ES modules, matching how the browser loads them.",
+  "scripts": {
+    "test": "node --test",
+    "serve": "python3 tools/serve.py 8000"
+  }
+}

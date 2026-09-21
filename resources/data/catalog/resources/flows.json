@@ -1,0 +1,41 @@
+{
+  "_note": "Flow resources: produced and consumed continuously, delivered by a network, cannot be stockpiled. Failure is instant and cascading. Water is a hybrid — piped like a flow, buffered like a stock, which is why it carries both a network and a bufferedIn.",
+  "flows": [
+    {
+      "id": "power",
+      "name": "Power",
+      "unit": "kW",
+      "network": "power-grid",
+      "trackedPer": "shaft",
+      "bufferedIn": "battery-bank",
+      "shortfallBehaviour": "priority-ladder",
+      "_note": "When supply < demand the ladder browns out low-priority buildings first. See catalog/infrastructure/networks.json.",
+      "warnThreshold": 0.9,
+      "criticalThreshold": 1.0
+    },
+    {
+      "id": "air-quality",
+      "name": "Air quality",
+      "unit": "index",
+      "network": "duct-network",
+      "trackedPer": "level",
+      "_note": "Tracked PER LEVEL, not globally — stale air pools in pockets the scrubbers do not reach. This is the whole point of the air system.",
+      "bufferedIn": null,
+      "shortfallBehaviour": "per-level-degradation",
+      "warnThreshold": 60,
+      "criticalThreshold": 30
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "unit": "m3",
+      "network": "water-mains",
+      "trackedPer": "level",
+      "bufferedIn": "cistern",
+      "shortfallBehaviour": "rationing",
+      "_note": "Hybrid. Sourced at the bottom, lifted upward at a power cost proportional to lift height; greywater returns downward free by gravity.",
+      "warnThreshold": 0.85,
+      "criticalThreshold": 1.0
+    }
+  ]
+}

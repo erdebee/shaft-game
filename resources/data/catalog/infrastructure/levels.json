@@ -1,0 +1,53 @@
+{
+  "_note": "Level templates and the depth bands that levelConstraint refers to. Each level has a fixed number of build slots; growth requires excavating downward, which is expensive, slow, and a structural integrity risk. Per-Shaft level counts live in config/profiles/*.json.",
+
+  "depthBands": [
+    {
+      "id": "shallow",
+      "name": "Upper levels",
+      "fromLevel": 1,
+      "toLevel": 12,
+      "_note": "Administration, the archive, the grove. Warm, well-aired, and the most desirable place to live — which makes housing allocation political."
+    },
+    {
+      "id": "mid",
+      "name": "Mid levels",
+      "fromLevel": 13,
+      "toLevel": 28,
+      "_note": "The bulk of habitation and cultivation."
+    },
+    {
+      "id": "deep",
+      "name": "Lower levels",
+      "fromLevel": 29,
+      "toLevel": null,
+      "_note": "Generator, pumps, reclamation, dig face. toLevel null means 'to the bottom, whatever that currently is'."
+    }
+  ],
+
+  "levelTemplate": {
+    "buildSlots": 8,
+    "housingCapacityBonus": 0,
+    "airVolume": 100,
+    "zoneAllowances": {
+      "_note": "Max slots per zone on one level, or null for unrestricted. Keeps a player from turning one level into an all-industry block and starving its air.",
+      "cultivation": null,
+      "water": null,
+      "air": 4,
+      "power": 4,
+      "mechanical": 6,
+      "habitation": null,
+      "administration": 4
+    }
+  },
+
+  "excavation": {
+    "_note": "Cost curve for digging a new level. Cost scales by depth via base.structure.excavationCostCurveExponent, so the twentieth new level costs far more than the first.",
+    "baseTicks": 240,
+    "baseLabour": 40,
+    "baseCost": [{ "id": "concrete", "qty": 12 }, { "id": "basic-parts", "qty": 8 }],
+    "integrityCost": 4,
+    "collapseRiskPerLevelBelowThreshold": 0.02,
+    "requiresBuilding": "dig-face"
+  }
+}

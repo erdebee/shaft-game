@@ -1,0 +1,60 @@
+{
+  "_note": "Chapter 2 only. Directives arrive on the Presidium's schedule, not the player's — atTick is absolute, and the scheduler fires them regardless of whether the player is ready. The Nexus never says 'Shaft': it says Facility and a number. It speaks in chapter and verse and cites the Core Mandate rather than authoring new orders, which is why the Chair assumes it is a machine.",
+  "directives": [
+    {
+      "id": "dir-01",
+      "atTick": 400,
+      "citesMandate": "cm-01",
+      "register": "doctrinal",
+      "severity": 0.3,
+      "text": "",
+      "expectedResponse": "archive-access-restricted",
+      "exposureOnMisreport": 4,
+      "_note": "The first directive, and deliberately easy: it asks for something a cautious Chair might have done anyway. Teaches the staging mechanic before the costs bite."
+    },
+    {
+      "id": "dir-02",
+      "atTick": 1100,
+      "citesMandate": "cm-02",
+      "register": "procedural",
+      "severity": 0.5,
+      "text": "",
+      "expectedResponse": "fertility-lottery-reform",
+      "exposureOnMisreport": 6
+    },
+    {
+      "id": "dir-03",
+      "atTick": 1900,
+      "citesMandate": "cm-07",
+      "register": "doctrinal",
+      "severity": 0.9,
+      "text": "",
+      "expectedResponse": "mandatory-curfew",
+      "exposureOnMisreport": 10,
+      "_note": "Activates a chapter of the Mandate that has been dormant for generations. High severity means faithful proclamation is expensive with every member — the first directive where there is no cheap framing."
+    },
+    {
+      "id": "dir-04",
+      "atTick": 2600,
+      "citesMandate": "cm-12",
+      "register": "procedural",
+      "severity": 0.6,
+      "text": "",
+      "expectedResponse": null,
+      "exposureOnMisreport": 8,
+      "_note": "No expected statute — it asks the Chair to stop an inquiry into the founder stores. The directive that reveals the Nexus is protecting something specific, which is the first crack in the machine theory."
+    },
+    {
+      "id": "dir-05",
+      "atTick": 3200,
+      "citesMandate": null,
+      "register": "personal",
+      "severity": 0.7,
+      "text": "",
+      "expectedResponse": null,
+      "exposureOnMisreport": 0,
+      "breaksPattern": true,
+      "_note": "THE turn. No mandate citation, no chapter and verse, and timing that only makes sense if someone is watching live — with a flicker of irritation in it. Someone is on the other end. This directive is why register exists as a field: it is the only one marked 'personal'."
+    }
+  ]
+}

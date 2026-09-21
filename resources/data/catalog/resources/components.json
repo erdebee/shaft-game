@@ -1,0 +1,92 @@
+{
+  "_note": "Component DEFINITIONS only — what a thing is. How it is made lives in recipes.json, because production needs a building, power and labour, not just inputs. producibleLocally=false means the settlement depends on outside supply; read componentChain.js and the README's 'one thread to be careful with' before changing any of these.",
+  "components": [
+    {
+      "id": "steel-billet",
+      "name": "Steel billet",
+      "tier": "refined",
+      "unit": "t",
+      "producibleLocally": true
+    },
+    {
+      "id": "copper-wire",
+      "name": "Copper wire",
+      "tier": "refined",
+      "unit": "km",
+      "producibleLocally": true
+    },
+    {
+      "id": "precision-contacts",
+      "name": "Precision contacts",
+      "tier": "refined",
+      "unit": "unit",
+      "producibleLocally": true
+    },
+    {
+      "id": "fuel",
+      "name": "Fuel",
+      "tier": "refined",
+      "unit": "t",
+      "producibleLocally": true
+    },
+    {
+      "id": "activated-carbon",
+      "name": "Activated carbon",
+      "tier": "refined",
+      "unit": "t",
+      "producibleLocally": true,
+      "_note": "Scrubber filter media, and the reason Air depends permanently on Mechanical."
+    },
+    {
+      "id": "concrete",
+      "name": "Concrete",
+      "tier": "refined",
+      "unit": "t",
+      "producibleLocally": true
+    },
+    {
+      "id": "glass",
+      "name": "Glass",
+      "tier": "refined",
+      "unit": "m2",
+      "producibleLocally": true
+    },
+    {
+      "id": "basic-parts",
+      "name": "Basic parts",
+      "tier": "component",
+      "unit": "unit",
+      "producibleLocally": true,
+      "character": "Bulk consumable",
+      "usedFor": "General maintenance, most repairs"
+    },
+    {
+      "id": "electrical-components",
+      "name": "Electrical components",
+      "tier": "component",
+      "unit": "unit",
+      "producibleLocally": true,
+      "character": "Moderate scarcity",
+      "usedFor": "Grid, elevators, lighting"
+    },
+    {
+      "id": "precision-components",
+      "name": "Precision components",
+      "tier": "component",
+      "unit": "unit",
+      "producibleLocally": true,
+      "character": "Slow to produce; always the crisis bottleneck",
+      "usedFor": "Terminals, sensors, clinic equipment"
+    },
+    {
+      "id": "scrubber-catalyst",
+      "name": "Scrubber catalyst",
+      "tier": "component",
+      "unit": "unit",
+      "producibleLocally": false,
+      "publicExplanation": "Founder-era stockpiles",
+      "actualSource": "presidium",
+      "_note": "NO RECIPE EXISTS IN recipes.json, and that absence is the point — expressing the gap by omission rather than a boolean is harder to break by accident. Players will notice they never mine it; the Chapter 2 demonstration pays off a detail they have been staring at for twenty hours. Changing this is a narrative decision, not a balance tweak."
+    }
+  ]
+}

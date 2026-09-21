@@ -1,0 +1,10 @@
+01-low-detail 5852ea35-0997-44f2-b25e-c5ce97d72549
+02-high-detail da39ad84-d823-4770-ac30-4b1caa6b7477
+03-sparse 7b9dd370-26d9-4179-bf7c-4886e631e40b
+04-cluttered c8fae40c-36ce-4c6b-99fb-51b4571e0717
+05-human-scale 5f1adf6a-b1f5-4c8a-aa2d-19ec121a380c
+06-monumental fe93b7f8-d4fa-411f-9340-803e2cebcb98
+07-modular-row ed9baa1a-5394-4ee2-876f-cee7088c77ce
+08-chunky-proportions fe263917-cf79-46af-b030-a5206b1ea253
+09-pixels-2x-96x48 d1e73734-26dd-40f6-8e32-4c7c52382133
+10-pixels-1.5x-128x64 7dde0fa6-af55-4f3a-99e2-703c750b90ac

@@ -1,0 +1,8 @@
+main-generator-blockout50 d0af471f-df48-4d00-b05a-1793fdc8cb5c
+main-generator-blockout70 52a294ea-9b0d-4a11-b75a-3ac7aa2e2e53
+house-blockout50 1766b031-7618-4726-892e-47fd6b0032da
+house-blockout70 bff236bd-6254-43d3-a6c1-b46beefad7bc
+council-chamber-blockout50 83938d14-4d2e-4f27-aca8-6a779bc3df3c
+council-chamber-blockout70 9ddbeac8-ed39-4d2e-9eb6-024f75e8e958
+main-generator-inpaint 631b97d8-9daf-42ee-a772-14d134bef596
+house-inpaint 765856d6-974c-4f8f-beed-a2b7b0837a56

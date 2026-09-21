@@ -1,0 +1,214 @@
+/* Screen-level layout. Component styles live alongside their modules
+   or in additional files here — keep specificity flat. */
+
+body {
+  background: var(--rock);
+  color: var(--ink);
+  font: var(--size-sm) / 1.5 var(--font-ui);
+}
+
+/* Shell: shaft on the left, panels on the right. Grid rather than fixed
+   widths, so a narrower viewport reflows without a breakpoint. */
+/* Shell: shaft on the left, panels on the right. The shaft fills its cell and
+   the view fits its viewBox to that cell's aspect ratio, so there is never a
+   letterbox regardless of window size. Below 60rem the panel drops underneath,
+   which is also the shape a tablet wants. */
+#app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  height: 100vh;
+  padding: var(--space-3);
+}
+
+@media (max-width: 60rem) {
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--panel);
+  border: var(--border);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--panel);
+  border: var(--border);
+  padding: var(--space-3);
+}
+
+.card h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--size-xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ---- Time controls ---- */
+
+.clock-readout { display: flex; gap: var(--space-4); align-items: baseline; }
+.clock-readout .day { font-size: var(--size-lg); color: var(--amber); }
+.clock-readout .tick { color: var(--ink-faint); font-size: var(--size-xs); }
+
+.speeds { display: flex; gap: var(--space-1); margin-left: auto; }
+
+.speeds button {
+  min-width: 2.75rem;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel-raised);
+  border: var(--border);
+  color: var(--ink-dim);
+  font: inherit;
+  cursor: pointer;
+}
+.speeds button:hover { color: var(--ink); border-color: var(--amber-dim); }
+.speeds button[aria-pressed="true"] { color: var(--rock); background: var(--amber); border-color: var(--amber); }
+.speeds button:focus-visible { outline: 2px solid var(--cool); outline-offset: 1px; }
+
+/* ---- Resource meters ---- */
+
+.meter { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1); margin-bottom: var(--space-2); }
+.meter-label { color: var(--ink-dim); font-size: var(--size-xs); }
+.meter-value { font-variant-numeric: tabular-nums; }
+.meter-bar { grid-column: 1 / -1; height: 3px; background: var(--dead); }
+.meter-fill { height: 100%; background: var(--ok); transition: width 120ms linear; }
+.meter[data-state="warn"] .meter-fill { background: var(--warn); }
+.meter[data-state="critical"] .meter-fill { background: var(--critical); }
+
+/* ---- Log ---- */
+
+.log { display: flex; flex-direction: column-reverse; gap: var(--space-1); max-height: 14rem; overflow-y: auto; }
+.log-entry { display: flex; gap: var(--space-2); font-size: var(--size-xs); }
+.log-entry .at { color: var(--ink-faint); font-variant-numeric: tabular-nums; flex: 0 0 3.5rem; }
+.log-entry[data-kind="critical"] .what { color: var(--critical); }
+.log-entry[data-kind="warn"] .what { color: var(--warn); }
+
+/* ---- The shaft ---- */
+
+/* The shaft is a column, so it is centred in whatever space it gets and the
+   surrounding rock is the page itself. */
+.shaft-host {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 0;
+  min-width: 0;
+  background: var(--rock);
+  border: var(--border);
+  overflow: hidden;
+}
+
+/* Fills the host. The view keeps the viewBox's aspect ratio equal to the
+   host's (see viewport.fitToElement), so `meet` never actually letterboxes —
+   which is what makes this work at any resolution without a media query. */
+.shaft {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* the view handles its own pan; stops page scroll fighting it */
+  cursor: grab;
+}
+.shaft:active { cursor: grabbing; }
+
+.level-rock  { fill: var(--rock-cut); stroke: var(--floor); stroke-width: 0.15; }
+.level-floor { fill: var(--concrete); }
+.level-label { fill: var(--ink-faint); font-size: 2.4px; font-family: var(--font-mono); }
+
+/* Every other level tinted, so forty floors read as forty rather than as one
+   dark column. Cheap banding, and it survives any palette change. */
+.level:nth-child(even) .level-rock { fill: color-mix(in srgb, var(--rock-cut) 88%, var(--concrete)); }
+
+.level[data-air="poor"] .level-rock     { fill: color-mix(in srgb, var(--rock-cut) 84%, var(--warn)); }
+.level[data-air="critical"] .level-rock { fill: color-mix(in srgb, var(--rock-cut) 70%, var(--critical)); }
+.level.sealed .level-floor { fill: var(--critical); }
+
+.stairwell      { fill: var(--concrete); }
+.liftshaft-bore { fill: var(--concrete); }
+
+/* Sprite part classes. The sheet carries no colour of its own. */
+.b-shell  { fill: var(--concrete-lit); }
+.b-detail { fill: var(--concrete); stroke: var(--concrete); }
+.b-hot    { fill: var(--sodium-lamp); }
+.b-cool   { fill: var(--cool); stroke: var(--cool); }
+
+.building { transition: opacity 200ms ease; }
+.building.unpowered { opacity: 0.35; }
+.building.unpowered .b-hot { fill: var(--dead); }
+.building.broken .b-shell  { fill: var(--rust); }
+
+/* A figure is a wrapper <g> (position, set by JS) around a .figure-sprite
+   <use> (animation, set by CSS). Never animate `transform` on the wrapper:
+   CSS transform beats the SVG transform attribute, so the figure would
+   interpolate between its real position and the origin. See figures.js. */
+.figure       { pointer-events: none; }
+.f-body       { fill: var(--figure); stroke: var(--figure); }
+.f-cargo      { fill: var(--cargo); }
+.figure-worker .f-body { fill: var(--figure-dim); stroke: var(--figure-dim); }
+
+/* Porters face the way they are walking. Safe on the inner node. */
+.figure-porter[data-descending="false"] .figure-sprite {
+  transform: scaleX(-1);
+  transform-origin: center;
+}
+
+/* ---- Animation ----
+   Three kinds, three mechanisms (see src/ui/view/spriteMap.js):
+     sim-time motion  driven from JS with tick + alpha, not here
+     state transition CSS transitions on a class, above
+     ambient loop     the keyframes below
+
+   Ambient loops must stop with the simulation, or workers keep hammering
+   away while the game is paused. One class on the root does it. */
+
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes glow   { 50% { opacity: 0.45; } }
+@keyframes bob    { 50% { transform: translateY(-0.5px); } }
+
+[data-part="fan"]     { animation: spin 2.4s linear infinite; }
+[data-part="glow"],
+[data-part="lamps"],
+[data-part="lamp"],
+[data-part="charge"],
+[data-part="piston"],
+[data-part="waterline"] { animation: glow 3.2s ease-in-out infinite; }
+
+/* On the inner sprite, not the wrapper — the wrapper's transform is JS-owned
+   position and a keyframe here would overwrite it. */
+.figure-worker .figure-sprite {
+  animation: bob 1.8s ease-in-out infinite;
+  animation-delay: var(--phase, 0s);
+}
+
+.shaft.paused [data-part],
+.shaft.paused .figure-sprite { animation-play-state: paused; }
+
+/* Doors are two-state, driven by sim state rather than a loop. */
+[data-part="door"] { transition: transform 400ms ease; }
+.level.sealed [data-part="door"] { transform: scaleX(1); }
+
+/* Motion is information here, so under reduced-motion figures keep moving —
+   they just snap between levels instead of gliding, and the decorative loops
+   stop entirely. base.css already collapses durations; this removes the
+   ambient animation rather than leaving it stuttering at 0.01ms. */
+@media (prefers-reduced-motion: reduce) {
+  [data-part], .figure-sprite { animation: none; }
+  .building, [data-part="door"] { transition: none; }
+}

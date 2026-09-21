@@ -1,0 +1,4 @@
+{
+  "_layer": "sandbox",
+  "_note": "Top-priority overrides for playtesting. Safe to edit freely; never ship non-empty. Accepts the same 'tunables' and 'patch' blocks as any other layer — the diff export will name this layer as the source of anything set here."
+}

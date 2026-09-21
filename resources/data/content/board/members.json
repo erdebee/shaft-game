@@ -1,0 +1,52 @@
+{
+  "_note": "Advisory Board roster — one senior representative per department. moleEligible marks members who may be the Presidium's plant; the actual mole is chosen at run start from the seed, and the reveal lands hardest on the member with the LOWEST accumulated doubt, so the choice is weighted toward whoever the player trusted. Names and histories are an open design thread (narrative-spine §Open) — ids stay stable once assigned.",
+  "members": [
+    {
+      "id": "member-cultivation",
+      "name": "",
+      "portfolio": "Cultivation",
+      "faction": "cultivation",
+      "startingTrust": 55,
+      "ambition": 3,
+      "moleEligible": true,
+      "coalitionRisk": "low",
+      "tenureYears": 22
+    },
+    {
+      "id": "member-engineering",
+      "name": "",
+      "portfolio": "Engineering",
+      "faction": "engineering",
+      "startingTrust": 40,
+      "ambition": 6,
+      "moleEligible": true,
+      "coalitionRisk": "high",
+      "tenureYears": 14,
+      "_note": "Recruiting this member in the Chapter 2 finale grants technical muscle or ends the severance attempt on the spot. Highest-variance conversation in the game."
+    },
+    {
+      "id": "member-order",
+      "name": "",
+      "portfolio": "Order",
+      "faction": "order",
+      "startingTrust": 48,
+      "ambition": 8,
+      "moleEligible": false,
+      "coalitionRisk": "extreme",
+      "tenureYears": 9,
+      "_note": "Not mole-eligible on purpose. The Order rep is the obvious suspect, so making them the plant would be the guess the player already made — and the reveal is supposed to land on the one who seemed safest."
+    },
+    {
+      "id": "member-archive",
+      "name": "",
+      "portfolio": "Archive",
+      "faction": "archive",
+      "startingTrust": 62,
+      "ambition": 2,
+      "moleEligible": true,
+      "coalitionRisk": "medium",
+      "tenureYears": 31,
+      "_note": "Longest tenure, highest starting trust, lowest ambition. The likeliest candidate for the lowest-doubt member at the finale, and therefore the strongest mole reveal — a colleague who has been helpful for thirty-one years."
+    }
+  ]
+}

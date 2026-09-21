@@ -1,0 +1,70 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Five rooms v9</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink); font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--faint); margin:0 0 24px; font-size:11px; max-width:90ch; }
+  .zoom { margin-bottom:20px; color:var(--dim); font-size:11px; }
+  .zoom button { font:inherit; background:#12141d; color:var(--ink); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  .zoom button.on { color:var(--amber); border-color:var(--amber); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap:28px; }
+  .card { border-top:1px solid var(--edge); padding-top:10px; }
+  .card h2 { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  .imgs { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .imgs img { image-rendering:pixelated; display:block; }
+  .big { zoom: var(--z, 3); max-width:100%; }
+  .pal { height:10px; image-rendering:pixelated; margin:8px 0 4px; }
+  .meta { color:var(--faint); font-size:10px; }
+  .note { color:var(--dim); font-size:11px; margin:6px 0 0; max-width:72ch; }
+  .flag { color:#b46741; }
+</style>
+
+<h1>Five rooms v9 &mdash; test of the current spec</h1>
+<p class="sub">Five very different buildings, two seeds each, at their catalog footprint (3 slots = 192&times;96, 2 slots = 128&times;96). Eastward style, palette v6/03 for every band,
+state <b>on</b>. Rooms use the new side-wall wording; the grove and dig face are open areas, drawn as the <code>none</code> master (open at both ends). Seeds 15001&ndash;15010.
+The house has no catalog id yet; 2 slots is an assumption.</p>
+<img class="pal" src="palette-03-count-16.png" alt="palette" style="height:12px;margin-bottom:16px">
+
+<div class="zoom">Zoom: <button data-z="2">2&times;</button> <button data-z="3" class="on">3&times;</button> <button data-z="4">4&times;</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const V = [
+  ['main-generator-on-a','Main generator · a','deep · room · 192×96 · seed 15001',
+   'The best of the round: flat, clean, big teal engine, drums and a control box, worker at a good scale. Only a hint of side wall at the edges.'],
+  ['main-generator-on-b','Main generator · b','deep · room · 192×96 · seed 15002',
+   'Good machine and pipework. <span class="flag">The glow disc is back behind the lamp, and there is no real side-wall slant.</span>'],
+  ['dig-face-on-none-a','Dig face (mines) · a','deep · open area · 128×96 · seed 15003',
+   'Open at both edges as intended. <span class="flag">Palette 03 has no rock browns, so the rock turned into teal cobbles, which reads as masonry, not a mine. There is also a glow disc.</span>'],
+  ['dig-face-on-none-b','Dig face (mines) · b','deep · open area · 128×96 · seed 15004',
+   '<span class="flag">It ignored “open area”: the scene is framed as a tunnel mouth, and the miners are big and cartoonish.</span>'],
+  ['grove-on-none-a','Grove (arboretum) · a','shallow · open area · 192×96 · seed 15005',
+   'Reads immediately: cultivated trees in planters, a gardener, a bench, open at both edges. <span class="flag">A row of light cones under the grow lamps.</span>'],
+  ['grove-on-none-b','Grove (arboretum) · b','shallow · open area · 192×96 · seed 15006',
+   'Wood wainscot, teal wall, tidy rows of trees, open edges. Fewer light cones than a. The closest to the spec.'],
+  ['council-chamber-on-a','Council chamber · a','shallow · room · 128×96 · seed 15007',
+   '<span class="flag">A full one-point perspective: floor and ceiling both recede toward the centre.</span>'],
+  ['council-chamber-on-b','Council chamber · b','shallow · room · 128×96 · seed 15008',
+   'Symmetrical, grand, with a seal and sconces. It clearly reads as the top of the hierarchy. <span class="flag">The side walls are far too deep, and the ceiling and carpet recede.</span>'],
+  ['house-on-a','House · a','mid · room · 128×96 · seed 15009',
+   'Cosy and lived-in: stove, table, shelves, curtains. <span class="flag">A full box interior with floor and ceiling in perspective.</span>'],
+  ['house-on-b','House · b','mid · room · 128×96 · seed 15010',
+   'The warmest domestic read: bed, kitchen, pictures, a lamp. <span class="flag">A full box perspective, plus a window, which the spec bans.</span>'],
+];
+const grid = document.getElementById('grid');
+for (const [f, t, meta, note] of V) {
+  grid.insertAdjacentHTML('beforeend', `<div class="card">
+    <h2>${f.slice(0,2)} · ${t}</h2>
+    <div class="imgs"><img class="big" src="${f}.png" alt="${t}"><img src="${f}.png" alt="${t} at 1×" ></div>
+    
+    <div class="meta">${meta}</div>
+    <p class="note">${note}</p></div>`);
+}
+document.querySelectorAll('.zoom button').forEach(b => b.onclick = () => {
+  document.documentElement.style.setProperty('--z', b.dataset.z);
+  document.querySelectorAll('.zoom button').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>

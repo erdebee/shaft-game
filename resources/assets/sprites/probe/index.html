@@ -1,0 +1,149 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Style probe</title>
+<style>
+  :root {
+    --rock: #14100e; --ink: #d9d2c4; --ink-dim: #8d857a; --ink-faint: #5b554d;
+    --panel: #191614; --edge: #302a26; --amber: #d98f2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--rock); color: var(--ink);
+    font: 13px/1.5 ui-monospace, Menlo, monospace;
+  }
+  h1 { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin: 0 0 4px; }
+  p.sub { color: var(--ink-faint); margin: 0 0 24px; font-size: 11px; }
+  h2 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint);
+       margin: 28px 0 10px; border-top: 1px solid var(--edge); padding-top: 10px; }
+
+  .row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* One slice of Shaft: 640 x 216 reference px = 3 levels of 72px pitch. */
+  .shaft { position: relative; width: 640px; height: 216px; overflow: hidden;
+           image-rendering: pixelated; transform-origin: top left;
+           background: url(rock-fill) repeat; outline: 1px solid var(--edge); }
+  .shaft * { image-rendering: pixelated; position: absolute; }
+
+  .slab  { left: 0; width: 640px; height: 8px; background: url(slab); background-size: 32px 32px;
+           background-position: 0 -4px; }
+  .col   { width: 64px; height: 216px; top: 0; background: #0d0b0a; opacity: .82; }
+  .col.l { left: 0; } .col.r { left: 576px; }
+  .lbl   { color: #5b554d; font: 9px/1 ui-monospace, monospace; left: 4px; }
+
+  .scale { display: flex; flex-direction: column; gap: 6px; }
+  .cap   { color: var(--ink-dim); font-size: 11px; }
+  .wrap  { overflow: hidden; }
+  .x1 .shaft { transform: scale(1); } .x1 .wrap { width: 640px; height: 216px; }
+  .x2 .shaft { transform: scale(2); } .x2 .wrap { width: 1280px; height: 432px; }
+  .x3 .shaft { transform: scale(3); } .x3 .wrap { width: 1920px; height: 648px; }
+
+  .sheet { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+  .cell { text-align: center; color: var(--ink-faint); font-size: 10px; }
+  .cell img { display: block; image-rendering: pixelated; margin: 0 auto 6px;
+              outline: 1px solid var(--edge); background: #0d0b0a; }
+  .sw { display: flex; flex-wrap: wrap; width: 512px; }
+  .sw b { width: 32px; height: 32px; display: block; }
+</style>
+
+<h1>Shaft — pixel-art style probe</h1>
+<p class="sub">
+  Grid: 64&times;64 build slot &middot; 72px level pitch (64 interior + 8 slab) &middot; 640px Shaft width.
+  Palette v1, forced at generation. <b style="color:var(--amber)">16-bit SNES flat pass</b> — seeds 2001–2005.
+</p>
+
+<h2>Three levels of Shaft — the band gradient, top to bottom</h2>
+<p class="sub">shallow (council chamber) &rarr; mid (dormitory) &rarr; deep (generator). Same world, different tailoring.</p>
+
+<div class="row" id="scales"></div>
+
+<h2>Assets at 1:1 — flat pass</h2>
+<div class="sheet">
+  <div class="cell"><img src="council-chamber.png"><span>council-chamber &middot; shallow &middot; 128&times;64</span></div>
+  <div class="cell"><img src="dormitory.png"><span>dormitory &middot; mid &middot; 128&times;64</span></div>
+  <div class="cell"><img src="main-generator.png"><span>main-generator &middot; deep &middot; 64&times;64</span></div>
+  <div class="cell"><img src="deep-rock-fill.png"><span>deep-rock-fill &middot; 64&times;72</span></div>
+  <div class="cell"><img src="deep-rock-tileset.png" style="opacity:.55"><span>tileset &middot; platform set, wrong for backdrop</span></div>
+</div>
+
+<h2>Flat pass vs. the first attempt</h2>
+<p class="sub">
+  Top row: <b>detailed shading + highly detailed</b> &mdash; rendered volume, soft falloff, rooms receding into the page.
+  Bottom row: <b>flat shading + medium detail</b>, guidance 10 &mdash; blocks of colour, hard edges, nothing recedes.
+</p>
+<div class="sheet">
+  <div class="cell"><img src="council-chamber-3d.png" style="opacity:.6"><span>chamber &middot; rendered</span></div>
+  <div class="cell"><img src="dormitory-v1.png" style="opacity:.6"><span>dormitory &middot; perspective room</span></div>
+  <div class="cell"><img src="dormitory-3d.png" style="opacity:.6"><span>dormitory &middot; washed out</span></div>
+  <div class="cell"><img src="main-generator-3d.png" style="opacity:.6"><span>generator &middot; rendered</span></div>
+  <div class="cell"><img src="deep-rock-fill-v1.png" style="opacity:.6"><span>rock &middot; too bright</span></div>
+</div>
+<div class="sheet" style="margin-top:16px">
+  <div class="cell"><img src="council-chamber.png"><span>chamber &middot; FLAT</span></div>
+  <div class="cell"><img src="dormitory.png"><span>dormitory &middot; FLAT</span></div>
+  <div class="cell"><img src="main-generator.png"><span>generator &middot; FLAT</span></div>
+  <div class="cell"><img src="deep-rock-fill.png"><span>rock &middot; FLAT</span></div>
+</div>
+
+<h2>Palette v1 — 41 colours, read from tokens.css</h2>
+<img src="palette-v1.png" style="image-rendering:pixelated;width:512px;outline:1px solid var(--edge)">
+
+<script>
+const LEVELS = [
+  { n: 1,  band: 'shallow', img: 'council-chamber.png', slot: 2, slots: 2 },
+  { n: 2,  band: 'mid',     img: 'dormitory.png',       slot: 1, slots: 2 },
+  { n: 3,  band: 'deep',    img: 'main-generator.png',  slot: 3, slots: 1 },
+];
+
+function slice() {
+  const s = document.createElement('div');
+  s.className = 'shaft';
+  s.style.backgroundImage = 'url(deep-rock-fill.png)';
+  s.style.backgroundSize = '64px 72px';
+
+  LEVELS.forEach((lv, i) => {
+    const top = i * 72;
+
+    const b = document.createElement('img');
+    b.src = lv.img;
+    b.style.left = (64 + lv.slot * 64) + 'px';
+    b.style.top = top + 'px';
+    b.style.width = (lv.slots * 64) + 'px';
+    b.style.height = '64px';
+    s.appendChild(b);
+
+    const slab = document.createElement('div');
+    slab.className = 'slab'; // placeholder concrete — see spec §4.1
+    slab.style.top = (top + 64) + 'px';
+    slab.style.background = '#3a3733';
+    slab.style.borderTop = '1px solid #4a463f';
+    slab.style.borderBottom = '1px solid #0d0b0a';
+    s.appendChild(slab);
+
+    const t = document.createElement('div');
+    t.className = 'lbl';
+    t.style.top = (top + 4) + 'px';
+    t.textContent = lv.n + ' ' + lv.band;
+    s.appendChild(t);
+  });
+
+  for (const side of ['l', 'r']) {
+    const c = document.createElement('div');
+    c.className = 'col ' + side;
+    s.appendChild(c);
+  }
+  return s;
+}
+
+for (const x of [1, 2, 3]) {
+  const col = document.createElement('div');
+  col.className = 'scale x' + x;
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.textContent = x + '×  —  ' + (x === 2 ? 'the default play scale' : x === 1 ? 'reference pixels' : 'inspection');
+  const wrap = document.createElement('div');
+  wrap.className = 'wrap';
+  wrap.appendChild(slice());
+  col.appendChild(cap); col.appendChild(wrap);
+  document.getElementById('scales').appendChild(col);
+}
+</script>

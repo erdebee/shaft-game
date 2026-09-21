@@ -1,0 +1,91 @@
+{
+  "_note": "Focus-purchasable investigation leads — the Chapter 1 thread that accumulates in the background while the player runs the Shaft competently. Each lead costs Focus, which is staff pulled off productive work, so the investigation is always paid for in food and repairs. Leads chain: unlocks names what becomes available next.",
+  "leads": [
+    {
+      "id": "lead-archive-discrepancy",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 8,
+      "requires": [{ "pred": "capability.enabled", "target": "investigation" }],
+      "summary": "Archive records that do not reconcile across the same decade.",
+      "unlocks": ["lead-sealed-section"],
+      "effects": [{ "op": "flag.set", "target": "found-archive-discrepancy" }],
+      "_note": "The cheapest entry point. Available from the moment the archive is staffed, so a curious player finds it early and a busy one never does."
+    },
+    {
+      "id": "lead-power-draw",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 10,
+      "focusCostIfDismissed": 18,
+      "requires": [{ "pred": "capability.enabled", "target": "investigation" }],
+      "summary": "A steady load on the lower levels matching no building on the register.",
+      "unlocks": ["lead-sealed-section", "lead-catalyst-provenance"],
+      "effects": [{ "op": "flag.set", "target": "traced-power-draw" }],
+      "_note": "focusCostIfDismissed is what it costs after the player closed the ledger in the unaccounted-draw dilemma. The lead never disappears; it just gets more expensive, which is a cleaner punishment than locking content away."
+    },
+    {
+      "id": "lead-catalyst-provenance",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 14,
+      "summary": "Nobody can name the seam the scrubber catalyst comes out of.",
+      "unlocks": ["lead-founder-stores-clause"],
+      "effects": [{ "op": "flag.set", "target": "catalyst-noticed" }],
+      "_note": "The thread the whole game hangs on. A player who buys this lead in Chapter 1 has spent Focus to notice something they will not understand for twenty hours."
+    },
+    {
+      "id": "lead-founder-stores-clause",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 24,
+      "requires": [{ "pred": "flag.set", "target": "catalyst-noticed" }],
+      "summary": "An unamendable Accord article exempting founder-era stores from audit.",
+      "unlocks": [],
+      "effects": [
+        { "op": "content.unlock", "target": "fc-founder-stores-unaudited" },
+        { "op": "flag.set", "target": "found-founder-clause" }
+      ],
+      "_note": "Surfaces the hidden clause for exposure or leverage. Expensive on purpose — this is the deepest a Chapter 1 player can get, and it stops exactly one step short of the truth."
+    },
+    {
+      "id": "lead-sealed-section",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 16,
+      "summary": "Sections of the Shaft that appear on no register and that nobody can explain.",
+      "unlocks": ["lead-chair-movements"],
+      "effects": [{ "op": "flag.set", "target": "found-sealed-section" }]
+    },
+    {
+      "id": "lead-chair-movements",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 20,
+      "requires": {
+        "pred": "any-of",
+        "of": [
+          { "pred": "flag.set", "target": "found-sealed-section" },
+          { "pred": "flag.set", "target": "traced-power-draw" }
+        ]
+      },
+      "summary": "The Chair keeps hours that the Board's minutes do not account for.",
+      "unlocks": [],
+      "effects": [
+        { "op": "flag.set", "target": "chair-suspected" },
+        { "op": "beat.arm", "target": "ch1-finale" }
+      ],
+      "_note": "The convergence point. Arming ch1-finale is what sets the Chapter 1 ending in motion — the catch is real, and so is the trap. Two independent routes reach it so the finale is not gated on one purchase."
+    },
+    {
+      "id": "lead-video-feed",
+      "title": "",
+      "chapter": 1,
+      "focusCost": 12,
+      "summary": "The surface feed has not changed in any detail in eleven years of archived stills.",
+      "unlocks": [],
+      "effects": [{ "op": "flag.set", "target": "feed-questioned" }],
+      "_note": "A dead end in v1 — deliberately. It plants the thread that pays off in Chapter 3's abandoned Shaft, and rewards the player with nothing but a bad feeling."
+    }
+  ]
+}

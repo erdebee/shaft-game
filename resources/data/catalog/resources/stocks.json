@@ -1,0 +1,51 @@
+{
+  "_note": "Stock resources: physical goods, stored and hauled by hand. Failure is slow and visible in advance — which is what gives the player time to make political choices, and where dilemmas come from. haulable=false marks goods consumed where they are made.",
+  "stocks": [
+    {
+      "id": "food",
+      "name": "Food",
+      "unit": "ration",
+      "producedBy": ["hydroponics-bay", "protein-vats"],
+      "primaryUse": "Population survival",
+      "haulable": true,
+      "spoilagePerTick": 0.0004,
+      "warnDaysOfSupply": 12,
+      "criticalDaysOfSupply": 4
+    },
+    {
+      "id": "scrap",
+      "name": "Scrap",
+      "unit": "t",
+      "producedBy": ["salvage-post"],
+      "primaryUse": "Feedstock for parts",
+      "haulable": true,
+      "spoilagePerTick": 0,
+      "warnDaysOfSupply": 8,
+      "criticalDaysOfSupply": 2
+    },
+    {
+      "id": "wood",
+      "name": "Wood",
+      "unit": "t",
+      "producedBy": ["grove"],
+      "primaryUse": "Culture, legitimacy, and paper",
+      "haulable": true,
+      "spoilagePerTick": 0,
+      "_note": "Deliberately NOT survival-critical, which is what makes spending Cultivation slots on it a political statement. The political layer literally consumes it — see the paper recipe.",
+      "warnDaysOfSupply": null,
+      "criticalDaysOfSupply": null
+    },
+    {
+      "id": "paper",
+      "name": "Paper",
+      "unit": "quire",
+      "producedBy": ["workshop"],
+      "primaryUse": "Accord amendments, archives, court records, the Apocrypha's volumes",
+      "haulable": true,
+      "spoilagePerTick": 0,
+      "_note": "A Chair who legislates constantly is quietly spending the Shaft's timber. A Shaft that can no longer make paper can no longer keep records.",
+      "warnDaysOfSupply": 20,
+      "criticalDaysOfSupply": 5
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Locked direction — palette v3</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink);
+         font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  h2 { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+       margin:34px 0 14px; border-top:1px solid var(--edge); padding-top:10px; }
+  p.sub { color:var(--faint); margin:0 0 20px; font-size:11px; max-width:84ch; }
+  b.hi { color:var(--amber); }
+
+  .row { display:flex; gap:34px; align-items:flex-start; flex-wrap:wrap; }
+  .scale { display:flex; flex-direction:column; gap:8px; }
+  .cap { color:var(--dim); font-size:11px; }
+
+  /* 640 x 104 reference px per level, three levels. */
+  .shaft { position:relative; width:640px; height:312px; image-rendering:pixelated;
+           transform-origin:top left; outline:1px solid var(--edge); }
+  .shaft * { position:absolute; image-rendering:pixelated; }
+  .slab { left:0; width:640px; height:8px; background:#2f323e; border-top:1px solid #010202; }
+  .lbl  { left:3px; font:8px/1 ui-monospace, monospace; color:#5e6572; z-index:5; }
+  .band { right:4px; font:8px/1 ui-monospace, monospace; color:#5e6572; z-index:5; }
+
+  .x1 .shaft { transform:scale(1); } .x1 .box { width:640px;  height:312px; }
+  .x2 .shaft { transform:scale(2); } .x2 .box { width:1280px; height:624px; }
+  .box { overflow:hidden; }
+
+  .sheet { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-end; }
+  .cell { text-align:center; color:var(--faint); font-size:10px; }
+  .cell img { display:block; image-rendering:pixelated; margin:0 auto 6px; outline:1px solid var(--edge); }
+</style>
+
+<h1>Locked direction &mdash; variant F</h1>
+<p class="sub">
+  <b class="hi">192&times;96 at 1&times; pixels, 16 colours per band, shallow side walls.</b>
+  Rooms are opaque envelopes with their own back wall, ceiling and floor, butted against each other and
+  the 8px slab. Everything stands on a flat floor band at the bottom edge &mdash; no receding floor plane
+  &mdash; and the left and right edges slant inward a few pixels. Each band is forced to its own
+  <b class="hi">16-colour palette</b>: 11 shared core colours plus 5 band accents, so the bands stay one
+  family while keeping brass at the top and rust at the bottom. Rock is generated procedurally from the
+  same 16. <b class="hi">Zero palette drift.</b>
+</p>
+
+<div class="row" id="scales"></div>
+
+<h2>The three bands at 1:1 &mdash; 16 colours each</h2>
+<div class="sheet">
+  <div class="cell"><img src="council-chamber.png"><span>council-chamber &middot; shallow &middot; 192&times;96</span></div>
+  <div class="cell"><img src="dormitory.png"><span>dormitory &middot; mid &middot; 192&times;96</span></div>
+  <div class="cell"><img src="main-generator.png"><span>main-generator &middot; deep &middot; 192&times;96</span></div>
+  <div class="cell"><img src="deep-rock.png"><span>deep-rock &middot; 64&times;104</span></div>
+</div>
+
+<h2>Sources</h2>
+<p class="sub">The style reference you supplied, and the palette derived from it plus the approved sodium probe.</p>
+<div class="sheet">
+  <div class="cell"><img src="palette-v3.png" style="width:256px"><span>palette-v3 &middot; 45 unique colours</span></div>
+</div>
+
+<script>
+const LEVELS = [
+  { n:  8, band:'shallow', img:'council-chamber.png', rock:'shallow-rock.png' },
+  { n: 20, band:'mid',     img:'dormitory.png',       rock:'mid-rock.png' },
+  { n: 33, band:'deep',    img:'main-generator.png',  rock:'deep-rock.png' },
+];
+
+function slice() {
+  const s = document.createElement('div');
+  s.className = 'shaft';
+
+  LEVELS.forEach((lv, i) => {
+    const top = i * 104;
+
+    // 512px build area = 8 slots. One 3-slot room, then bare rock, then another.
+    for (const x of [64, 320]) {
+      const img = document.createElement('img');
+      img.src = lv.img;
+      img.style.left = x + 'px';
+      img.style.top = top + 'px';
+      img.style.width = '192px'; img.style.height = '96px'; img.style.zIndex = '1';
+      s.appendChild(img);
+    }
+
+    const bg = document.createElement('div');
+    bg.style.left = '0px'; bg.style.top = top + 'px';
+    bg.style.width = '640px'; bg.style.height = '104px';
+    bg.style.background = `url(${lv.rock}) repeat`;
+    bg.style.backgroundSize = '64px 104px';
+    bg.style.zIndex = '0';
+    s.insertBefore(bg, s.firstChild);
+
+    const slab = document.createElement('div');
+    slab.className = 'slab';
+    slab.style.top = (top + 96) + 'px';
+    s.appendChild(slab);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'lbl'; lbl.style.top = (top + 3) + 'px';
+    lbl.textContent = lv.n;
+    s.appendChild(lbl);
+
+    const band = document.createElement('div');
+    band.className = 'band'; band.style.top = (top + 3) + 'px';
+    band.textContent = lv.band;
+    s.appendChild(band);
+  });
+  return s;
+}
+
+for (const x of [1, 2]) {
+  const col = document.createElement('div');
+  col.className = 'scale x' + x;
+  const cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.textContent = x + '× — ' + (x === 1 ? 'reference pixels' : 'the default play scale');
+  const box = document.createElement('div');
+  box.className = 'box';
+  box.appendChild(slice());
+  col.appendChild(cap); col.appendChild(box);
+  document.getElementById('scales').appendChild(col);
+}
+</script>

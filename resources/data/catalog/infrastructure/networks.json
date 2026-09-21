@@ -1,0 +1,48 @@
+{
+  "_note": "The three distribution networks. Each has different physics, and that difference is what makes vertical layout matter: power loses over distance, water costs power to lift, air pools where nothing moves it. Scalar defaults live in config/base.json; this file declares the network's shape and behaviour.",
+  "networks": [
+    {
+      "id": "power-grid",
+      "name": "Power grid",
+      "carries": "power",
+      "topology": "trunk-and-branch",
+      "path": ["main-generator", "trunk-cable", "junction", "building"],
+      "lossModel": "per-level-distance",
+      "lossTunable": "power.transmissionLossPerLevel",
+      "capacityNode": "junction",
+      "capacityTunable": "power.junctionCapacity",
+      "bufferNode": "battery-bank",
+      "shortfallResolution": "priority-ladder",
+      "_note": "Loss scales with distance travelled from the generator, so a shallow level served by a deep generator pays for every level in between."
+    },
+    {
+      "id": "water-mains",
+      "name": "Water mains",
+      "carries": "water",
+      "topology": "lift-and-gravity-return",
+      "path": ["deep-pump", "purifier", "water-mains", "cistern", "building"],
+      "lossModel": "none",
+      "liftCostTunable": "water.pumpPowerPerLevelLifted",
+      "returnCost": 0,
+      "capacityNode": null,
+      "bufferNode": "cistern",
+      "shortfallResolution": "rationing",
+      "_note": "Pumping upward costs power proportional to lift height; greywater returns downward free by gravity to reclamation. Water cost therefore scales with how high people live — making vertical layout an economic decision rather than flavour."
+    },
+    {
+      "id": "duct-network",
+      "name": "Duct network",
+      "carries": "air-quality",
+      "topology": "radial-per-level",
+      "path": ["scrubber-bank", "duct-network", "level"],
+      "lossModel": "radius-falloff",
+      "radiusTunable": "air.scrubberRadiusLevels",
+      "migrationTunable": "air.migrationRateBetweenLevels",
+      "capacityNode": null,
+      "bufferNode": null,
+      "shortfallResolution": "per-level-degradation",
+      "sealable": true,
+      "_note": "Sealing a level isolates it from the ducts — useful during fire, contamination or containment, and also the reason it begins suffocating. sealedLevelDecayPerTick in base.json is how fast that happens."
+    }
+  ]
+}

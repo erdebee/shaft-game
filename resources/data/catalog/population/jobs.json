@@ -1,0 +1,118 @@
+{
+  "_note": "Job types the player assigns workers to. Every job draws from the same labour pool, so assignment is the primary zero-sum decision in the sim layer. Focus-generating jobs pull staff off productive work by definition — that competition is the engine of story revelation.",
+  "jobs": [
+    {
+      "id": "grower",
+      "name": "Grower",
+      "faction": "cultivation",
+      "worksIn": ["hydroponics-bay", "protein-vats", "grove"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 200
+    },
+    {
+      "id": "kitchen-hand",
+      "name": "Kitchen hand",
+      "faction": "cultivation",
+      "worksIn": ["food-processing", "canteen"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 60
+    },
+    {
+      "id": "engineer",
+      "name": "Engineer",
+      "faction": "engineering",
+      "worksIn": ["workshop", "machine-shop", "main-generator", "freight-elevator"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 600,
+      "_note": "Longest ramp in the game. Losing engineers to an accident is a wound that takes a chapter to heal."
+    },
+    {
+      "id": "miner",
+      "name": "Miner",
+      "faction": "engineering",
+      "worksIn": ["dig-face", "smelter", "recycler", "salvage-post"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 200,
+      "healthRiskPerShift": 0.002
+    },
+    {
+      "id": "porter",
+      "name": "Porter",
+      "faction": null,
+      "worksIn": [],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 40,
+      "_note": "Assigned to haulage rather than a building. The invisible tax on bad placement."
+    },
+    {
+      "id": "pump-tech",
+      "name": "Pump technician",
+      "faction": "engineering",
+      "worksIn": ["deep-pump", "purifier", "reclamation-plant"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 300
+    },
+    {
+      "id": "air-tech",
+      "name": "Air technician",
+      "faction": "engineering",
+      "worksIn": ["scrubber-bank", "oxygen-garden", "duct-fan"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 300
+    },
+    {
+      "id": "medic",
+      "name": "Medic",
+      "faction": null,
+      "worksIn": ["clinic"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 500
+    },
+    {
+      "id": "teacher",
+      "name": "Teacher",
+      "faction": "archive",
+      "worksIn": ["school"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 200
+    },
+    {
+      "id": "constable",
+      "name": "Constable",
+      "faction": "order",
+      "worksIn": ["security-post", "holding-cells"],
+      "labourPerShift": 1,
+      "producesFocus": 0,
+      "skillRampTicks": 120
+    },
+    {
+      "id": "archivist",
+      "name": "Archivist",
+      "faction": "archive",
+      "worksIn": ["archive"],
+      "labourPerShift": 1,
+      "producesFocus": 1,
+      "skillRampTicks": 400,
+      "_note": "The only standing job that generates Focus. Every archivist is a worker not growing food."
+    },
+    {
+      "id": "investigator",
+      "name": "Investigator",
+      "faction": "archive",
+      "worksIn": ["archive"],
+      "labourPerShift": 0,
+      "producesFocus": 3,
+      "skillRampTicks": 300,
+      "_note": "Pure Focus, zero labour — staff pulled entirely off productive work. This is the mechanical shape of 'uncovering truth competes with keeping the lights on'."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "_note": "Revelation staging — how the Chair chooses to present a Nexus directive to the Board. Doubt is applied PER MEMBER using their credibility profile (board/credibility.json), so the same framing costs different amounts with different people. Doubt drivers per design-document §6: severity of language, consistency with the Chair's established precedent, and frequency.",
+  "framings": [
+    {
+      "id": "faithful-proclamation",
+      "name": "Faithful proclamation",
+      "description": "Read near-verbatim as sacred instruction.",
+      "presidiumFavour": 3,
+      "doubtBase": 3,
+      "complianceFidelity": 1.0,
+      "effects": [
+        { "op": "meter.add", "target": "legitimacy", "value": 2 }
+      ],
+      "_note": "Full favour and full effect. The doctrinal members barely blink; Engineering counts the days since the last one."
+    },
+    {
+      "id": "reinterpreted-teaching",
+      "name": "Reinterpreted teaching",
+      "description": "Softened to fit what the Board already expects to hear.",
+      "presidiumFavour": 1,
+      "doubtBase": 2,
+      "complianceFidelity": 0.6,
+      "effects": [],
+      "_note": "Partial favour, partial effect. Dangerous specifically in front of the Archive rep, who knows the texts better than the Chair does."
+    },
+    {
+      "id": "buried-footnote",
+      "name": "Buried footnote",
+      "description": "Slipped in as a minor technical clause nobody reads twice.",
+      "presidiumFavour": 0,
+      "doubtBase": 1,
+      "complianceFidelity": 0.3,
+      "consumes": [{ "id": "paper", "qty": 1 }],
+      "effects": [],
+      "_note": "Nearly free on doubt for most members and actively suspicious to Order, whose religion is procedure. Costs paper, because a footnote has to be written down."
+    },
+    {
+      "id": "withhold",
+      "name": "Withhold",
+      "description": "Not brought to the Board at all.",
+      "presidiumFavour": -2,
+      "doubtBase": 0,
+      "complianceFidelity": 0.0,
+      "effects": [
+        { "op": "flag.set", "target": "withheld-a-directive" }
+      ],
+      "auditRisk": 0.15,
+      "_note": "No doubt and no compliance. The risk is not the Board — it is the audit. auditRisk is the per-directive chance the Presidium notices, and noticing is what starts the road to the takeover."
+    }
+  ],
+
+  "doubtModifiers": {
+    "_note": "Applied on top of the per-member doubtGain. Consistency is the interesting one: a harsh revelation after a lenient record reads as suspicious, because the text has not changed in decades — so why does its meaning keep shifting to match convenience?",
+    "severityMultiplier": 1.4,
+    "inconsistencyWithPrecedent": 6,
+    "frequencyWindowTicks": 5400,
+    "frequencyPenaltyPerExtraRevelation": 4,
+    "_frequencyNote": "One proclamation a year feels sacred; one a month feels well-timed."
+  }
+}

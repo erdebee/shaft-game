@@ -1,0 +1,52 @@
+{
+  "_layer": "shaft",
+  "_note": "The baseline Shaft — the player's home in Chapters 1 and 2. Other profiles express their character as a delta over this one, which is what the glossary calls a Shaft profile.",
+  "id": "default",
+  "name": "The Shaft",
+  "facilityNumber": 12,
+
+  "tunables": {
+    "structure": {
+      "levels": 42
+    },
+    "power": {
+      "baseGeneration": 1200
+    },
+    "water": {
+      "groundwaterIntakePerTick": 90
+    }
+  },
+
+  "layout": {
+    "_note": "Vertical arrangement. deepestHabitedLevel gates where population may live; digFaceLevel is where extraction currently sits.",
+    "surfaceLevel": 1,
+    "deepestHabitedLevel": 34,
+    "digFaceLevel": 40,
+    "reclamationLevel": 42,
+    "generatorLevel": 38,
+    "apocryphaLevel": 3,
+    "hiddenPassageLevel": 41
+  },
+
+  "startingStocks": {
+    "_note": "What the settlement has in hand at tick zero. Structure rather than a tunable, like layout and veins, because it is a map of resource ids and not a scalar the schema can range-check. Read by core/gameState.js — and being in data rather than boot code is what lets a run replay from its command log alone.",
+    "food": 400,
+    "coal": 200,
+    "iron-ore": 120,
+    "limestone": 80,
+    "scrap": 60,
+    "wood": 40,
+    "basic-parts": 30,
+    "activated-carbon": 20,
+    "scrubber-catalyst": 40
+  },
+
+  "veins": [
+    { "id": "iron-ore", "abundance": 1.0 },
+    { "id": "copper-ore", "abundance": 0.8 },
+    { "id": "coal", "abundance": 0.9 },
+    { "id": "limestone", "abundance": 1.0 },
+    { "id": "silica-sand", "abundance": 0.7 },
+    { "id": "gold-ore", "abundance": 0.25 }
+  ]
+}

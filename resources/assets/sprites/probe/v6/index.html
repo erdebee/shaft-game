@@ -1,0 +1,71 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Eastward palettes v6</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink); font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--faint); margin:0 0 24px; font-size:11px; max-width:90ch; }
+  .zoom { margin-bottom:20px; color:var(--dim); font-size:11px; }
+  .zoom button { font:inherit; background:#12141d; color:var(--ink); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  .zoom button.on { color:var(--amber); border-color:var(--amber); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap:28px; }
+  .card { border-top:1px solid var(--edge); padding-top:10px; }
+  .card h2 { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  .imgs { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .imgs img { image-rendering:pixelated; display:block; }
+  .big { width:calc(192px * var(--z, 3)); max-width:100%; }
+  .pal { height:10px; image-rendering:pixelated; margin:8px 0 4px; }
+  .meta { color:var(--faint); font-size:10px; }
+  .note { color:var(--dim); font-size:11px; margin:6px 0 0; max-width:72ch; }
+  .flag { color:#b46741; }
+</style>
+
+<h1>Eastward palettes v6 &mdash; main-generator</h1>
+<p class="sub">The v5 Eastward prompt, knobs and <b>seed 12009</b> held constant, so the composition stays put and only the palette changes.
+Renders 01&ndash;05 vary the <b>colour count</b> (8 / 12 / 16 / 24 / 32) on one teal-and-terracotta scheme; renders 06&ndash;10 are all <b>16 colours</b> with different hue schemes.
+00 is the v5 original for reference. Palettes are in <code>palettes/make.py</code>.</p>
+
+<div class="zoom">Zoom: <button data-z="2">2&times;</button> <button data-z="3" class="on">3&times;</button> <button data-z="4">4&times;</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const V = [
+  ['00-v5-eastward','v5 original','14 colours · reference',
+   'The render you picked. Its palette is the starting point for this round.'],
+  ['01-count-8','8 colours','teal / terracotta / 5 neutrals',
+   'The flattest and most graphic. With few shades, the model fills gaps with speckle, which is most visible on the cabinet. The lamp glow becomes a hard orange disc.'],
+  ['02-count-12','12 colours','neutral ramp 7 · teal 3 · warm 2',
+   'Holds together well. The warm door and cabinet stand out clearly, but there is still some speckle on the warm surfaces.'],
+  ['03-count-16','16 colours','neutral ramp 9 · teal 4 · warm 3',
+   'Probably the best balance: clean teal machine, readable brick, the glow now in two steps. Same count as the current v3 contract.'],
+  ['04-count-24','24 colours','+ violet shadow, extra terracotta and amber steps',
+   'Smoother glow falloff and a cool violet shadow behind the machine. More depth, but it starts to drift away from “flat”.'],
+  ['05-count-32','32 colours','longer ramps everywhere + olive',
+   'Soft, almost painterly glow halos. Richest image, but the extra shades bring back gradients the spec bans. Diminishing returns past 24.'],
+  ['06-warm-dusk','Warm dusk · 16','terracotta-heavy, a little teal',
+   'The wall came back as teal panelling instead of brick, so it is the cleanest wall of the round. Warm, strong contrast between the teal machine and the orange lamp.'],
+  ['07-cool-night','Cool night · 16','teal/slate-dominant, amber lamp only',
+   'Cold teal panelled wall with one warm pool of light. The sharpest light/dark read, and the closest to the “amber means running” rule.'],
+  ['08-moss-brass','Moss & brass · 16','olive greens + brass',
+   'Military-olive. <span class="flag">Lowest contrast: the engine sinks into the wall.</span>'],
+  ['09-deep-rust','Deep rust · 16','cold greys + rust + one amber',
+   'The grimmest version, with desaturated grey steel and rust accents. A candidate for the deep band specifically.'],
+  ['10-faded-pastel','Faded pastel · 16','light washed-out ramp',
+   'Hazy and nostalgic. <span class="flag">Muddy: the machine loses its edges and the room reads as fog.</span>'],
+];
+const grid = document.getElementById('grid');
+for (const [f, t, meta, note] of V) {
+  grid.insertAdjacentHTML('beforeend', `<div class="card">
+    <h2>${f.slice(0,2)} · ${t}</h2>
+    <div class="imgs"><img class="big" src="${f}.png" alt="${t}"><img src="${f}.png" alt="${t} at 1×" width="192" height="96"></div>
+    <img class="pal" src="palettes/${f}.png" alt="">
+    <div class="meta">${meta}</div>
+    <p class="note">${note}</p></div>`);
+}
+document.querySelectorAll('.zoom button').forEach(b => b.onclick = () => {
+  document.documentElement.style.setProperty('--z', b.dataset.z);
+  document.querySelectorAll('.zoom button').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>

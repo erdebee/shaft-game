@@ -1,0 +1,56 @@
+{
+  "_note": "Unamendable doctrine predating the settlement. Bounds what the Accord may say. The Nexus rarely authors new orders — it points to which dormant chapter of the Mandate now applies, which is why the Chair assumes it is a machine reading from a book. Chapters are numbered because the Nexus cites them by chapter and verse.",
+  "clauses": [
+    {
+      "id": "cm-01",
+      "chapter": 1,
+      "verse": 4,
+      "title": "",
+      "text": "",
+      "forbids": ["archive-access:unrestricted"],
+      "dormant": false,
+      "_note": "Always active. The reason the archive-access article has a ceiling the player cannot see the reason for."
+    },
+    {
+      "id": "cm-02",
+      "chapter": 2,
+      "verse": 11,
+      "title": "",
+      "text": "",
+      "forbids": ["population:unbounded-growth"],
+      "dormant": false
+    },
+    {
+      "id": "cm-03",
+      "chapter": 4,
+      "verse": 2,
+      "title": "",
+      "text": "",
+      "forbids": ["surface:contact", "surface:egress"],
+      "dormant": false,
+      "_note": "Reads as doctrinal caution about a poisoned world. Is actually the Presidium making sure no Shaft ever walks out and finds the others. The abandoned Shaft in Chapter 3 is what happens when a Shaft breaks this one."
+    },
+    {
+      "id": "cm-07",
+      "chapter": 7,
+      "verse": 1,
+      "title": "",
+      "text": "",
+      "forbids": [],
+      "requires": ["order:emergency-powers"],
+      "dormant": true,
+      "activatedBy": "nexus-directive",
+      "_note": "Dormant until the Nexus cites it. A chapter of scripture that has sat unread for generations and then becomes binding on a Tuesday is exactly the shape of the Chapter 2 pressure: the text has not changed, so why does its meaning keep arriving when it is needed?"
+    },
+    {
+      "id": "cm-12",
+      "chapter": 12,
+      "verse": 6,
+      "title": "",
+      "text": "",
+      "forbids": ["provision:audit-of-founder-stores"],
+      "dormant": false,
+      "_note": "Pairs with the fc-founder-stores-unaudited clause. Belt and braces: the Presidium wrote the exemption into both the local law and the doctrine above it."
+    }
+  ]
+}

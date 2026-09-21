@@ -1,0 +1,27 @@
+{
+  "_layer": "chapter",
+  "_note": "Chapter 1 — the Mayor. Tuned for onboarding: shortfalls are legible and recoverable, political pressure is light, and the catalyst thread is seeded but never explained.",
+
+  "tunables": {
+    "narrative": {
+      "catalystMysteryEnabled": true,
+      "dilemmaBaseIntervalTicks": 500
+    },
+    "population": {
+      "unrestThreshold": 20
+    },
+    "governance": {
+      "authorityRegenPerWindow": 10
+    },
+    "air": {
+      "qualityCriticalThreshold": 25
+    }
+  },
+
+  "patch": {
+    "_note": "Catalog entities patched by id for this chapter only. Never redefines a whole entity — only the fields that differ from base.",
+    "meters": {
+      "board-doubt": { "enabled": false }
+    }
+  }
+}

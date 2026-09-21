@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Monumental clutter v8</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink); font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--faint); margin:0 0 24px; font-size:11px; max-width:90ch; }
+  .zoom { margin-bottom:20px; color:var(--dim); font-size:11px; }
+  .zoom button { font:inherit; background:#12141d; color:var(--ink); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  .zoom button.on { color:var(--amber); border-color:var(--amber); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap:28px; }
+  .card { border-top:1px solid var(--edge); padding-top:10px; }
+  .card h2 { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  .imgs { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .imgs img { image-rendering:pixelated; display:block; }
+  .big { width:calc(192px * var(--z, 3)); max-width:100%; }
+  .pal { height:10px; image-rendering:pixelated; margin:8px 0 4px; }
+  .meta { color:var(--faint); font-size:10px; }
+  .note { color:var(--dim); font-size:11px; margin:6px 0 0; max-width:72ch; }
+  .flag { color:#b46741; }
+</style>
+
+<h1>Monumental + clutter v8 &mdash; main-generator</h1>
+<p class="sub">v7 #04 (lived-in clutter) combined with v7 #06 (monumental engine, tiny worker). Eastward style, palette v6/03 (16 colours),
+<b>lamps switched off</b>, so the base sprite carries no glow and the light can live in the separate lit layer the spec calls for.
+Six seeds, then clean-up experiments on the most side-on one (e).</p>
+<img class="pal" src="palette-03-count-16.png" alt="palette" style="height:12px;margin-bottom:16px">
+
+<div class="zoom">Zoom: <button data-z="2">2&times;</button> <button data-z="3" class="on">3&times;</button> <button data-z="4">4&times;</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const V = [
+  ['a-seed13006','a · seed 13006','raw',
+   'A big engine with drums and cans on both sides. <span class="flag">The side walls slant and there is a floor strip in perspective.</span>'],
+  ['b-seed13004','b · seed 13004','raw',
+   'A grey engine against a curved teal wall, fairly side-on. <span class="flag">The wall is the most speckled of the six.</span>'],
+  ['c-seed14001','c · seed 14001','raw',
+   'The cleanest surfaces of the six. <span class="flag">A large visible floor plane and angled side walls: the view is looking into a room.</span>'],
+  ['d-seed14002','d · seed 14002','raw',
+   'The richest clutter. <span class="flag">A perspective ceiling and walls, and a window, which the spec bans.</span>'],
+  ['e-seed14003','e · seed 14003','raw · the most side-on',
+   'Symmetrical and side-on. A huge horizontal tank engine with vertical stacks, clutter on both sides, a ~10px worker at its base, a flat floor band, and wall plates that face the viewer. Only a slight bevel at the corners, which the spec allows.'],
+  ['f-seed14004','f · seed 14004','raw',
+   'Dramatic dark back wall and a big flywheel. <span class="flag">Floor tiles recede, and the worker is almost lost.</span>'],
+  ['e-seed14003-clean','e · PixelLab clean-up','correct_pixelart 0.2, snapped back to palette',
+   'Isolated pixels 8.5% → 7.4%. Barely visible. The tool also returned 8,925 colours, so it has to be snapped back onto the palette.'],
+  ['e-seed14003-flat400','e · flat-shading redraw, light','pixflux img2img, keep 400',
+   'Almost identical to the raw render.'],
+  ['e-seed14003-flat250','e · flat-shading redraw, strong','pixflux img2img, keep 250',
+   'The flattest version of e: cleaner banding on the tank and fewer highlight specks, with the composition kept. The notices on the wall changed. The best candidate so far.'],
+];
+const grid = document.getElementById('grid');
+for (const [f, t, meta, note] of V) {
+  grid.insertAdjacentHTML('beforeend', `<div class="card">
+    <h2>${f.slice(0,2)} · ${t}</h2>
+    <div class="imgs"><img class="big" src="${f}.png" alt="${t}"><img src="${f}.png" alt="${t} at 1×" width="192" height="96"></div>
+    
+    <div class="meta">${meta}</div>
+    <p class="note">${note}</p></div>`);
+}
+document.querySelectorAll('.zoom button').forEach(b => b.onclick = () => {
+  document.documentElement.style.setProperty('--z', b.dataset.z);
+  document.querySelectorAll('.zoom button').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>

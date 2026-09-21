@@ -1,0 +1,72 @@
+{
+  "_note": "Clauses buried in the Accord's base text at founding, surfaced by spending Focus to inspect it. Most favour the Presidium in ways nobody currently alive remembers. Each can be EXPOSED publicly (large Trust swing, and it becomes permanent public knowledge) or HELD as leverage. Holding one is a Chapter 2 bargaining chip; exposing one is a Chapter 1 act of honesty with a price.",
+  "clauses": [
+    {
+      "id": "fc-founder-stores-unaudited",
+      "article": "external-provision",
+      "focusCost": 24,
+      "text": "",
+      "favours": "presidium",
+      "chapterFound": 1,
+      "onExpose": [
+        { "op": "meter.add", "target": "trust", "value": 14 },
+        { "op": "meter.add", "target": "stability", "value": -8 },
+        { "op": "flag.set", "target": "catalyst-questioned-publicly" }
+      ],
+      "onHold": [
+        { "op": "flag.set", "target": "leverage-founder-stores" }
+      ],
+      "_note": "The keystone clause. Exempting 'founder-era stores' from audit is why nobody has ever asked where the scrubber catalyst comes from. Exposing it in Chapter 1 makes the Chapter 2 demonstration land harder, because the player already said out loud that something was wrong."
+    },
+    {
+      "id": "fc-board-appoints-mayor",
+      "article": "succession",
+      "focusCost": 14,
+      "text": "",
+      "favours": "board",
+      "chapterFound": 1,
+      "onExpose": [
+        { "op": "meter.add", "target": "trust", "value": 8 },
+        { "op": "meter.add", "target": "legitimacy", "value": -10 },
+        { "op": "faction.satisfaction", "target": "order", "value": -5 }
+      ],
+      "onHold": [
+        { "op": "flag.set", "target": "leverage-succession" }
+      ],
+      "_note": "The Board may install an interim Mayor without an election. Exposing it as the Mayor undermines the player's own legitimacy — an honest act that costs them personally, which is the sharpest version of this mechanic."
+    },
+    {
+      "id": "fc-archive-rear-chamber",
+      "article": "archive-access",
+      "focusCost": 18,
+      "text": "",
+      "favours": "presidium",
+      "chapterFound": 1,
+      "onExpose": [
+        { "op": "meter.add", "target": "trust", "value": 6 },
+        { "op": "doubt.add", "target": "all", "value": 8 },
+        { "op": "flag.set", "target": "apocrypha-publicly-known" }
+      ],
+      "onHold": [
+        { "op": "flag.set", "target": "leverage-rear-chamber" }
+      ],
+      "_note": "Reserves the archive's rear chamber to the Chair alone. As the Mayor this reads as a curiosity; on a Chapter 2 replay it reads as the Presidium writing itself a private room at founding."
+    },
+    {
+      "id": "fc-integrity-override",
+      "article": "power-priority",
+      "focusCost": 12,
+      "text": "",
+      "favours": "presidium",
+      "chapterFound": 2,
+      "onExpose": [
+        { "op": "meter.add", "target": "trust", "value": 4 },
+        { "op": "meter.add", "target": "stability", "value": -5 }
+      ],
+      "onHold": [
+        { "op": "flag.set", "target": "leverage-integrity-override" }
+      ],
+      "_note": "An unexplained standing power allocation with no named recipient. It is the draw the Chapter 1 investigation notices and cannot account for — the Nexus, drawing its own power."
+    }
+  ]
+}

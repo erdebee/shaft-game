@@ -1,0 +1,102 @@
+{
+  "_note": "Chapter 2 beats. The finale is a five-step sequence (design-document §6) delivered through this system rather than a bespoke mechanic. Steps gate on Apocrypha progress rather than ticks, so a player who never studies the Apocrypha reaches the takeover without ever attempting severance — and the Presidium takes over anyway.",
+  "beats": [
+    {
+      "id": "ch2-open-perform-shock",
+      "atTick": 0,
+      "armedBy": { "pred": "flag.set", "target": "mayor-killed" },
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "capability.enable", "target": "revelation-staging" },
+        { "op": "flag.set", "target": "ch2-started" }
+      ],
+      "_note": "Walk into the Board meeting where the death is announced and perform shock convincingly for people who have no idea. A natural tutorial for revelation staging before the Nexus has sent a single directive — the player learns to lie about something they did, which is the whole chapter in one scene."
+    },
+    {
+      "id": "ch2-installed-as-mayor",
+      "atTick": 60,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "flag.set", "target": "holds-three-roles" },
+        { "op": "meter.add", "target": "legitimacy", "value": -6 }
+      ],
+      "_note": "The Board installs the Chair as interim Mayor, using the succession clause written at founding. Public Mayor, Chair of the Board, and the Nexus's extended arm, all at once."
+    },
+    {
+      "id": "ch2-reading-between-lines",
+      "atTick": null,
+      "armedBy": { "pred": "flag.set", "target": "nexus-is-traceable" },
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "capability.enable", "target": "severance-planning" }],
+      "_note": "Finale step 1. Gated behind Apocrypha investigation progress — the Chair theorises the Nexus can be traced, jammed or seized."
+    },
+    {
+      "id": "ch2-machine-to-human",
+      "atTick": null,
+      "armedBy": { "pred": "directive.fired", "target": "dir-05" },
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "flag.set", "target": "knows-handler-exists" }],
+      "_note": "Finale step 2. dir-05 breaks pattern and someone is on the other end — a handler assigned to this Shaft, themselves a node in something larger. Characterisation is an open thread (narrative-spine §Open)."
+    },
+    {
+      "id": "ch2-build-coalition",
+      "atTick": null,
+      "armedBy": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "flag.set", "target": "knows-handler-exists" },
+          { "pred": "capability.enabled", "target": "severance-planning" }
+        ]
+      },
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "capability.enable", "target": "coalition-recruitment" }],
+      "_note": "Finale step 3. The Chair decides which board members to bring into confidence — saying aloud what they have hidden all chapter, to people who could report them. Recruiting the engineering rep grants technical muscle or ends the attempt on the spot; see members.json coalitionRisk."
+    },
+    {
+      "id": "ch2-demonstration",
+      "atTick": null,
+      "armedBy": { "pred": "flag.set", "target": "severance-attempted" },
+      "delayTicks": 120,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "supply.cut", "target": "scrubber-catalyst" },
+        { "op": "flag.set", "target": "myth-broken" }
+      ],
+      "_note": "Finale step 4. The Presidium does not negotiate — it demonstrates. The clean water and scrubbed air the Shaft believed it produced have been supplied from outside all along. Fires the catalyst-interruption dilemma. Pays off a detail the player has been staring at for twenty hours."
+    },
+    {
+      "id": "ch2-takeover",
+      "atTick": null,
+      "armedBy": { "pred": "flag.set", "target": "myth-broken" },
+      "delayTicks": 600,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "flag.set", "target": "presidium-entered" },
+        { "op": "board.revealMole", "target": "lowest-doubt" },
+        { "op": "flag.set", "target": "chair-eliminated" }
+      ],
+      "_note": "Finale step 5. The Presidium enters physically through the hidden passage foreshadowed in doc-lower-schematic. Aftermath: the population never learns, the Board survives as coerced insiders, the Chair is eliminated, and the mole is installed as the new Mayor and Chair. board.revealMole targets lowest-doubt — the member who seemed safest."
+    },
+    {
+      "id": "ch2-takeover-fallback",
+      "atTick": 7200,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "flag.set", "target": "presidium-entered" },
+        { "op": "board.revealMole", "target": "lowest-doubt" },
+        { "op": "flag.set", "target": "chair-eliminated" }
+      ],
+      "_note": "A player who never attempts severance still reaches the ending. Judged unreliable for a different reason, or simply no longer needed — the takeover was never contingent on the Chair's defiance."
+    }
+  ]
+}

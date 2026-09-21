@@ -1,0 +1,64 @@
+{
+  "_note": "Air zone. Quality is tracked per level, and scrubbers serve a radius — so coverage is a placement puzzle, not a total. The scrubber's catalyst line is the Chapter 2 lever; see resources/components.json.",
+  "buildings": [
+    {
+      "id": "scrubber-bank",
+      "name": "Scrubber bank",
+      "zone": "air",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "life-support",
+      "powerDraw": 85,
+      "staffing": 2,
+      "wearPerTick": 0.0024,
+      "consumes": [
+        { "id": "activated-carbon", "qty": 2 },
+        { "id": "scrubber-catalyst", "qty": 1 }
+      ],
+      "produces": [],
+      "serviceRadiusLevels": 3,
+      "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "electrical-components", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
+      "effects": [{ "op": "flow.scrub", "target": "air-quality", "value": 40 }],
+      "_note": "The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
+    },
+    {
+      "id": "oxygen-garden",
+      "name": "Oxygen garden",
+      "zone": "air",
+      "slots": 2,
+      "levelConstraint": "shallow",
+      "priorityClass": "life-support",
+      "powerDraw": 50,
+      "staffing": 2,
+      "wearPerTick": 0.0008,
+      "consumes": [{ "id": "water", "qty": 4 }],
+      "produces": [],
+      "serviceRadiusLevels": 2,
+      "repairCost": [{ "id": "glass", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "flow.scrub", "target": "air-quality", "value": 18 },
+        { "op": "meter.add", "target": "morale", "value": 2 }
+      ],
+      "_note": "Weaker than a scrubber and needs no catalyst. The self-sufficient option, which is thematically loaded once the player learns what the scrubbers actually depend on."
+    },
+    {
+      "id": "duct-fan",
+      "name": "Duct fan",
+      "zone": "air",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "life-support",
+      "powerDraw": 20,
+      "staffing": 0,
+      "wearPerTick": 0.0016,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "electrical-components", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
+      "effects": [{ "op": "network.boost", "target": "duct-network", "value": 0.3 }],
+      "_note": "Raises migration between adjacent levels. Fixes stale pockets without adding scrubbing capacity — it moves the problem rather than solving it."
+    }
+  ]
+}

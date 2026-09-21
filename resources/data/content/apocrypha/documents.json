@@ -1,0 +1,57 @@
+{
+  "_note": "Restricted archive contents. clearance gates who may read; revealsFlags fire narrative state on access. focusCost is what studying the document costs — the Apocrypha is not a reward for reaching Chapter 2, it is a second economy the player spends into. Progress here gates the severance attempt.",
+  "documents": [
+    {
+      "id": "doc-founding-inventory",
+      "title": "",
+      "clearance": "chair",
+      "focusCost": 8,
+      "body": "",
+      "revealsFlags": ["knows-founder-stores-were-shipped"],
+      "chapter": 2,
+      "_note": "A founding-era inventory in which the catalyst is a line item with a delivery date, not a stockpile. The quiet one — no revelation, just an invoice."
+    },
+    {
+      "id": "doc-chair-succession-log",
+      "title": "",
+      "clearance": "chair",
+      "focusCost": 10,
+      "body": "",
+      "revealsFlags": ["knows-every-chair-knew"],
+      "chapter": 2,
+      "_note": "Every Chair before this one, and a mark against each name in the same hand. The player's predecessor kept the log too. Nobody in this chain was ever in charge either."
+    },
+    {
+      "id": "doc-lower-schematic",
+      "title": "",
+      "clearance": "chair",
+      "focusCost": 12,
+      "body": "",
+      "revealsFlags": ["noticed-hidden-passage"],
+      "chapter": 2,
+      "_note": "A lower-level schematic with an architectural oddity on it — a corridor that goes somewhere the Shaft does not have. Dismissible on first read, which is the point: it is the foreshadowing for the physical entry in the takeover."
+    },
+    {
+      "id": "doc-nexus-maintenance",
+      "title": "",
+      "clearance": "chair",
+      "focusCost": 16,
+      "body": "",
+      "revealsFlags": ["nexus-is-traceable"],
+      "requires": [{ "pred": "flag.set", "target": "knows-every-chair-knew" }],
+      "chapter": 2,
+      "_note": "Gates step 1 of the finale ('reading between the lines'). Sets nexus-is-traceable, which is what makes the severance attempt selectable at all."
+    },
+    {
+      "id": "doc-facility-register",
+      "title": "",
+      "clearance": "chair",
+      "focusCost": 20,
+      "body": "",
+      "revealsFlags": ["knows-there-are-others"],
+      "requires": [{ "pred": "flag.set", "target": "nexus-is-traceable" }],
+      "chapter": 2,
+      "_note": "A partial list, in the Nexus's vocabulary, of numbered Facilities. The Chair cannot place the shape of it. Optional, late, and the strongest possible setup for the epilogue — the player who finds this reads the Coryphaeus's status board already knowing what they are looking at."
+    }
+  ]
+}

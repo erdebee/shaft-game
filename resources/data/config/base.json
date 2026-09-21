@@ -1,0 +1,124 @@
+{
+  "_layer": "base",
+  "_note": "Default values for every tunable parameter. Never edit this to balance a single chapter — add an override layer instead. Numbers here are first-pass placeholders chosen to be plausible and internally consistent, not balanced; null means genuinely undecided (see CONVENTIONS.md §2).",
+
+  "clock": {
+    "tickMs": 1000,
+    "shiftsPerDay": 3,
+    "ticksPerShift": 20,
+    "ticksPerDecisionWindow": 60,
+    "ticksPerAmendmentWindow": 1800,
+    "autoPauseTriggers": ["first-brownout", "air-quality-critical", "dilemma-raised", "breakdown"]
+  },
+
+  "power": {
+    "baseGeneration": 1200,
+    "transmissionLossPerLevel": 0.004,
+    "junctionCapacity": 400,
+    "batteryBankCapacity": 600,
+    "batteryChargeRatePerTick": 20,
+    "brownoutRecoveryTicks": 5,
+    "defaultPriorityLadder": ["life-support", "water", "medical", "industry", "residential", "amenity"]
+  },
+
+  "air": {
+    "contaminantPerCapitaPerTick": 0.02,
+    "migrationRateBetweenLevels": 0.15,
+    "scrubberVolumePerTick": 40,
+    "scrubberRadiusLevels": 3,
+    "catalystConsumptionPerTick": 0.05,
+    "qualityWarnThreshold": 60,
+    "qualityCriticalThreshold": 30,
+    "sealedLevelDecayPerTick": 0.8
+  },
+
+  "water": {
+    "potablePerCapitaPerTick": 0.05,
+    "reclamationEfficiency": 0.68,
+    "groundwaterIntakePerTick": 90,
+    "pumpPowerPerLevelLifted": 1.4,
+    "cisternCapacityPerLevel": 200
+  },
+
+  "structure": {
+    "integrityStart": 100,
+    "excavationIntegrityCost": 4,
+    "excavationTicks": 240,
+    "excavationCostCurveExponent": 1.35,
+    "collapseRiskThreshold": 35
+  },
+
+  "haulage": {
+    "porterTicksPerLevel": 2,
+    "fatiguePerLevelHauled": 0.01,
+    "shiftChangeCongestionMultiplier": 1.6
+  },
+
+  "buildings": {
+    "conditionStart": 1.0,
+    "degradedEfficiencyMultiplier": 0.7,
+    "breakdownCheckIntervalTicks": 20,
+    "repairLabourPerCondition": 8
+  },
+
+  "mining": {
+    "depletionPerExtractionTick": 0.0008,
+    "depthVentilationPowerPerLevel": 3,
+    "depthWaterIngressPerLevel": 1.2,
+    "recyclerEfficiency": 0.45
+  },
+
+  "population": {
+    "startingHeadcount": 2400,
+    "unrestThreshold": 25,
+    "moraleStart": 60,
+    "foodPerCapitaPerTick": 0.03,
+    "labourPerWorkerPerShift": 1,
+    "birthLotterySlotsPerCycle": 6,
+    "birthLotteryCycleTicks": 1800,
+    "deathAgeMean": 68,
+    "focusPerStaffPulled": 1
+  },
+
+  "factions": {
+    "satisfactionStart": 55,
+    "satisfactionDriftPerTick": -0.002,
+    "sabotageThreshold": 20,
+    "earlyWarningThreshold": 75
+  },
+
+  "governance": {
+    "amendmentVotesRequired": 3,
+    "authorityStart": 20,
+    "authorityRegenPerWindow": 8,
+    "authorityCap": 40,
+    "precedentDecayPerTick": 0.0005,
+    "codificationThreshold": 3,
+    "codificationDiscount": 0.4,
+    "flipFlopPenaltyPerWindowStood": 1.5,
+    "flipFlopPenaltyCap": 25,
+    "contradictionSurchargePerLeaningStep": 0.25,
+    "paperPerAmendment": 2,
+    "hiddenClauseFocusCost": 12
+  },
+
+  "narrative": {
+    "dilemmaBaseIntervalTicks": 400,
+    "dilemmaIntervalJitterTicks": 120,
+    "dilemmaHardPause": true,
+    "promiseTimerGraceTicks": 20,
+    "leadFocusCostDefault": 10,
+    "catalystMysteryEnabled": false,
+    "nexusEnabled": false,
+    "apocryphaUnlocked": false,
+    "revelationStagingEnabled": false
+  },
+
+  "board": {
+    "doubtStart": 0,
+    "doubtDecayPerTick": 0.001,
+    "doubtFreezeThreshold": 45,
+    "doubtInquiryThreshold": 70,
+    "revelationFrequencyMemoryTicks": 5400
+  }
+}

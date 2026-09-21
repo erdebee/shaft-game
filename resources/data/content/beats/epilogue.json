@@ -1,0 +1,24 @@
+{
+  "_note": "The v1 ending: a short non-interactive scene from the Coryphaeus's perspective. The takeover of your Shaft — a Facility number like any other on the board — logged as a routine item among many, with a glimpse of a wider network on a status board. Closure on Chapters 1-2 plus the hook for Chapter 3, requiring none of Chapter 3's systems to exist.",
+  "beats": [
+    {
+      "id": "epilogue-coryphaeus",
+      "atTick": null,
+      "armedBy": { "pred": "flag.set", "target": "presidium-entered" },
+      "delayTicks": 60,
+      "hardPause": true,
+      "interactive": false,
+      "perspective": "coryphaeus",
+      "text": "",
+      "effects": [{ "op": "flag.set", "target": "run-complete" }],
+      "variants": [
+        {
+          "when": { "pred": "flag.set", "target": "knows-there-are-others" },
+          "text": "",
+          "_note": "For the player who found doc-facility-register. They already know what the status board is, so the scene can be colder and shorter — no explanation needed, which is a better ending for having been earned."
+        }
+      ],
+      "_note": "Non-interactive by design. The perspective field exists so the UI can shift to Chapter 3's control-room styling for this one scene without the chapter's systems being built."
+    }
+  ]
+}

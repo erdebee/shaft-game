@@ -1,0 +1,120 @@
+{
+  "_note": "Chapter 2 dilemmas. These carry the extra pressure of a player who now has something to hide: several options trade a physical outcome against board doubt, and 'the honest answer' is often the one that exposes the Chair.",
+  "dilemmas": [
+    {
+      "id": "inquiry-demand",
+      "chapter": 2,
+      "theme": "dissent",
+      "weight": 12,
+      "cooldownTicks": 1800,
+      "hardPause": true,
+      "preconditions": {
+        "pred": "any-of",
+        "of": [
+          { "pred": "doubt.anyAbove", "value": 70 }
+        ]
+      },
+      "prompt": "A formal motion, tabled properly, minuted before you could speak. The Board wishes to see the text. Not a reading of it — the volume itself, on the table, in front of everyone.",
+      "options": [
+        {
+          "id": "produce-a-text",
+          "label": "Produce a text",
+          "detail": "Spend a week in the Apocrypha assembling something that will survive being read aloud.",
+          "leaning": "pragmatic",
+          "requires": [{ "pred": "stock.above", "target": "paper", "value": 8 }],
+          "effects": [
+            { "op": "stock.add", "target": "paper", "value": -8 },
+            { "op": "focus.add", "target": "focus", "value": -18 },
+            { "op": "doubt.add", "target": "all", "value": -22 },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "pragmatic" }
+          ],
+          "_note": "Forging scripture costs paper — the same paper the Accord and the school need. The political layer literally consuming timber, at the worst possible moment."
+        },
+        {
+          "id": "refuse-on-doctrine",
+          "label": "Refuse, on doctrine",
+          "detail": "The rear chamber is closed to all but the Chair. Cite the clause and let it stand.",
+          "leaning": "harsh",
+          "effects": [
+            { "op": "meter.add", "target": "legitimacy", "value": -8 },
+            { "op": "doubt.add", "target": "all", "value": 6 },
+            { "op": "faction.satisfaction", "target": "archive", "value": -8 },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "harsh" }
+          ]
+        },
+        {
+          "id": "replace-the-mover",
+          "label": "Replace the mover",
+          "detail": "The motion needs a mover. Find a reason they cannot serve.",
+          "leaning": "harsh",
+          "requires": [{ "pred": "meter.above", "target": "stability", "value": 45 }],
+          "effects": [
+            { "op": "board.replace", "target": "highest-doubt" },
+            { "op": "meter.add", "target": "stability", "value": -6 },
+            { "op": "doubt.add", "target": "all", "value": 10 },
+            { "op": "flag.set", "target": "purged-a-member" },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "harsh" }
+          ],
+          "_note": "Removes the immediate problem and raises doubt in everyone who is left. The Board has been paying attention for decades; they can all count."
+        }
+      ]
+    },
+    {
+      "id": "catalyst-interruption",
+      "chapter": 2,
+      "theme": "scarcity",
+      "weight": 14,
+      "cooldownTicks": 3600,
+      "hardPause": true,
+      "oneShot": true,
+      "preconditions": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "flag.set", "target": "severance-attempted" },
+          { "pred": "building.exists", "target": "scrubber-bank" }
+        ]
+      },
+      "prompt": "The founder stores did not open this month. No notice, no explanation, and nothing in the Accord that lets you ask. Air Technical wants to know how many weeks of catalyst remain. The honest answer is four.",
+      "options": [
+        {
+          "id": "ration-the-catalyst",
+          "label": "Ration the catalyst",
+          "detail": "Run the scrubbers below spec and seal the worst-served levels.",
+          "leaning": "harsh",
+          "effects": [
+            { "op": "consumption.multiply", "target": "scrubber-catalyst", "value": 0.5 },
+            { "op": "flow.scrub", "target": "air-quality", "value": -20 },
+            { "op": "meter.add", "target": "trust", "value": -8 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "harsh" }
+          ]
+        },
+        {
+          "id": "convert-to-gardens",
+          "label": "Build gardens",
+          "detail": "Convert what capacity you can to oxygen gardens. Slower, weaker, and yours.",
+          "leaning": "pragmatic",
+          "requires": [{ "pred": "stock.above", "target": "basic-parts", "value": 20 }],
+          "effects": [
+            { "op": "stock.add", "target": "basic-parts", "value": -20 },
+            { "op": "meter.add", "target": "productivity", "value": -10 },
+            { "op": "flag.set", "target": "chose-self-sufficiency" },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "pragmatic" }
+          ],
+          "_note": "The only option that answers the demonstration rather than absorbing it. It cannot save the Shaft in time, and choosing it anyway is the closest thing Chapter 2 offers to defiance."
+        },
+        {
+          "id": "comply",
+          "label": "Ask what they want",
+          "detail": "Open the Nexus and offer whatever ends this.",
+          "leaning": "lenient",
+          "effects": [
+            { "op": "flag.set", "target": "capitulated" },
+            { "op": "consumption.multiply", "target": "scrubber-catalyst", "value": 1.0 },
+            { "op": "meter.add", "target": "legitimacy", "value": -12 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "lenient" }
+          ]
+        }
+      ]
+    }
+  ]
+}

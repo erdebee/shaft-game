@@ -1,0 +1,32 @@
+{
+  "_layer": "shaft",
+  "_note": "Failing geothermal. Power-starved; warm levels are scarce, so habitation crowds toward the generator and air quality suffers for it. Chapter 3 material, stubbed now so the resolver has a second real profile to merge against.",
+  "id": "deep-cold",
+  "name": "Facility 07",
+  "facilityNumber": 7,
+
+  "tunables": {
+    "power": {
+      "baseGeneration": 640,
+      "batteryBankCapacity": 900
+    },
+    "air": {
+      "contaminantPerCapitaPerTick": 0.028
+    },
+    "population": {
+      "startingHeadcount": 1600,
+      "moraleStart": 48
+    }
+  },
+
+  "layout": {
+    "levels": 31,
+    "deepestHabitedLevel": 22,
+    "digFaceLevel": 28
+  },
+
+  "veins": [
+    { "id": "copper-ore", "abundance": 0.2, "_note": "Near-exhausted. The grid cannot be repaired locally." },
+    { "id": "coal", "abundance": 0.5 }
+  ]
+}

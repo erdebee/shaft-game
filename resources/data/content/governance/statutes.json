@@ -1,0 +1,81 @@
+{
+  "_note": "Accord ARTICLES — the standing structure of the law, and the baseline text a run starts with. Distinct from law-cards.json, which is the hand of amendments offered during a window. An article is a heading the Accord always has; a law card is a change to what it says.",
+  "articles": [
+    {
+      "id": "power-priority",
+      "title": "Order of Supply",
+      "baselineText": "",
+      "affects": ["power"],
+      "amendable": true,
+      "mandateConstrained": false,
+      "foundingClauses": []
+    },
+    {
+      "id": "archive-access",
+      "title": "Access to the Record",
+      "baselineText": "",
+      "affects": ["apocrypha", "investigation"],
+      "amendable": true,
+      "mandateConstrained": true,
+      "foundingClauses": ["fc-archive-rear-chamber"],
+      "_note": "Bounded by the Core Mandate: cm-01 forbids unrestricted archive access outright, so amendments here have a ceiling the player cannot see the reason for."
+    },
+    {
+      "id": "rationing",
+      "title": "Allocation of Stores",
+      "baselineText": "",
+      "affects": ["food", "water"],
+      "amendable": true,
+      "mandateConstrained": false,
+      "foundingClauses": []
+    },
+    {
+      "id": "assembly",
+      "title": "Right of Gathering",
+      "baselineText": "",
+      "affects": ["stability", "freedom", "assembly-risk"],
+      "amendable": true,
+      "mandateConstrained": false,
+      "foundingClauses": []
+    },
+    {
+      "id": "succession",
+      "title": "Succession and Appointment",
+      "baselineText": "",
+      "affects": ["board", "mayor"],
+      "amendable": true,
+      "mandateConstrained": true,
+      "foundingClauses": ["fc-board-appoints-mayor"],
+      "_note": "Contains the clause that lets the Board install an interim Mayor without an election — the legal mechanism Chapter 2 opens with. Written at founding, and nobody currently alive remembers why."
+    },
+    {
+      "id": "fertility",
+      "title": "Continuance of the Shaft",
+      "baselineText": "",
+      "affects": ["population"],
+      "amendable": true,
+      "mandateConstrained": true,
+      "foundingClauses": []
+    },
+    {
+      "id": "labour-obligation",
+      "title": "Obligation of Work",
+      "baselineText": "",
+      "affects": ["labour", "productivity"],
+      "amendable": true,
+      "mandateConstrained": false,
+      "foundingClauses": []
+    },
+    {
+      "id": "external-provision",
+      "title": "Provision of Founder Stores",
+      "baselineText": "",
+      "affects": ["scrubber-catalyst"],
+      "amendable": false,
+      "mandateConstrained": true,
+      "foundingClauses": ["fc-founder-stores-unaudited"],
+      "foundFocusCost": 24,
+      "_note": "THE seeded article. Unamendable, unremarkable, and it exempts 'founder-era stores' from audit — which is how the Presidium's catalyst shipments have gone unquestioned for generations. Finding this via Focus is the strongest form of the Chapter 1 catalyst thread."
+    }
+  ]
+}

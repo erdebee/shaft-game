@@ -1,0 +1,60 @@
+{
+  "_note": "Power zone. Generator -> trunk cable -> per-level junction -> buildings, with transmission loss scaling by distance. Junctions have capacity caps, so a well-supplied Shaft can still starve a level.",
+  "buildings": [
+    {
+      "id": "main-generator",
+      "name": "Main generator",
+      "zone": "power",
+      "slots": 3,
+      "levelConstraint": "deep",
+      "priorityClass": "life-support",
+      "powerDraw": 0,
+      "staffing": 5,
+      "wearPerTick": 0.0026,
+      "consumes": [{ "id": "fuel", "qty": 2 }],
+      "produces": [{ "id": "power", "qty": 1200 }],
+      "repairCost": [
+        { "id": "basic-parts", "qty": 8 },
+        { "id": "electrical-components", "qty": 4 },
+        { "id": "precision-components", "qty": 1 }
+      ],
+      "conditionThresholds": { "degraded": 0.5, "breakdown": 0.18 },
+      "effects": [],
+      "_note": "Single point of failure by design. The precision component in its repair cost is what makes a generator fault a multi-day crisis rather than an afternoon's work."
+    },
+    {
+      "id": "battery-bank",
+      "name": "Battery bank",
+      "zone": "power",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "life-support",
+      "powerDraw": 0,
+      "staffing": 1,
+      "wearPerTick": 0.0012,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "electrical-components", "qty": 3 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
+      "effects": [{ "op": "buffer.add", "target": "power", "value": 600 }],
+      "_note": "Buffers against generator faults. Buys minutes, not hours — enough to get the priority ladder to do its job in an orderly way."
+    },
+    {
+      "id": "junction",
+      "name": "Junction",
+      "zone": "power",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "life-support",
+      "powerDraw": 0,
+      "staffing": 0,
+      "wearPerTick": 0.001,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "copper-wire", "qty": 1 }, { "id": "electrical-components", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
+      "effects": [{ "op": "network.capacity", "target": "power-grid", "value": 400 }],
+      "_note": "One per level, or that level draws through a neighbour's and eats the extra transmission loss."
+    }
+  ]
+}

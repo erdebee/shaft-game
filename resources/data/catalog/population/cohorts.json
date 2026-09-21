@@ -1,0 +1,71 @@
+{
+  "_note": "Age cohorts, consumption, and the birth lottery that caps growth to what the settlement can sustain. Cohorts consume regardless of whether they work, which is what makes the dependency ratio a real constraint and the lottery a genuinely political instrument.",
+
+  "cohorts": [
+    {
+      "id": "children",
+      "name": "Children",
+      "fromAge": 0,
+      "toAge": 13,
+      "employable": false,
+      "foodMultiplier": 0.6,
+      "waterMultiplier": 0.7,
+      "startingShare": 0.18,
+      "attendsSchool": true
+    },
+    {
+      "id": "apprentices",
+      "name": "Apprentices",
+      "fromAge": 14,
+      "toAge": 17,
+      "employable": true,
+      "labourMultiplier": 0.6,
+      "foodMultiplier": 1.1,
+      "waterMultiplier": 1.0,
+      "startingShare": 0.07,
+      "_note": "Eat more than adults and work less. Putting them to work early is an option with a morale and legitimacy cost."
+    },
+    {
+      "id": "adults",
+      "name": "Adults",
+      "fromAge": 18,
+      "toAge": 59,
+      "employable": true,
+      "labourMultiplier": 1.0,
+      "foodMultiplier": 1.0,
+      "waterMultiplier": 1.0,
+      "startingShare": 0.6
+    },
+    {
+      "id": "elders",
+      "name": "Elders",
+      "fromAge": 60,
+      "toAge": null,
+      "employable": true,
+      "labourMultiplier": 0.5,
+      "foodMultiplier": 0.8,
+      "waterMultiplier": 1.0,
+      "startingShare": 0.15,
+      "_note": "The Advisory Board is drawn from here. A Shaft that treats its elders badly is arguing with its own government."
+    }
+  ],
+
+  "birthLottery": {
+    "_note": "Caps growth to sustainable levels. Reaction depends on perceived FAIRNESS, not on the number of slots — a lottery seen as rigged costs more trust than a stingy one seen as honest.",
+    "slotsPerCycle": 6,
+    "cycleTicks": 1800,
+    "slotsScaleWithFoodSurplus": true,
+    "fairnessMeter": "trust",
+    "reformableBy": "fertility-lottery-reform"
+  },
+
+  "health": {
+    "deathAgeMean": 68,
+    "deathAgeVariance": 9,
+    "illnessBaseRatePerTick": 0.0002,
+    "airQualityIllnessMultiplier": 2.4,
+    "overcrowdingIllnessMultiplier": 1.8,
+    "clinicRecoveryMultiplier": 0.35,
+    "_note": "Air quality is the biggest single health driver, which is what connects the per-level air model to the population model rather than leaving it a standalone gauge."
+  }
+}

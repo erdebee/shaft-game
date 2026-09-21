@@ -1,0 +1,54 @@
+{
+  "_note": "Raw extractables. Grade affects component chain yield. Each mineral maps to a distinct component type — no ore is generically interchangeable with another. Per-Shaft abundance is set in config/profiles/*.json, not here.",
+  "minerals": [
+    {
+      "id": "iron-ore",
+      "name": "Iron ore",
+      "unit": "t",
+      "grades": ["low", "standard", "rich"],
+      "refinesInto": ["steel-billet"],
+      "usedFor": "Structural repair, basic parts, tools, pipes"
+    },
+    {
+      "id": "copper-ore",
+      "name": "Copper ore",
+      "unit": "t",
+      "grades": ["low", "standard"],
+      "refinesInto": ["copper-wire"],
+      "usedFor": "Power grid, elevator motors, lighting"
+    },
+    {
+      "id": "coal",
+      "name": "Coal",
+      "unit": "t",
+      "grades": ["low", "standard"],
+      "refinesInto": ["fuel", "activated-carbon"],
+      "usedFor": "Smelting heat, and scrubber filter media",
+      "_note": "THE key interdependency. Doubling as activated carbon turns air quality from a fixed installation into an ongoing consumable cost, making Air permanently co-dependent on Mechanical."
+    },
+    {
+      "id": "gold-ore",
+      "name": "Gold and silver ore",
+      "unit": "kg",
+      "grades": ["trace", "standard"],
+      "refinesInto": ["precision-contacts"],
+      "usedFor": "Terminals, sensors, medical equipment, the Archive"
+    },
+    {
+      "id": "limestone",
+      "name": "Limestone",
+      "unit": "t",
+      "grades": ["standard"],
+      "refinesInto": ["concrete"],
+      "usedFor": "Excavation shoring, structural integrity repair"
+    },
+    {
+      "id": "silica-sand",
+      "name": "Silica sand",
+      "unit": "t",
+      "grades": ["standard"],
+      "refinesInto": ["glass"],
+      "usedFor": "Grow-lamp elements, cistern lining, optics"
+    }
+  ]
+}

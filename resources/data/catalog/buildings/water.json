@@ -1,0 +1,72 @@
+{
+  "_note": "Water zone. The source is at the bottom and the people are above it, so every drop costs power proportional to lift height — which quietly makes vertical layout an economic decision. Greywater returns downward free by gravity.",
+  "buildings": [
+    {
+      "id": "deep-pump",
+      "name": "Deep pump",
+      "zone": "water",
+      "slots": 2,
+      "levelConstraint": "deep",
+      "priorityClass": "water",
+      "powerDraw": 120,
+      "staffing": 2,
+      "wearPerTick": 0.003,
+      "consumes": [],
+      "produces": [{ "id": "water", "qty": 30 }],
+      "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "electrical-components", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.5, "breakdown": 0.2 },
+      "effects": [],
+      "_note": "Highest wear rate in the game. It runs constantly and it is at the bottom of the Shaft, where the water is."
+    },
+    {
+      "id": "purifier",
+      "name": "Purifier",
+      "zone": "water",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "water",
+      "powerDraw": 45,
+      "staffing": 2,
+      "wearPerTick": 0.002,
+      "consumes": [{ "id": "activated-carbon", "qty": 1 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 3 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
+      "effects": [{ "op": "flow.setQuality", "target": "water", "value": 1.0 }]
+    },
+    {
+      "id": "reclamation-plant",
+      "name": "Reclamation plant",
+      "zone": "water",
+      "slots": 2,
+      "levelConstraint": "deep",
+      "priorityClass": "water",
+      "powerDraw": 60,
+      "staffing": 3,
+      "wearPerTick": 0.0025,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "concrete", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
+      "effects": [{ "op": "reclamation.enable", "target": "water", "value": 1 }],
+      "_note": "Recovers greywater at water.reclamationEfficiency. Without it, every litre must be pumped fresh from the bottom."
+    },
+    {
+      "id": "cistern",
+      "name": "Cistern",
+      "zone": "water",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "water",
+      "powerDraw": 0,
+      "staffing": 0,
+      "wearPerTick": 0.0006,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "concrete", "qty": 2 }, { "id": "glass", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.35 },
+      "effects": [{ "op": "buffer.add", "target": "water", "value": 200 }],
+      "_note": "Per-level buffer against pump failure. Free to run, which makes it the cheapest insurance in the game and the easiest thing to forget to build."
+    }
+  ]
+}

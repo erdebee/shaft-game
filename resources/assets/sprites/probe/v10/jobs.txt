@@ -1,0 +1,7 @@
+engineer 1581f1c2-8ee2-4de4-bbb4-d401b29900e8
+miner 771a33eb-880d-40fc-af95-4da65065f60a
+porter a024a944-2a9d-4c80-bd10-1cf3da22b3f8
+grower 6ddb38a3-e9dd-4a18-b4ec-247acf45b034
+councillor fd293e8f-7620-43d4-9d14-23797b7c201e
+resident 37d14e0d-a4c4-4bf5-a8dc-a77e77869b8c
+child 0f70b19a-118b-494c-8aa8-e67c42a8f2be

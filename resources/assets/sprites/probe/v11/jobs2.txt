@@ -1,0 +1,7 @@
+main-generator-guide50 2bbc02a7-63d7-49b0-a2ba-0d72eaa43465
+main-generator-guide30 55cffdbb-a621-4196-8afc-4ba909a2bf39
+dig-face-guide50 e06a0dae-feef-4b8d-bd64-628c4699423b
+grove-guide50 8239ab97-aaa9-4390-8184-bf6a1897b5cf
+council-chamber-guide50 ea05680b-ce45-4c15-ad0c-8d8f5fc033f3
+house-guide50 a85c9988-acba-46cb-a387-0171165edec4
+house-guide30 d99f99e2-d119-4d5c-a603-124d517fe6d6

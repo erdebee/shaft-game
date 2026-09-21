@@ -1,0 +1,90 @@
+{
+  "_note": "Administration zone. These buildings mostly enable political capability rather than producing anything — which is why they are the first thing a player under resource pressure wants to cut, and why cutting them is a trap. The archive gates the Apocrypha, and therefore the whole Chapter 2 mechanic.",
+  "buildings": [
+    {
+      "id": "council-chamber",
+      "name": "Council chamber",
+      "zone": "administration",
+      "slots": 2,
+      "levelConstraint": "shallow",
+      "priorityClass": "amenity",
+      "powerDraw": 30,
+      "staffing": 2,
+      "wearPerTick": 0.0008,
+      "consumes": [{ "id": "paper", "qty": 0.5 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 1 }, { "id": "wood", "qty": 3 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.35 },
+      "effects": [
+        { "op": "capability.enable", "target": "amendment-window" },
+        { "op": "meter.add", "target": "legitimacy", "value": 4 }
+      ],
+      "_note": "Its repair cost is timber for chamber fittings — the ceremonial spend that buys legitimacy. Let it decay and the Accord cannot be amended at all."
+    },
+    {
+      "id": "archive",
+      "name": "Archive",
+      "zone": "administration",
+      "slots": 2,
+      "levelConstraint": "shallow",
+      "priorityClass": "amenity",
+      "powerDraw": 35,
+      "staffing": 3,
+      "wearPerTick": 0.0006,
+      "consumes": [{ "id": "paper", "qty": 1 }],
+      "produces": [],
+      "repairCost": [
+        { "id": "basic-parts", "qty": 2 },
+        { "id": "precision-components", "qty": 1 }
+      ],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "capability.enable", "target": "investigation" },
+        { "op": "capability.enable", "target": "apocrypha-access" },
+        { "op": "focus.add", "target": "focus", "value": 2 }
+      ],
+      "_note": "Holds the Apocrypha in its restricted rear chamber, and therefore the Nexus. Also where Chapter 1's archive-record inconsistencies are found. Neglecting the archive quietly closes the story down."
+    },
+    {
+      "id": "security-post",
+      "name": "Security post",
+      "zone": "administration",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 25,
+      "staffing": 4,
+      "wearPerTick": 0.0014,
+      "consumes": [],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
+      "effects": [
+        { "op": "meter.add", "target": "stability", "value": 4 },
+        { "op": "meter.add", "target": "freedom", "value": -3 },
+        { "op": "risk.add", "target": "assembly", "value": -3 }
+      ],
+      "_note": "The Order faction's physical footprint. Every one built trades freedom for stability at a fixed rate, which is the whole game in one building."
+    },
+    {
+      "id": "holding-cells",
+      "name": "Holding cells",
+      "zone": "administration",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 20,
+      "staffing": 2,
+      "wearPerTick": 0.001,
+      "consumes": [{ "id": "water", "qty": 1 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "steel-billet", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
+      "effects": [
+        { "op": "capability.enable", "target": "detention-rulings" },
+        { "op": "meter.add", "target": "freedom", "value": -2 }
+      ],
+      "_note": "Unlocks the harsh branch of several dilemmas. Without it, 'make an example of him' is not on the menu — the buildings a player owns shape which rulings they are even offered."
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "_layer": "chapter",
+  "_note": "Chapter 2 — the Chair. Political pressure rises, physical margins tighten, and the Nexus starts issuing directives on the Presidium's schedule.",
+
+  "tunables": {
+    "narrative": {
+      "nexusEnabled": true,
+      "apocryphaUnlocked": true,
+      "revelationStagingEnabled": true,
+      "catalystMysteryEnabled": true,
+      "dilemmaBaseIntervalTicks": 340
+    },
+    "population": {
+      "unrestThreshold": 28
+    },
+    "governance": {
+      "authorityRegenPerWindow": 7,
+      "contradictionSurchargePerLeaningStep": 0.35
+    },
+    "water": {
+      "reclamationEfficiency": 0.62
+    },
+    "mining": {
+      "depletionPerExtractionTick": 0.0011
+    },
+    "board": {
+      "doubtDecayPerTick": 0.0008
+    }
+  },
+
+  "patch": {
+    "meters": {
+      "board-doubt": { "enabled": true }
+    },
+    "buildings": {
+      "_note": "Scrubbers bite harder once the catalyst becomes the Presidium's lever.",
+      "scrubber-bank": { "consumes": [{ "id": "scrubber-catalyst", "qty": 2 }] }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "_note": "Habitation zone. People live in family homes, in five suite tiers from simple to presidential. Each step up houses fewer people per slot, draws more power, water and timber, and buys more morale — the housing choice is a standard-of-living policy expressed in build slots. The common hall raises morale AND assembly risk: a direct hook from the sim layer into the political layer.",
+  "buildings": [
+    {
+      "id": "simple-suite",
+      "name": "Simple suite",
+      "zone": "habitation",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 25,
+      "staffing": 0,
+      "housing": 80,
+      "wearPerTick": 0.0014,
+      "consumes": [{ "id": "water", "qty": 5 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.3 },
+      "effects": [{ "op": "meter.add", "target": "morale", "value": -2 }],
+      "_note": "The bottom rung: families packed into one-room homes. Cheapest housing per slot in the Shaft, and everyone can tell."
+    },
+    {
+      "id": "modest-suite",
+      "name": "Modest suite",
+      "zone": "habitation",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 30,
+      "staffing": 0,
+      "housing": 60,
+      "wearPerTick": 0.0012,
+      "consumes": [{ "id": "water", "qty": 6 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.3 },
+      "effects": [{ "op": "meter.add", "target": "morale", "value": 1 }]
+    },
+    {
+      "id": "superior-suite",
+      "name": "Superior suite",
+      "zone": "habitation",
+      "slots": 3,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 45,
+      "staffing": 0,
+      "housing": 50,
+      "wearPerTick": 0.001,
+      "consumes": [{ "id": "water", "qty": 8 }, { "id": "wood", "qty": 0.2 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "wood", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
+      "effects": [{ "op": "meter.add", "target": "morale", "value": 5 }],
+      "_note": "The first tier that consumes timber for fittings. From here up, housing people well is a resource decision the player has to defend."
+    },
+    {
+      "id": "luxury-suite",
+      "name": "Luxury suite",
+      "zone": "habitation",
+      "slots": 3,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 55,
+      "staffing": 0,
+      "housing": 30,
+      "wearPerTick": 0.0009,
+      "consumes": [{ "id": "water", "qty": 9 }, { "id": "wood", "qty": 0.4 }],
+      "produces": [],
+      "repairCost": [
+        { "id": "basic-parts", "qty": 2 },
+        { "id": "wood", "qty": 1 },
+        { "id": "glass", "qty": 1 }
+      ],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [{ "op": "meter.add", "target": "morale", "value": 7 }]
+    },
+    {
+      "id": "presidential-suite",
+      "name": "Presidential suite",
+      "zone": "habitation",
+      "slots": 4,
+      "levelConstraint": "shallow",
+      "priorityClass": "residential",
+      "powerDraw": 70,
+      "staffing": 0,
+      "housing": 12,
+      "wearPerTick": 0.0008,
+      "consumes": [{ "id": "water", "qty": 10 }, { "id": "wood", "qty": 0.6 }],
+      "produces": [],
+      "repairCost": [
+        { "id": "basic-parts", "qty": 2 },
+        { "id": "wood", "qty": 2 },
+        { "id": "precision-components", "qty": 1 }
+      ],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "meter.add", "target": "morale", "value": 3 },
+        { "op": "meter.add", "target": "trust", "value": -3 },
+        { "op": "risk.add", "target": "assembly", "value": 2 }
+      ],
+      "_note": "Four slots on the most desirable levels for a dozen people. The few who live here are content; everyone else can see the lights on upstairs. Costs trust and feeds assembly risk for as long as it stands."
+    },
+    {
+      "id": "canteen",
+      "name": "Canteen",
+      "zone": "habitation",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "residential",
+      "powerDraw": 30,
+      "staffing": 3,
+      "wearPerTick": 0.0016,
+      "consumes": [{ "id": "water", "qty": 3 }, { "id": "food", "qty": 18 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
+      "effects": [{ "op": "meter.add", "target": "morale", "value": 3 }],
+      "_note": "The canteen is where food is actually consumed, which is what makes it the destination for every food haul. Distance from the hydroponics bay is therefore paid in porter-hours every single day, forever — placement is permanent policy."
+    },
+    {
+      "id": "clinic",
+      "name": "Clinic",
+      "zone": "habitation",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "medical",
+      "powerDraw": 55,
+      "staffing": 4,
+      "wearPerTick": 0.0018,
+      "consumes": [{ "id": "water", "qty": 4 }],
+      "produces": [],
+      "repairCost": [
+        { "id": "basic-parts", "qty": 2 },
+        { "id": "precision-components", "qty": 1 }
+      ],
+      "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
+      "effects": [
+        { "op": "population.healthRate", "target": "all", "value": 0.15 },
+        { "op": "meter.add", "target": "trust", "value": 2 }
+      ],
+      "_note": "Sits at 'medical' on the priority ladder, above industry and below water. Whether the clinic outranks the workshop is a decision the player makes early and feels much later. Its consumable supply chain is still an open design item."
+    },
+    {
+      "id": "school",
+      "name": "School",
+      "zone": "habitation",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "amenity",
+      "powerDraw": 20,
+      "staffing": 3,
+      "wearPerTick": 0.0012,
+      "consumes": [{ "id": "paper", "qty": 0.5 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 1 }, { "id": "wood", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "meter.add", "target": "morale", "value": 2 },
+        { "op": "meter.add", "target": "legitimacy", "value": 2 }
+      ],
+      "_note": "Consumes paper, and so competes with the Accord for the same timber. Educating children and writing law draw on one stock."
+    },
+    {
+      "id": "common-hall",
+      "name": "Common hall",
+      "zone": "habitation",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "amenity",
+      "powerDraw": 25,
+      "staffing": 1,
+      "wearPerTick": 0.0014,
+      "consumes": [{ "id": "wood", "qty": 0.3 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 1 }, { "id": "wood", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "meter.add", "target": "morale", "value": 6 },
+        { "op": "risk.add", "target": "assembly", "value": 4 }
+      ],
+      "_note": "The clearest sim-to-politics hook in the game. People are happier because they can gather, and they can gather because they are together. Sealing it during unrest costs exactly the morale that was holding things steady."
+    }
+  ]
+}

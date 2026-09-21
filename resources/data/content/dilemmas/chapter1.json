@@ -1,0 +1,137 @@
+{
+  "_note": "Chapter 1 dilemmas. Preconditions are evaluated against gameState; effects are applied through the effect applier, which emits on the event bus. Dilemmas hard-pause the simulation. Options bundle a systemic response AND a judgment on the person involved, so they read as coherent stances rather than stat optimisation — keep writing them that way.",
+  "dilemmas": [
+    {
+      "id": "ration-theft",
+      "chapter": 1,
+      "theme": "scarcity",
+      "weight": 10,
+      "cooldownTicks": 2400,
+      "hardPause": true,
+      "preconditions": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "stock.belowDaysOfSupply", "target": "food", "value": 10 },
+          { "pred": "tick.after", "value": 680 }
+        ]
+      },
+      "prompt": "A night-shift guard caught a cultivation hand slipping tins out through the pipe access. Under questioning he didn't deny it. His daughter has had a fever for six days, and he'd already given her his own rations twice.",
+      "variants": [
+        {
+          "when": { "pred": "statute.active", "target": "rationing-quotas" },
+          "prompt": "",
+          "removeOptions": ["cut-rations"],
+          "_note": "With quotas already law, the player's own statute caused the strain. Flavour text acknowledges it and the harsh option is withdrawn — you cannot make an example of a man for a shortage you legislated."
+        }
+      ],
+      "options": [
+        {
+          "id": "double-shifts",
+          "label": "Double the shifts",
+          "detail": "Push cultivation and mechanical to recover the shortfall. No charge brought.",
+          "leaning": "pragmatic",
+          "effects": [
+            { "op": "stock.add", "target": "food", "value": 14 },
+            { "op": "meter.add", "target": "productivity", "value": -6 },
+            { "op": "meter.add", "target": "stability", "value": 3 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "pragmatic" }
+          ]
+        },
+        {
+          "id": "cut-rations",
+          "label": "Cut the rations",
+          "detail": "Tighten quotas settlement-wide and make an example of him.",
+          "leaning": "harsh",
+          "requires": [{ "pred": "building.exists", "target": "holding-cells" }],
+          "effects": [
+            { "op": "stock.add", "target": "food", "value": 18 },
+            { "op": "meter.add", "target": "trust", "value": -10 },
+            { "op": "meter.add", "target": "freedom", "value": -4 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "harsh" }
+          ]
+        },
+        {
+          "id": "give-your-word",
+          "label": "Give your word",
+          "detail": "Pardon him. Promise the shortage ends within the month.",
+          "leaning": "lenient",
+          "effects": [
+            { "op": "meter.add", "target": "trust", "value": 8 },
+            { "op": "precedent.record", "theme": "scarcity", "leaning": "lenient" },
+            {
+              "op": "timer.start",
+              "target": "promise-rations",
+              "ticks": 1800,
+              "condition": { "pred": "stock.aboveDaysOfSupply", "target": "food", "value": 14 },
+              "onMet": [
+                { "op": "meter.add", "target": "trust", "value": 8 },
+                { "op": "flag.set", "target": "keeps-promises" }
+              ],
+              "onExpire": [
+                { "op": "meter.add", "target": "trust", "value": -18 },
+                { "op": "meter.add", "target": "stability", "value": -6 },
+                { "op": "flag.set", "target": "broken-promise" }
+              ]
+            }
+          ],
+          "_note": "The gamble. Kept, it beats every other option; missed, it costs more than 'cut the rations' would have. The timer's condition is what it means to keep the promise — it is checked at expiry, not assumed."
+        }
+      ]
+    },
+    {
+      "id": "unaccounted-draw",
+      "chapter": 1,
+      "theme": "dissent",
+      "weight": 6,
+      "cooldownTicks": 3600,
+      "hardPause": true,
+      "oneShot": true,
+      "preconditions": {
+        "pred": "all-of",
+        "of": [
+          { "pred": "capability.enabled", "target": "investigation" },
+          { "pred": "tick.after", "value": 1200 }
+        ]
+      },
+      "prompt": "The grid ledger does not balance, and it has not balanced for as long as the ledger goes back. Something on the lower levels draws a steady load that matches no building on the register. The junction engineer has noticed you noticing.",
+      "options": [
+        {
+          "id": "assign-focus",
+          "label": "Put someone on it",
+          "detail": "Pull an archivist off the record and have them trace the draw.",
+          "leaning": "pragmatic",
+          "effects": [
+            { "op": "meter.add", "target": "productivity", "value": -3 },
+            { "op": "content.unlock", "target": "lead-power-draw" },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "pragmatic" }
+          ]
+        },
+        {
+          "id": "close-the-ledger",
+          "label": "Close the ledger",
+          "detail": "Record it as founder-era allocation and move on. It has balanced this way for a century.",
+          "leaning": "harsh",
+          "effects": [
+            { "op": "meter.add", "target": "stability", "value": 2 },
+            { "op": "flag.set", "target": "draw-dismissed" },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "harsh" }
+          ],
+          "_note": "Dismissing it does not remove the lead — it makes it cost more Focus later. The player can always come back, and it will always be more expensive than it was."
+        },
+        {
+          "id": "ask-the-board",
+          "label": "Raise it with the Board",
+          "detail": "Put the discrepancy in front of the Advisory Board and watch who speaks.",
+          "leaning": "lenient",
+          "effects": [
+            { "op": "meter.add", "target": "trust", "value": 3 },
+            { "op": "flag.set", "target": "chair-alerted" },
+            { "op": "content.unlock", "target": "lead-power-draw" },
+            { "op": "precedent.record", "theme": "dissent", "leaning": "lenient" }
+          ],
+          "_note": "Sets chair-alerted, which brings the Chapter 1 finale forward. Openness is rewarded with information and punished with a shorter fuse — the Chair now knows the Mayor is looking."
+        }
+      ]
+    }
+  ]
+}

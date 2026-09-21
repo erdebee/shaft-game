@@ -1,0 +1,65 @@
+{
+  "_note": "The themes rulings accumulate against, and the thresholds that turn a pattern into a visible case history and then into offerable statute. Leaning accumulates invisibly at first — the player discovers they have a reputation rather than choosing one.",
+
+  "themes": [
+    {
+      "id": "scarcity",
+      "name": "Scarcity",
+      "concerns": "How shortages are distributed and who absorbs them",
+      "leanings": ["pragmatic", "harsh", "lenient"],
+      "codifiesTo": {
+        "harsh": "rationing-quotas",
+        "pragmatic": "overtime-mandate",
+        "lenient": "petition-system"
+      }
+    },
+    {
+      "id": "dissent",
+      "name": "Dissent",
+      "concerns": "How disagreement, theft, and disorder are answered",
+      "leanings": ["pragmatic", "harsh", "lenient"],
+      "codifiesTo": {
+        "harsh": "mandatory-curfew",
+        "pragmatic": "restricted-zone",
+        "lenient": "public-assembly-rights"
+      }
+    },
+    {
+      "id": "health",
+      "name": "Health",
+      "concerns": "What the Shaft asks of bodies, and what it spends to repair them",
+      "leanings": ["pragmatic", "harsh", "lenient"],
+      "codifiesTo": {
+        "harsh": "overtime-mandate",
+        "pragmatic": "overtime-mandate",
+        "lenient": "fertility-lottery-reform"
+      }
+    }
+  ],
+
+  "thresholds": {
+    "_note": "Values here are the ones design-document §4 leaves as an open thread ('exact numbers'). These are a first pass: 2 consistent rulings to make a leaning visible, 3 to unlock codification.",
+    "visibleAtCount": 2,
+    "codificationAtCount": 3,
+    "codificationDiscount": 0.4,
+    "contradictionSurchargePerStep": 0.25,
+    "decayPerTick": 0.0005
+  },
+
+  "flipFlop": {
+    "_note": "Repeal penalty scaled to how long the law stood. Early experimentation is cheap; reversing entrenched law is risky.",
+    "penaltyPerWindowStood": 1.5,
+    "penaltyCap": 25,
+    "appliesTo": ["stability", "trust"]
+  },
+
+  "promises": {
+    "_note": "Promise timers are a gamble, not a free option. Meeting one makes the Trust gain permanent and sets keeps-promises, which strengthens future soft options. Missing one costs MORE than the harsh option would have, and sets broken-promise, which devalues every future promise.",
+    "graceTicks": 20,
+    "keptFlag": "keeps-promises",
+    "brokenFlag": "broken-promise",
+    "brokenPenaltyMultiplier": 1.6,
+    "softOptionBonusWhenKept": 0.25,
+    "softOptionMalusWhenBroken": 0.5
+  }
+}

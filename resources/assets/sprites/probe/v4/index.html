@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Style round v4</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink); font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--faint); margin:0 0 24px; font-size:11px; max-width:90ch; }
+  .zoom { margin-bottom:20px; color:var(--dim); font-size:11px; }
+  .zoom button { font:inherit; background:#12141d; color:var(--ink); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  .zoom button.on { color:var(--amber); border-color:var(--amber); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap:28px; }
+  .card { border-top:1px solid var(--edge); padding-top:10px; }
+  .card h2 { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  .imgs { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .imgs img { image-rendering:pixelated; display:block; }
+  .big { width:calc(192px * var(--z, 3)); max-width:100%; }
+  .pal { height:10px; image-rendering:pixelated; margin:8px 0 4px; }
+  .meta { color:var(--faint); font-size:10px; }
+  .note { color:var(--dim); font-size:11px; margin:6px 0 0; max-width:72ch; }
+  .flag { color:#b46741; }
+</style>
+
+<h1>Style round v4 &mdash; main-generator &times; 10</h1>
+<p class="sub">Same subject and 192&times;96 canvas for every render; only palette, shading, outline and texture wording change.
+Every prompt pushes for <b>low texture</b>: big flat fills, plain wall plates, no noise, speckle or grain.
+Each is forced to its own hand-authored palette (<code>palettes/make.py</code>). Tool <code>create_image_pixflux</code>, <code>view: side</code>, seeds 11001&ndash;11010.</p>
+
+<div class="zoom">Zoom: <button data-z="2">2&times;</button> <button data-z="3" class="on">3&times;</button> <button data-z="4">4&times;</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const V = [
+  ['01-v3-refined','V3 refined','v3-deep 16 · flat · selective outline · medium detail',
+   'The locked v3-deep palette, unchanged. Only the prompt moved: bigger machine, rust pipe run framing the room, low-texture wording. Cleaner and fuller than current V3.'],
+  ['02-reference','Reference-matched','16 sampled from style-image.png · flat · single-colour outline',
+   'Palette pulled straight from the supplied reference. Pale sage-grey wall, copper pipes, green readout. Brightest and most legible; reads closest to the reference image.'],
+  ['03-sodium-duotone','Sodium duotone','11-step brown→amber ramp · flat',
+   'Whole room in one warm ramp, like old sepia lit by sodium. Very moody and cohesive. <span class="flag">Side walls recede in perspective — would need a re-roll.</span>'],
+  ['04-cold-steel-amber','Cold steel, one warm accent','12 blue-greys + amber + rust · flat',
+   'Cold institutional blue; amber reserved for gauge faces and the worker. Very clean and low-texture. Fits the palette rule that amber = “something is running”.'],
+  ['05-machine-green','Machine-green enamel','15 greens + brass + rust · flat',
+   '1940s machine-shop green paint with brass and rust pipes. Strong period dieselpunk feel. <span class="flag">Floor planks are busier than the rest.</span>'],
+  ['06-bold-cel','Bold outline cel','13 saturated · black outline · low detail · 2 shades',
+   'Mega Man X register: black keylines, base + shadow only. Lowest texture of the outlined set, very readable at 1×, but the most “game-y” and least grim.'],
+  ['07-lineless-muted','Lineless muted','11 desaturated · lineless · low detail',
+   'Flashback / Another World: no outlines, shapes separated only by value. Most minimal and atmospheric; machinery loses some character.'],
+  ['08-dither','Dither shading','9 colours · basic shading · ordered dither',
+   'Super Metroid-ish: tiny palette with dithered transitions. Rich but busier — dithering adds texture back. <span class="flag">Wooden plank floor is off-brief for deep.</span>'],
+  ['09-chiaroscuro','Chiaroscuro','12 near-black + amber ramp · flat',
+   'Castlevania IV: mostly black, machines picked out by hard amber top light. Most dramatic. <span class="flag">Breaks the “no light cones” rule, and repeats the machine three times.</span>'],
+  ['10-rust-teal','Rust & teal','14 teal + rust/orange complementary · flat',
+   'Faded teal enamel machinery against copper-rust pipework. Most colourful and distinct; hue contrast does the separation work instead of value.'],
+];
+const grid = document.getElementById('grid');
+for (const [f, t, meta, note] of V) {
+  grid.insertAdjacentHTML('beforeend', `<div class="card">
+    <h2>${f.slice(0,2)} · ${t}</h2>
+    <div class="imgs"><img class="big" src="${f}.png" alt="${t}"><img src="${f}.png" alt="${t} at 1×" width="192" height="96"></div>
+    <img class="pal" src="palettes/${f}.png" alt="">
+    <div class="meta">${meta}</div>
+    <p class="note">${note}</p></div>`);
+}
+document.querySelectorAll('.zoom button').forEach(b => b.onclick = () => {
+  document.documentElement.style.setProperty('--z', b.dataset.z);
+  document.querySelectorAll('.zoom button').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>

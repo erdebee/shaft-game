@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Style comparison</title>
+<style>
+  :root { --rock:#14100e; --ink:#d9d2c4; --dim:#8d857a; --faint:#5b554d; --edge:#302a26; --amber:#d98f2b; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--rock); color:var(--ink);
+         font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  h2 { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+       margin:32px 0 12px; border-top:1px solid var(--edge); padding-top:10px; }
+  p.sub { color:var(--faint); margin:0 0 20px; font-size:11px; max-width:70ch; }
+  .grid { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+  .card { background:#0d0b0a; border:1px solid var(--edge); padding:12px; }
+  .card img { display:block; image-rendering:pixelated; margin-bottom:10px; }
+  .card .id { color:var(--amber); font-size:12px; letter-spacing:.08em; }
+  .card .knobs { color:var(--dim); font-size:10px; white-space:pre; margin-top:6px; }
+  .card .note { color:var(--faint); font-size:10px; margin-top:6px; max-width:34ch; }
+  .x2 img { width:256px; } .x2 img.wide { width:384px; }
+  .x3 img { width:384px; } .x3 img.wide { width:576px; }
+  .row1 img { width:128px; } .row1 img.wide { width:192px; }
+</style>
+
+<h1>Style comparison &mdash; matching the reference</h1>
+<p class="sub">
+  Same subject (an engine room) generated six ways. All at 2&times; here; the strip at the bottom is 1:1.
+  The reference is a framed room card &mdash; cool steel palette, strong dark outlines, packed wall to wall,
+  figures drawn in for scale.
+</p>
+
+<h2>Variants at 2&times;</h2>
+<div class="grid x2" id="grid"></div>
+
+<h2>At 1:1 &mdash; how they actually ship</h2>
+<div class="grid row1" id="grid1"></div>
+
+<h2>At 3&times; &mdash; pixel structure</h2>
+<div class="grid x3" id="grid3"></div>
+
+<script>
+const V = [
+  { f:'a-cool-flat.png',      id:'A  cool + flat',      knobs:'selective / flat / highly detailed\nno forced palette  seed 3001',
+    note:'Framed card, cool steel. Closest baseline attempt at the reference.' },
+  { f:'b-forced-palette.png', id:'B  our palette',      knobs:'selective / flat / highly detailed\nPALETTE v1 FORCED  seed 3002',
+    note:'Same as A but forced to tokens.css. Tests whether the Shaft palette can carry this style.' },
+  { f:'c-bold-outline.png',   id:'C  bold outline',     knobs:'SINGLE COLOR outline / BASIC shading\nhighly detailed  seed 3003',
+    note:'Heavier keyline, one step more shading. Tests outline weight.' },
+  { f:'d-192x96.png',         id:'D  bigger canvas',    knobs:'selective / flat / highly detailed\n192x96  seed 3004', wide:true,
+    note:'Same recipe at 3 slots. Tests whether the reference density needs more pixels.' },
+  { f:'e-no-frame.png',       id:'E  no frame',         knobs:'selective / flat / highly detailed\ntransparent bg  seed 3005',
+    note:'Contents only, no card frame — the renderer would draw the frame instead.' },
+  { f:'f-low-detail.png',     id:'F  fewer shades',     knobs:'selective / flat / MEDIUM detail\nseed 3006',
+    note:'Detail turned down. Tests how far simplification can go before it stops reading.' },
+];
+
+for (const [gid, cls] of [['grid',''],['grid1',''],['grid3','']]) {
+  const host = document.getElementById(gid);
+  for (const v of V) {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.innerHTML = `<img src="${v.f}" class="${v.wide?'wide':''}">
+      <div class="id">${v.id}</div>
+      <div class="knobs">${v.knobs}</div>` + (gid==='grid' ? `<div class="note">${v.note}</div>` : '');
+    host.appendChild(c);
+  }
+}
+</script>

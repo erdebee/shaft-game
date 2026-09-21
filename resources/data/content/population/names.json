@@ -1,0 +1,14 @@
+{
+  "_note": "Name pools for individually-tracked workers. Drawn on the dedicated 'names' RNG stream — never a simulation stream, so hiring a porter cannot shift the economy's sequence (see src/core/streams.js). Deliberately plain, worn-in and a little archival: these are people whose grandparents were born underground and who have never needed a surname to mean where they came from. Keep additions in that register.",
+  "given": [
+    "Alba", "Bren", "Cass", "Dov", "Edda", "Ferris", "Gale", "Hesper",
+    "Ivo", "Jarl", "Kesse", "Lune", "Mabry", "Nix", "Orla", "Pell",
+    "Quist", "Rask", "Sabel", "Torr", "Umber", "Vesna", "Wren", "Yarrow"
+  ],
+  "family": [
+    "Ashfield", "Bellow", "Cinder", "Dray", "Emberly", "Foulkes", "Grimsby",
+    "Hollow", "Ives", "Jessup", "Kell", "Lathe", "Marrow", "Nendick",
+    "Orrick", "Pike", "Quarles", "Rundle", "Sallow", "Thrale", "Underhill",
+    "Vance", "Wicker", "Yoxall"
+  ]
+}

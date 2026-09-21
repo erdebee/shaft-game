@@ -1,0 +1,71 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Scale and detail v7</title>
+<style>
+  :root { --ink:#b3bbb3; --dim:#7e8787; --faint:#5e6572; --edge:#2f323e; --amber:#c58c5e; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:#010202; color:var(--ink); font:13px/1.55 ui-monospace, Menlo, monospace; }
+  h1 { font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--faint); margin:0 0 24px; font-size:11px; max-width:90ch; }
+  .zoom { margin-bottom:20px; color:var(--dim); font-size:11px; }
+  .zoom button { font:inherit; background:#12141d; color:var(--ink); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  .zoom button.on { color:var(--amber); border-color:var(--amber); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap:28px; }
+  .card { border-top:1px solid var(--edge); padding-top:10px; }
+  .card h2 { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  .imgs { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
+  .imgs img { image-rendering:pixelated; display:block; }
+  .big { width:calc(192px * var(--z, 3)); max-width:100%; }
+  .pal { height:10px; image-rendering:pixelated; margin:8px 0 4px; }
+  .meta { color:var(--faint); font-size:10px; }
+  .note { color:var(--dim); font-size:11px; margin:6px 0 0; max-width:72ch; }
+  .flag { color:#b46741; }
+</style>
+
+<h1>Scale &amp; detail v7 &mdash; main-generator</h1>
+<p class="sub">Eastward style with palette v6/03 (16 colours) locked. Three things vary: <b>level of detail</b> (01&ndash;04), <b>scale and proportion</b> of objects in the room (05&ndash;08),
+and <b>pixel size</b> (09&ndash;10). The small image beside each render is what it looks like at 1&times; in a 192&times;96 slot. 00 is the v6 pick. Seeds 12009 and 13003&ndash;13010.</p>
+
+<img class="pal" src="palette-03-count-16.png" alt="palette" style="height:12px;margin-bottom:16px">
+<div class="zoom">Zoom: <button data-z="2">2&times;</button> <button data-z="3" class="on">3&times;</button> <button data-z="4">4&times;</button></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const V = [
+  ['00-baseline','Baseline (v6 #03)','192×96 · medium detail',
+   'Your pick from the palette round, for comparison.'],
+  ['01-low-detail','Low detail','192×96 · detail: low · same seed',
+   'Very clean and flat, the lowest-texture render so far. <span class="flag">The engine turns into featureless boxes and reads as an electrical cabinet, not a diesel.</span>'],
+  ['02-high-detail','High detail','192×96 · detail: high · same seed',
+   'Dense small parts (valves, gauges, a teal tiled wall) that still read cleanly at 1×. The richest version that still reads as flat 16-bit art.'],
+  ['03-sparse','Sparse composition','192×96 · medium · seed 13003',
+   'Lots of open wall, small machine. Calm, but the lamp glow takes over the empty space. <span class="flag">Slight floor recession.</span>'],
+  ['04-cluttered','Packed clutter','192×96 · medium · seed 13004',
+   'Crates, tools, notices: lived-in and very Eastward. <span class="flag">The generator dropped out entirely, and the floor tiles recede.</span>'],
+  ['05-human-scale','Human scale (large figure)','192×96 · worker ≈ ⅓ room height',
+   'A ~28px worker makes the room feel intimate, but figures would dominate the shaft. <span class="flag">Visible floor plane and side walls, which breaks the side-on view.</span>'],
+  ['06-monumental','Monumental (tiny figure)','192×96 · engine fills the room',
+   'The engine fills floor to ceiling and the worker reads as ~14px. The strongest silhouette and the most “this place is a machine”. Side walls slant a few px, which the spec allows.'],
+  ['07-modular-row','Modular row','192×96 · three small units',
+   'A repeating rhythm of small units. It would tile well across many levels, but each machine is tiny and generic, and there is a lot of empty wall.'],
+  ['08-chunky-proportions','Stylised chunky proportions','192×96 · toy-like, big-headed worker',
+   'Squat rounded shapes. <span class="flag">Came back with light cones, speckled walls and perspective ceiling beams.</span>'],
+  ['09-pixels-2x-96x48','Big pixels (2×)','96×48 generated, shown 2× in the slot',
+   'Twice the pixel size. <span class="flag">The machinery turns to mush at this resolution, the same result as the earlier chunky probe.</span>'],
+  ['10-pixels-1.5x-128x64','Medium pixels (1.5×)','128×64 generated',
+   'Reads well and is cleaner than 2×. <span class="flag">1.5× is not an integer scale into a 192×96 slot, so this only works if the grid changes to 128×64 rooms (e.g. shown at 3× instead of 2×).</span>'],
+];
+const grid = document.getElementById('grid');
+for (const [f, t, meta, note] of V) {
+  grid.insertAdjacentHTML('beforeend', `<div class="card">
+    <h2>${f.slice(0,2)} · ${t}</h2>
+    <div class="imgs"><img class="big" src="${f}.png" alt="${t}"><img src="${f}.png" alt="${t} at 1×" width="192" height="96"></div>
+    
+    <div class="meta">${meta}</div>
+    <p class="note">${note}</p></div>`);
+}
+document.querySelectorAll('.zoom button').forEach(b => b.onclick = () => {
+  document.documentElement.style.setProperty('--z', b.dataset.z);
+  document.querySelectorAll('.zoom button').forEach(x => x.classList.toggle('on', x === b));
+});
+</script>

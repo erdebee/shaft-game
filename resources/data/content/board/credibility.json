@@ -1,0 +1,57 @@
+{
+  "_note": "What each board member finds believable — the data behind 'land a revelation calibrated to what that specific member finds credible' (design-document §6). believes weights how much a revelation's register convinces them; doubtGain is added per framing when they DO notice something off. A member with high technical credence is persuaded by a directive that reads like an engineering instruction and suspicious of one that reads like scripture.",
+  "profiles": [
+    {
+      "memberId": "member-cultivation",
+      "believes": { "doctrinal": 0.7, "technical": 0.3, "procedural": 0.5, "humanitarian": 0.8 },
+      "doubtGain": {
+        "faithful-proclamation": 2,
+        "reinterpreted-teaching": 1,
+        "buried-footnote": 0,
+        "withhold": 0
+      },
+      "inquiryThreshold": 70,
+      "reassuredBy": ["food-surplus", "lenient-scarcity-ruling"],
+      "_note": "Persuaded by anything framed as caring for people. The easiest member to keep calm and the one who will be most betrayed by the truth."
+    },
+    {
+      "memberId": "member-engineering",
+      "believes": { "doctrinal": 0.2, "technical": 0.9, "procedural": 0.4, "humanitarian": 0.4 },
+      "doubtGain": {
+        "faithful-proclamation": 5,
+        "reinterpreted-teaching": 2,
+        "buried-footnote": 1,
+        "withhold": 0
+      },
+      "inquiryThreshold": 58,
+      "reassuredBy": ["repairs-funded", "no-buildings-below-condition"],
+      "_note": "Lowest doctrinal credence and lowest inquiry threshold: scripture does not move them and they notice fastest. Faithful proclamation to this member is expensive. They are also the one whose help the finale needs."
+    },
+    {
+      "memberId": "member-order",
+      "believes": { "doctrinal": 0.6, "technical": 0.3, "procedural": 0.9, "humanitarian": 0.1 },
+      "doubtGain": {
+        "faithful-proclamation": 2,
+        "reinterpreted-teaching": 3,
+        "buried-footnote": 4,
+        "withhold": 2
+      },
+      "inquiryThreshold": 64,
+      "reassuredBy": ["stability-high", "harsh-dissent-ruling"],
+      "_note": "Inverted doubt profile — the only member MORE suspicious of a buried footnote than a proclamation. Procedure is their religion, so slipping something through as a technical clause is what reads as sneaking. Also the only member who gains doubt from withholding, because they audit."
+    },
+    {
+      "memberId": "member-archive",
+      "believes": { "doctrinal": 0.9, "technical": 0.4, "procedural": 0.7, "humanitarian": 0.5 },
+      "doubtGain": {
+        "faithful-proclamation": 1,
+        "reinterpreted-teaching": 4,
+        "buried-footnote": 2,
+        "withhold": 0
+      },
+      "inquiryThreshold": 76,
+      "reassuredBy": ["paper-stocked", "archive-access-unrestricted"],
+      "_note": "Highest doctrinal credence and highest inquiry threshold — they want to believe, which is why faithful proclamation is nearly free here. But they know the texts better than anyone, so REINTERPRETING one in front of them is the most dangerous thing the Chair can do."
+    }
+  ]
+}

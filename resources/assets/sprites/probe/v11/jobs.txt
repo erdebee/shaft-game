@@ -1,0 +1,12 @@
+main-generator-prompt 58aa7b76-d313-4645-90c5-4359ed9c8776
+main-generator-guide 1e4d4b4d-ab4d-4cb1-91f3-0a3f2b46d3ba
+dig-face-prompt 7afca6de-22b4-49d4-9e2b-a1a9f7e4c1f1
+dig-face-guide 0ad8f15a-82a3-4a20-92c9-d6b292382886
+grove-prompt 95e8e75c-01d7-48f8-89d6-5a7705bc0b1d
+grove-guide 0a9f0b13-5c26-452c-b04f-0f77f3099368
+council-chamber-prompt f3e9efa5-cab0-495d-a66b-68b9deb5244e
+council-chamber-guide 42513239-4886-4470-a7e3-6939cfb22700
+house-prompt 5ce73a9b-06ff-4c12-acf2-3aa202515bd5
+house-guide d5f97759-0a0c-4c29-9cde-dad859e16dc5
+porter a9a9ba0d-4ba4-4896-bcb4-dd2e892bf9c2
+councillor 71128029-56b4-4035-9541-fbb7e55c552f

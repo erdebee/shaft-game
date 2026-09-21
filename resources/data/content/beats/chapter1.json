@@ -1,0 +1,68 @@
+{
+  "_note": "Scripted Chapter 1 plot beats, fired through the event scheduler. armedBy means the beat waits for a flag before it can be scheduled; atTick beats fire regardless of player state, per eventScheduler.js's remit. The finale plays out through this system rather than a bespoke mechanic — same as the Mayor's death and the Chapter 2 invasion.",
+  "beats": [
+    {
+      "id": "ch1-open",
+      "atTick": 0,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "flag.set", "target": "ch1-started" }],
+      "_note": "The Mayor takes office. Introduces resources and the dashboard, nothing political yet."
+    },
+    {
+      "id": "ch1-first-shortfall",
+      "atTick": null,
+      "armedBy": { "pred": "flow.shortfall", "target": "power" },
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "capability.enable", "target": "priority-ladder-editing" }],
+      "_note": "Teaches the priority ladder at the moment it first matters, not in a tutorial before it does."
+    },
+    {
+      "id": "ch1-first-amendment-window",
+      "atTick": 600,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "capability.enable", "target": "amendment-window" }],
+      "_note": "Law arrives as punctuation, roughly ten minutes in. Before this the player has only run the Shaft."
+    },
+    {
+      "id": "ch1-board-introduction",
+      "atTick": 900,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [{ "op": "capability.enable", "target": "board-screen" }],
+      "_note": "Meet the four department elders, including the Chair, presented as a facilitator nobody envies. The player will replay this scene in memory after the finale."
+    },
+    {
+      "id": "ch1-finale",
+      "atTick": null,
+      "armedBy": { "pred": "flag.set", "target": "chair-suspected" },
+      "delayTicks": 240,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "flag.set", "target": "mayor-killed" },
+        { "op": "flag.set", "target": "knows-nexus-exists" },
+        { "op": "chapter.advance", "target": 2 }
+      ],
+      "_note": "The leads converge; the Chair is caught executing something behind the Mayor's back. The catch is real and so is the trap. Before killing the Mayor the Chair confesses, against his own will: the Mayor was never in control, and the Chair is as much a puppet as anyone. delayTicks is the gap between arming and firing — the player has four minutes of ordinary work left and does not know it."
+    },
+    {
+      "id": "ch1-finale-fallback",
+      "atTick": 5400,
+      "armedBy": null,
+      "hardPause": true,
+      "text": "",
+      "effects": [
+        { "op": "flag.set", "target": "mayor-killed" },
+        { "op": "flag.set", "target": "knows-nexus-exists" },
+        { "op": "chapter.advance", "target": 2 }
+      ],
+      "_note": "Chapter beats must fire regardless of player state. A player who never investigates still reaches Chapter 2 — the Chair simply acts first, and the confession lands on someone who never suspected a thing. Arguably the better version of the scene."
+    }
+  ]
+}
