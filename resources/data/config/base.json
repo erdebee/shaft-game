@@ -62,7 +62,10 @@
     "conditionStart": 1.0,
     "degradedEfficiencyMultiplier": 0.7,
     "breakdownCheckIntervalTicks": 20,
-    "repairLabourPerCondition": 8
+    "repairLabourPerCondition": 8,
+    "repairThreshold": 0.75,
+    "maintenanceCrewsStart": 2,
+    "wearMultiplier": 0.1
   },
 
   "mining": {

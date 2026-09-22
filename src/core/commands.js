@@ -61,6 +61,11 @@ const HANDLERS = {
     log(state, `${def.name} built on level ${cmd.level}`);
   },
 
+  /** How many crews go round repairing, ahead of every building's staff. */
+  'player:setMaintenanceCrews': (state, ctx, cmd) => {
+    state.maintenance.crewTarget = Math.max(0, Math.floor(cmd.count ?? 0));
+  },
+
   /** Reorder the power priority ladder. */
   'player:setPriorityLadder': (state, ctx, cmd) => {
     if (!Array.isArray(cmd.ladder)) return;

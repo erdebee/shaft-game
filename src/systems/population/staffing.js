@@ -9,11 +9,12 @@
  * time — cohorts.json labourMultiplier), less the sick, less the porters,
  * who are tracked by name in the roster.
  *
- * The player sets a `staffTarget` per building (it starts full). Each tick
- * the pool is dealt out against those targets in power-ladder order — life
- * support first, amenities last, shallower first within a class — so a
- * shrinking workforce empties the amenities before the scrubbers. A building
- * whose faction is on strike gets nobody.
+ * Maintenance crews (state.maintenance) are dealt first. Then the player's
+ * `staffTarget` per building (it starts full): the pool is dealt out against
+ * those targets in power-ladder order — life support first, amenities last,
+ * shallower first within a class — so a shrinking workforce empties the
+ * amenities before the scrubbers. A building whose faction is on strike gets
+ * nobody.
  *
  * Owns instance.staffing and population.labour. Writing `staffing` on an
  * instance is the one reach into another domain, and it is here for the same
@@ -30,8 +31,12 @@ export function tick(state, ctx) {
   const pool = labourPool(state, ctx);
   const striking = new Set(state.population.strikes?.map((s) => s.faction) ?? []);
 
-  let left = pool;
-  let wanted = 0;
+  // Maintenance crews first: Engineering will not send its people to run
+  // machines nobody is keeping running.
+  const m = state.maintenance;
+  m.crews = Math.min(m.crewTarget, Math.floor(pool / perCrew));
+  let left = pool - m.crews * perCrew;
+  let wanted = m.crewTarget * perCrew;
   for (const { instance, def } of inLadderOrder(state, ctx)) {
     const target = instance.staffTarget ?? def.staffing ?? 0;
     wanted += target * perCrew;

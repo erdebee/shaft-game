@@ -16,6 +16,7 @@
 
 import { clamp } from '../../utils/math.js';
 import { conditionScale, staffingScale } from '../../core/effects.js';
+import * as maintenance from './maintenance.js';
 
 /**
  * Wear and breakdown. A building only wears while it is actually running —
@@ -23,7 +24,10 @@ import { conditionScale, staffingScale } from '../../core/effects.js';
  * demoting something on the priority ladder a genuine preservation tactic.
  */
 export function tick(state, ctx) {
+  maintenance.tick(state, ctx);
+
   const check = ctx.config.buildings.breakdownCheckIntervalTicks;
+  const wearMultiplier = ctx.config.buildings.wearMultiplier;
   const dueForCheck = check > 0 && state.clock.tick % check === 0;
 
   for (const instance of state.buildings) {
@@ -31,7 +35,7 @@ export function tick(state, ctx) {
     if (!def) continue;
 
     if (instance.powered !== false) {
-      instance.condition = clamp(instance.condition - (def.wearPerTick ?? 0), 0, 1);
+      instance.condition = clamp(instance.condition - (def.wearPerTick ?? 0) * wearMultiplier, 0, 1);
     }
 
     const thresholds = def.conditionThresholds ?? {};

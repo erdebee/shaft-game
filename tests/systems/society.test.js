@@ -117,6 +117,7 @@ test('crossing the demands line raises the demand once', async () => {
 test('riots wreck buildings and tear down what they wreck, never the fixed structure', async () => {
   const run = await runWith([['shaft-exit', 1], ['school', 10], ['canteen', 26]], { stocks: FED, tunables: CALM });
   const { riotThreshold } = run.ctx.config.unrest;
+  run.state.maintenance.crewTarget = 0; // nobody patching up behind the rioters
   const demolished = capture('unrest:demolished', () => {
     for (let i = 0; i < 400; i++) { run.state.meters.discontent = riotThreshold + 10; ticks(run, 1); }
   });

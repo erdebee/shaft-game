@@ -93,6 +93,7 @@ test('a short labour pool empties the amenities before life support', async () =
   const lifeSupport = (5 + 1 + 2) * perCrew;
   run.state.population.headcount = 1;
   run.state.population.workers = [];
+  run.state.maintenance.crewTarget = 0;
   const factor = labourPool(run.state, run.ctx);
   run.state.population.headcount = (lifeSupport + perCrew / 2) / factor;
   ticks(run, 1);

@@ -207,6 +207,11 @@ function wireLog(state, ctx) {
   on('unrest:riot', ({ buildingId, level }) => record(`Rioters wrecked the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
   on('unrest:demolished', ({ buildingId, level }) => record(`Rioters tore down the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
 
+  on('maintenance:stalled', ({ id, tick }) => {
+    if (!onset(`repairs:${id}`, tick)) return;
+    record(`Repairs stalled: no ${id} in the stores`, 'warn');
+  });
+
   on('supply:delivered', ({ id, qty }) => record(`${qty} ${id} came down from outside`));
 
   on('clock:autoPaused', ({ reason }) => {

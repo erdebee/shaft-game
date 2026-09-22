@@ -73,6 +73,9 @@ export const TUNABLES = {
   'buildings.degradedEfficiencyMultiplier': RATE,
   'buildings.breakdownCheckIntervalTicks': TICKS,
   'buildings.repairLabourPerCondition': N(0, 1000),
+  'buildings.repairThreshold': RATE,
+  'buildings.maintenanceCrewsStart': N(0, 100),
+  'buildings.wearMultiplier': N(0, 10),
 
   'mining.baseYieldPerTick': N(0, 100),
   'mining.depletionPerExtractionTick': RATE,
