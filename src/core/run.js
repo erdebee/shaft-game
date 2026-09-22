@@ -22,10 +22,11 @@ import * as haulage from '../systems/haulage/haulageMethods.js';
 import * as buildings from '../systems/buildings/buildingRegistry.js';
 import * as roster from '../systems/population/roster.js';
 import * as population from '../systems/population/index.js';
+import * as society from '../systems/society/index.js';
 
 /** The system registry, keyed to match SYSTEM_ORDER in engine.js. */
 export function createSystems() {
-  return { power, resources, water, airQuality, haulage, buildings, population };
+  return { power, resources, water, airQuality, haulage, buildings, population, society };
 }
 
 /**

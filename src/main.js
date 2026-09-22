@@ -121,7 +121,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   router.register('dashboard', dashboard);
   router.go('dashboard');
 
-  wireLog(state);
+  wireLog(state, ctx);
 
   engine.view = shaftView;
   engine.onFrame = (currentState) => {
@@ -143,7 +143,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
  * Turn simulation events into player-visible log entries. The bus is the
  * boundary: the log records what happened, and systems never write to it.
  */
-function wireLog(state) {
+function wireLog(state, ctx) {
   const record = (message, kind = 'info') => {
     const entry = { tick: state.clock.tick, message, kind };
     state.log.push(entry);
@@ -187,15 +187,25 @@ function wireLog(state) {
   on('air:critical', ({ level }) => record(`The air on level ${level} is failing`, 'critical'));
   on('air:recovered', ({ level }) => record(`The air on level ${level} is breathable again`));
 
-  on('population:day', ({ deaths, births }) => {
+  on('population:day', ({ deaths, births, departures }) => {
     const causes = { starvation: 'starved', thirst: 'died of thirst', suffocation: 'suffocated', illness: 'died of illness' };
     const lost = Object.entries(deaths)
       .map(([cause, n]) => [cause, Math.round(n)])
       .filter(([, n]) => n > 0)
       .map(([cause, n]) => `${n} ${causes[cause]}`);
+    if (departures >= 1) lost.push(`${Math.round(departures)} left through the Exit`);
     if (lost.length) record(`Today ${lost.join(', ')}`, 'critical');
     if (births >= 1) record(`${Math.round(births)} born under the lottery`);
   });
+
+  const faction = (id) => ctx.catalog.factions.byId[id]?.name ?? id;
+  const building = (id) => ctx.catalog.buildings.byId[id]?.name ?? id;
+  on('unrest:warning', ({ faction: id }) => record(`${faction(id)} warns that the people are losing patience`, 'warn'));
+  on('unrest:strike', ({ faction: id }) => record(`${faction(id)} has walked out: its buildings stand empty`, 'critical'));
+  on('unrest:strikeEnded', ({ faction: id }) => record(`${faction(id)} is back at work`));
+  on('unrest:demands', () => record('The people are demanding change', 'critical'));
+  on('unrest:riot', ({ buildingId, level }) => record(`Rioters wrecked the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
+  on('unrest:demolished', ({ buildingId, level }) => record(`Rioters tore down the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
 
   on('supply:delivered', ({ id, qty }) => record(`${qty} ${id} came down from outside`));
 

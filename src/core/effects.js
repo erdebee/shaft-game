@@ -23,6 +23,7 @@
 import { clamp } from '../utils/math.js';
 import { EFFECT_OPS } from '../config/schema.js';
 import * as S from './selectors.js';
+import { workRate } from '../systems/society/meters.js';
 
 /**
  * Ops that describe a standing capability or modifier rather than an event.
@@ -238,6 +239,10 @@ export function collectModifiers(state, ctx) {
     recipes: {},      // boolean, by building id
     haulage: {},      // boolean, by method id
   };
+
+  // How hard everyone works, from the productivity meter. Every building's
+  // output scales by it (buildings/buildingRegistry.js workScale).
+  mods.multiply.work = workRate(state, ctx);
 
   const add = (bucket, key, value) => { bucket[key] = (bucket[key] ?? 0) + value; };
   const mul = (key, value) => { mods.multiply[key] = (mods.multiply[key] ?? 1) * value; };

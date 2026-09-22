@@ -54,7 +54,7 @@ const HANDLERS = {
     if (slot === null) return;
 
     state.buildings.push(createInstance(def, ctx, {
-      instanceId: `b${state.buildings.length + 1}`,
+      instanceId: nextInstanceId(state),
       level: cmd.level,
       slot,
     }));
@@ -83,6 +83,19 @@ const HANDLERS = {
     instance.staffing = instance.staffTarget;
   },
 };
+
+/**
+ * A fresh instance id from a counter in state. Not the count of buildings:
+ * once a riot has demolished something, count + 1 can name a building that
+ * still exists, and even the highest id + 1 can revive a demolished one's id
+ * — which the view would take for the old building.
+ */
+function nextInstanceId(state) {
+  state.nextInstanceId ??= 1 + state.buildings.reduce((max, b) => Math.max(max, Number(b.instanceId.slice(1)) || 0), 0);
+  const id = `b${state.nextInstanceId}`;
+  state.nextInstanceId += 1;
+  return id;
+}
 
 /**
  * A run of free slots wide enough for this building, or null if it cannot be

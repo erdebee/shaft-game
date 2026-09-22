@@ -53,15 +53,17 @@ export function tick(state, ctx) {
 }
 
 /**
- * How hard an instance can work this tick: condition, staffing, power and
- * breakdown combined, but NOT whether it has its inputs. The resources system
+ * How hard an instance can work this tick: condition, staffing, power,
+ * breakdown and the Shaft's work rate (the productivity meter) combined, but
+ * NOT whether it has its inputs. The resources system
  * uses this to decide whether inputs are needed at all, and is the one that
  * sets `starved` — so it must not read the flag it is about to write.
  */
 export function workScale(instance, def, ctx) {
   if (instance.brokenDown) return 0;
   if (instance.powered === false) return 0;
-  return conditionScale(instance.condition, def, ctx) * staffingScale(instance, def);
+  return conditionScale(instance.condition, def, ctx) * staffingScale(instance, def)
+    * (ctx.modifiers?.multiply?.work ?? 1);
 }
 
 /**

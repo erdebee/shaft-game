@@ -104,7 +104,25 @@
     "satisfactionStart": 55,
     "satisfactionDriftPerTick": -0.002,
     "sabotageThreshold": 20,
-    "earlyWarningThreshold": 75
+    "earlyWarningThreshold": 75,
+    "satisfactionApproachPerTick": 0.05,
+    "satisfactionFloor": 25,
+    "satisfactionRange": 50,
+    "discontentWeight": 0.3
+  },
+
+  "unrest": {
+    "warnThreshold": 25,
+    "strikeThreshold": 40,
+    "demandsThreshold": 55,
+    "riotThreshold": 70,
+    "departureThreshold": 50,
+    "strikeDurationTicks": 60,
+    "strikeCooldownTicks": 180,
+    "demandsCooldownTicks": 600,
+    "riotTargetsPerShift": 2,
+    "riotDamage": 0.35,
+    "departureRatePerTick": 0.0003
   },
 
   "governance": {

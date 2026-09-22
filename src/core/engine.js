@@ -31,7 +31,8 @@ const SYSTEM_ORDER = [
   'airQuality',
   'haulage',      // move what was produced
   'buildings',    // condition, wear, output modifiers
-  'population',   // consumption, morale, unrest
+  'population',   // consumption, health, deaths, the labour pool
+  'society',      // meters, faction satisfaction, strikes and riots
   'governance',   // statute effects, enforcement
   'narrative',    // dilemmas, scheduled events, revelation staging
 ];

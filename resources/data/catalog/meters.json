@@ -1,5 +1,5 @@
 {
-  "_note": "The six meters that drive every consequence in the game. 0-100 integers. scope 'global' means one value on gameState.meters; 'per-board-member' means one value per roster entry. failsAt null means the meter cannot end the run — board-doubt fails capabilities instead, per design-document §3.",
+  "_note": "The six meters that drive every consequence in the game. 0-100 integers. scope 'global' means one value on gameState.meters; 'per-board-member' means one value per roster entry. failsAt null means the meter cannot end the run — board-doubt fails capabilities instead, per design-document §3. Each meter DRIFTS toward a target rather than accumulating (systems/society/meters.js): target = start + the standing meter.add effects of every standing building and statute + its drivers, and the value moves toward it by drift.perTick. A driver reads a source (need.*, meter.*, population.health) and adds weight × (value − pivot), or weight × how far the value sits below `below`, as a share of it. A one-shot effect moves the value, which then drifts back — so a ruling's goodwill fades unless the conditions behind it hold. structural-integrity instead ACCUMULATES its standing effects each tick: the rock does not recover on its own. productivity's workRate maps it onto every building's work rate (1 at the pivot).",
   "meters": [
     {
       "id": "stability",
@@ -9,9 +9,30 @@
       "min": 0,
       "max": 100,
       "start": 62,
-      "failsAt": { "below": 10, "state": "rebellion" },
-      "chapters": [1, 2],
-      "enabled": true
+      "failsAt": {
+        "below": 10,
+        "state": "rebellion"
+      },
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "drift": {
+        "perTick": 0.03,
+        "drivers": [
+          {
+            "source": "meter.morale",
+            "pivot": 60,
+            "weight": 0.4
+          },
+          {
+            "source": "meter.discontent",
+            "pivot": 0,
+            "weight": -0.5
+          }
+        ]
+      }
     },
     {
       "id": "trust",
@@ -21,9 +42,35 @@
       "min": 0,
       "max": 100,
       "start": 55,
-      "failsAt": { "below": 10, "state": "rebellion" },
-      "chapters": [1, 2],
-      "enabled": true
+      "failsAt": {
+        "below": 10,
+        "state": "rebellion"
+      },
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "drift": {
+        "perTick": 0.02,
+        "drivers": [
+          {
+            "source": "need.food",
+            "below": 1,
+            "weight": -20
+          },
+          {
+            "source": "need.water",
+            "below": 1,
+            "weight": -20
+          },
+          {
+            "source": "need.homePower",
+            "below": 1,
+            "weight": -10
+          }
+        ]
+      }
     },
     {
       "id": "freedom",
@@ -35,8 +82,15 @@
       "start": 70,
       "failsAt": null,
       "_note": "No failure state of its own. Low freedom angers factions and feeds unrest, which fails through stability.",
-      "chapters": [1, 2],
-      "enabled": true
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "drift": {
+        "perTick": 0.05,
+        "drivers": []
+      }
     },
     {
       "id": "productivity",
@@ -46,9 +100,40 @@
       "min": 0,
       "max": 100,
       "start": 65,
-      "failsAt": { "below": 15, "state": "resource-collapse" },
-      "chapters": [1, 2],
-      "enabled": true
+      "failsAt": {
+        "below": 15,
+        "state": "resource-collapse"
+      },
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "drift": {
+        "perTick": 0.05,
+        "drivers": [
+          {
+            "source": "meter.morale",
+            "pivot": 60,
+            "weight": 0.5
+          },
+          {
+            "source": "population.health",
+            "pivot": 70,
+            "weight": 0.5
+          },
+          {
+            "source": "need.homePower",
+            "below": 1,
+            "weight": -10
+          }
+        ]
+      },
+      "workRate": {
+        "pivot": 65,
+        "floor": 0.5,
+        "ceiling": 1.25
+      }
     },
     {
       "id": "structural-integrity",
@@ -58,10 +143,17 @@
       "min": 0,
       "max": 100,
       "start": 100,
-      "failsAt": { "below": 20, "state": "collapse" },
+      "failsAt": {
+        "below": 20,
+        "state": "collapse"
+      },
       "_note": "Degrades with excavation and neglect. Crossing collapseRiskThreshold fires level-loss events before the failure state.",
-      "chapters": [1, 2],
-      "enabled": true
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "accumulate": true
     },
     {
       "id": "morale",
@@ -72,9 +164,52 @@
       "max": 100,
       "start": 60,
       "failsAt": null,
-      "chapters": [1, 2],
+      "chapters": [
+        1,
+        2
+      ],
       "enabled": true,
-      "_note": "NOT in the design document's headline meter table, but referenced constantly in its effect tables ('−morale') and as a population attribute. Declared here as a secondary axis so effects can target it and validation can resolve it. Worth confirming whether this is a first-class meter or a derived read of population state — see the open question in CONVENTIONS.md's companion notes."
+      "_note": "NOT in the design document's headline meter table, but referenced constantly in its effect tables ('−morale') and as a population attribute. Declared here as a secondary axis so effects can target it and validation can resolve it. Worth confirming whether this is a first-class meter or a derived read of population state — see the open question in CONVENTIONS.md's companion notes.",
+      "drift": {
+        "perTick": 0.05,
+        "drivers": [
+          {
+            "source": "need.food",
+            "below": 1,
+            "weight": -35
+          },
+          {
+            "source": "need.water",
+            "below": 1,
+            "weight": -35
+          },
+          {
+            "source": "need.air",
+            "below": 60,
+            "weight": -25
+          },
+          {
+            "source": "need.housing",
+            "below": 1,
+            "weight": -25
+          },
+          {
+            "source": "need.homePower",
+            "below": 1,
+            "weight": -15
+          },
+          {
+            "source": "need.waterQuality",
+            "below": 60,
+            "weight": -10
+          },
+          {
+            "source": "population.health",
+            "below": 60,
+            "weight": -20
+          }
+        ]
+      }
     },
     {
       "id": "legitimacy",
@@ -85,9 +220,58 @@
       "max": 100,
       "start": 50,
       "failsAt": null,
-      "chapters": [1, 2],
+      "chapters": [
+        1,
+        2
+      ],
       "enabled": true,
-      "_note": "Same status as morale: named in systems-reference §4 (ceremonial fittings, Board chamber, memorials feed it) but absent from the meter table. Distinct from trust — a Chair can be believed sincere and still be seen as having no standing."
+      "_note": "Same status as morale: named in systems-reference §4 (ceremonial fittings, Board chamber, memorials feed it) but absent from the meter table. Distinct from trust — a Chair can be believed sincere and still be seen as having no standing.",
+      "drift": {
+        "perTick": 0.02,
+        "drivers": [
+          {
+            "source": "meter.trust",
+            "pivot": 55,
+            "weight": 0.2
+          }
+        ]
+      }
+    },
+    {
+      "id": "discontent",
+      "name": "Discontent",
+      "governs": "Share of the people who have had enough; drives strikes, demands, riots and departures",
+      "scope": "global",
+      "min": 0,
+      "max": 100,
+      "start": 5,
+      "failsAt": null,
+      "chapters": [
+        1,
+        2
+      ],
+      "enabled": true,
+      "drift": {
+        "perTick": 0.05,
+        "drivers": [
+          {
+            "source": "meter.morale",
+            "pivot": 50,
+            "weight": -1.2
+          },
+          {
+            "source": "meter.trust",
+            "pivot": 50,
+            "weight": -0.6
+          },
+          {
+            "source": "meter.freedom",
+            "pivot": 40,
+            "weight": -0.3
+          }
+        ]
+      },
+      "_note": "Not one of the design's six: the aggregate of individual grievance, which systems/society/unrest.js turns into strikes, demands, riots and departures (thresholds in config unrest.*). Pivot drivers push it up when morale, trust or freedom fall below their pivot, and down when they sit above it."
     },
     {
       "id": "board-doubt",
@@ -99,7 +283,9 @@
       "start": 0,
       "failsAt": null,
       "_note": "Does not fail the run. Above doubtFreezeThreshold a member stops implementing revelations in their domain; above doubtInquiryThreshold they demand the physical text. Chapter 2 only — chapter1.json patches enabled=false.",
-      "chapters": [2],
+      "chapters": [
+        2
+      ],
       "enabled": true
     }
   ]

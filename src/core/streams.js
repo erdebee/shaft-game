@@ -30,6 +30,7 @@ export const STREAM_NAMES = [
   'events',     // scheduled event jitter
   'board',      // mole selection, vote uncertainty
   'names',      // porter and worker names — presentation only
+  'unrest',     // riot targets
 ];
 
 /** Wrap one stream so every draw is counted. */

@@ -11,7 +11,9 @@
  *               below, by the meters, and by the dashboard.
  *   3. HEALTH   drifts toward a target set by those needs and the clinics
  *   4. DEATHS   hunger, thirst, suffocation and illness, each at its own rate
- *   5. BIRTHS   the birth lottery, once a cycle, and only in a fed Shaft
+ *   5. LEAVING  people who have had enough go out through the Exit, and
+ *               nobody who goes out comes back
+ *   6. BIRTHS   the birth lottery, once a cycle, and only in a fed Shaft
  *
  * Headcount is the authority; cohorts carry the age mix and shrink in
  * proportion when people die. Both are fractional — a tick's worth of
@@ -73,7 +75,14 @@ export function tick(state, ctx) {
   }
   if (died > 0) remove(pop, died);
 
-  // --- 5. births ------------------------------------------------------------
+  // --- 5. leaving -----------------------------------------------------------
+  const leaving = departures(state, ctx);
+  if (leaving > 0) {
+    pop.vitalStats.departures += leaving;
+    remove(pop, leaving);
+  }
+
+  // --- 6. births ------------------------------------------------------------
   if (cfg.birthLotteryCycleTicks > 0 && state.clock.tick % cfg.birthLotteryCycleTicks === 0 && pop.needs.food >= 1) {
     const born = cfg.birthLotterySlotsPerCycle * (pop.lotteryMultiplier ?? 1);
     if (born > 0) {
@@ -154,6 +163,21 @@ function litHomes(state, ctx) {
   return places > 0 ? lit / places : 1;
 }
 
+/**
+ * People leaving through the Exit this tick. Nobody leaves below
+ * unrest.departureThreshold; above it, a share of the population that grows
+ * with discontent. Only while the Exit stands and works — a sealed Exit keeps
+ * everyone in, which is its own kind of answer.
+ */
+function departures(state, ctx) {
+  const { departureThreshold, departureRatePerTick } = ctx.config.unrest;
+  const discontent = state.meters.discontent ?? 0;
+  if (discontent <= departureThreshold) return 0;
+  if (!ctx.modifiers.capabilities.departure) return 0;
+  const intensity = (discontent - departureThreshold) / (100 - departureThreshold);
+  return state.population.headcount * departureRatePerTick * intensity;
+}
+
 /** Take `n` people out of the population, from every cohort in proportion. */
 function remove(pop, n) {
   const before = pop.headcount;
@@ -164,5 +188,5 @@ function remove(pop, n) {
 }
 
 function emptyStats() {
-  return { deaths: Object.fromEntries(CAUSES.map((c) => [c, 0])), births: 0 };
+  return { deaths: Object.fromEntries(CAUSES.map((c) => [c, 0])), births: 0, departures: 0 };
 }

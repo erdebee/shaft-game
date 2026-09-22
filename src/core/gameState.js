@@ -18,6 +18,7 @@
 import { initialSeams } from '../systems/resources/minerals.js';
 import { initialWater } from '../systems/water/greywaterLoop.js';
 import { initialVitals } from '../systems/population/vitals.js';
+import { initialUnrest } from '../systems/society/unrest.js';
 
 /**
  * @param {object} args
@@ -43,6 +44,7 @@ export function createGameState({ chapter, dataset, seed }) {
 
     levels: buildLevels(config, shaft, dataset.tables),
     buildings: [],
+    nextInstanceId: 1,
     haulage: { trips: [], queue: [], nextTripId: 1 },
 
     resources: {
@@ -69,6 +71,7 @@ export function createGameState({ chapter, dataset, seed }) {
       ...initialVitals(config),
       labour: { pool: 0, assigned: 0, wanted: 0 },
       strikes: [],
+      unrest: initialUnrest(),
     },
 
     governance: {
