@@ -13,7 +13,7 @@
  */
 
 import {
-  tripPosition, levelCentreY, slotRect, workerSlot, visualJitter, LEVEL_HEIGHT,
+  tripPosition, stairWalk, levelCentreY, roomRect, workerSlot, visualJitter, LEVEL_HEIGHT,
 } from './interpolate.js';
 import { spriteFor, workerFigureCount } from './spriteMap.js';
 import { isLevelVisible } from './viewport.js';
@@ -22,11 +22,36 @@ import { SPEEDS } from '../../core/clock.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 /**
- * Figure size in shaft units. A level is 10 tall, so a figure is a third of a
- * storey — small enough to read as a person in a room rather than filling it.
+ * Figure size in shaft units (sprite pixels). An adult is about 36 px tall in a
+ * 96-px room (spec §4.2): chest-high to a counter, a head under a doorway. The
+ * vector placeholder is drawn 1:2; a real figure carries its own measurements
+ * in the manifest and ignores these.
  */
-const FIGURE_W = 1.7;
-const FIGURE_H = 3.4;
+const FIGURE_W = 18;
+const FIGURE_H = 36;
+
+/**
+ * Which role works in a building. The catalogue answers for most of them
+ * (`jobs.worksIn`); the four staffed rooms it does not name are listed here,
+ * and a room with several jobs cycles through them by figure index, so the
+ * archive shows an archivist beside an investigator.
+ */
+const ROLE_FALLBACK = {
+  'council-chamber': 'councillor',
+  'common-hall': 'resident',
+  'battery-bank': 'engineer',
+  'seed-vault': 'grower',
+  judicial: 'councillor',
+  'shaft-exit': 'constable',
+  auditorium: 'resident',
+};
+
+export function rolesForBuilding(def, ctx) {
+  const jobs = ctx.catalog?.jobs?.all ?? [];
+  const working = jobs.filter((j) => j.worksIn?.includes(def.id)).map((j) => j.id);
+  if (working.length) return working;
+  return [ROLE_FALLBACK[def.id] ?? 'resident'];
+}
 
 /**
  * Above this speed individual figures stop reading as people and start reading
@@ -96,14 +121,170 @@ function ensurePool(layer, pool, count, symbolId, className) {
   return pool;
 }
 
+// ---- Pixel figures ---------------------------------------------------------
+
+/**
+ * A pooled node for one pixel figure, built like an animated room part: a
+ * window <svg> the size of one frame, holding a strip that CSS steps sideways.
+ *
+ *   the outer <g>    POSITION   (JS transform attribute)
+ *   the flip <g>     FACING     (JS transform attribute)
+ *   the strip <image> ANIMATION (CSS keyframes, see screens.css)
+ *
+ * The same three-node split as the vector figure above, for the same reason: a
+ * CSS animation on a node whose transform attribute JS owns would drag the
+ * figure towards the origin once per cycle.
+ */
+function ensureSpritePool(layer, pool, count, className) {
+  while (pool.length < count) {
+    const node = document.createElementNS(SVG_NS, 'g');
+    node.setAttribute('class', className);
+
+    const flip = document.createElementNS(SVG_NS, 'g');
+    const window = document.createElementNS(SVG_NS, 'svg');
+    window.setAttribute('class', 'figure-window');
+    const strip = document.createElementNS(SVG_NS, 'image');
+    strip.setAttribute('data-part', 'strip');
+    strip.setAttribute('y', '0');
+
+    window.appendChild(strip);
+    flip.appendChild(window);
+    node.appendChild(flip);
+    hide(node);
+    layer.group.appendChild(node);
+    pool.push({ node, flip, window, strip, clip: null });
+  }
+  return pool;
+}
+
+/**
+ * Point a pooled figure at one clip of one role. Attributes are only written
+ * when the clip changes — per frame this is a no-op, which is the point.
+ */
+function setClip(entry, clip, key) {
+  const id = `${key}:${clip.path}`;
+  if (entry.clip === id) return;
+  entry.clip = id;
+
+  const { w, h, frames } = clip;
+  entry.window.setAttribute('width', String(w));
+  entry.window.setAttribute('height', String(h));
+  entry.window.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  entry.strip.setAttribute('href', clip.href);
+  entry.strip.setAttribute('width', String(w * frames));
+  entry.strip.setAttribute('height', String(h));
+  entry.strip.style.setProperty('--frames', String(frames));
+  entry.strip.style.setProperty('--strip-width', String(w * frames));
+  entry.strip.style.setProperty('--strip-duration', `${(clip.frameMs ?? 120) * frames}ms`);
+  // A still is one cell: no steps to take, so the animation is switched off
+  // rather than left running over a single frame.
+  entry.strip.style.animationName = frames > 1 ? 'strip' : 'none';
+}
+
+/**
+ * Place a figure so its feet land on `y` and its body centres on `x`, facing
+ * east (`facing` 1) or west (-1). Mirroring happens inside the sprite box, so
+ * the anchor column moves with it.
+ */
+function placeSprite(entry, clip, x, y, facing) {
+  const anchor = facing < 0 ? clip.w - clip.cx : clip.cx;
+  entry.node.setAttribute(
+    'transform',
+    `translate(${Math.round(x - anchor)} ${Math.round(y - clip.feet)})`,
+  );
+  entry.flip.setAttribute('transform', facing < 0 ? `translate(${clip.w} 0) scale(-1 1)` : '');
+}
+
 /**
  * Redraw every figure for this frame.
  * Called from shaftView.render, which is called from the engine's rAF loop.
  * Reads state; never writes it.
  */
-export function renderFigures(layer, state, ctx, tick, alpha, viewport) {
+export function renderFigures(layer, state, ctx, tick, alpha, viewport, art = null) {
+  const figures = art?.figures;
+  if (figures?.size) {
+    renderSpritePorters(layer, state, tick, alpha, viewport, figures);
+    renderSpriteWorkers(layer, state, ctx, viewport, art);
+    return;
+  }
   renderPorters(layer, state, ctx, tick, alpha, viewport);
-  renderWorkers(layer, state, ctx, viewport);
+  renderWorkers(layer, state, ctx, viewport, art);
+}
+
+/** Porters on the stairwell, walking their trip. */
+function renderSpritePorters(layer, state, tick, alpha, viewport, figures) {
+  const thinned = state.clock.speed > FIGURE_SPEED_LIMIT;
+  const trips = thinned ? [] : state.haulage.trips.filter((t) => t.method === 'stairwell');
+  const clips = figures.get('porter');
+  const pool = ensureSpritePool(layer, layer.porters, trips.length, 'figure figure-porter');
+
+  trips.forEach((trip, i) => {
+    const entry = pool[i];
+    const pos = tripPosition(trip, tick, alpha);
+    if (!isLevelVisible(viewport, Math.round(pos.level))) {
+      hide(entry.node);
+      return;
+    }
+    show(entry.node);
+    const clip = clips.walk ?? clips.still;
+    setClip(entry, clip, 'porter');
+    // Trips that start on the same tick share a position, so a stable offset
+    // hashed from the trip id spreads them out. ALONG the stair, not across
+    // it: a lateral offset would hang them over the drop, while a few steps
+    // ahead or behind keeps every one of them on the treads.
+    const step = stairWalk(pos.y + (visualJitter(trip.id) - 0.5) * 10, pos.descending);
+    placeSprite(entry, clip, step.x, step.y, step.facing);
+    entry.strip.style.setProperty('--phase', `${(visualJitter(`${trip.id}:p`) * -1.2).toFixed(2)}s`);
+  });
+
+  for (let i = trips.length; i < pool.length; i++) hide(pool[i].node);
+}
+
+/**
+ * Workers inside buildings: the roles the catalogue says work there, standing
+ * on the room's own floor row and playing their work loop if they have one.
+ */
+function renderSpriteWorkers(layer, state, ctx, viewport, art) {
+  const placements = [];
+
+  for (const instance of state.buildings) {
+    if (!isLevelVisible(viewport, instance.level)) continue;
+    if (instance.powered === false) continue; // dark building, nobody working
+
+    const def = ctx.catalog.buildings.byId[instance.buildingId];
+    if (!def) continue;
+
+    const count = workerFigureCount(instance, def);
+    if (count === 0) continue;
+
+    const roles = rolesForBuilding(def, ctx);
+    const rect = roomRect(instance, state.buildings);
+    const room = art.rooms.get(def.id);
+    const floorY = room?.floorY;
+
+    for (let i = 0; i < count; i++) {
+      const role = roles[i % roles.length];
+      const clips = art.figures.get(role);
+      if (!clips) continue;
+      const spot = workerSlot(rect, i, count, floorY, room?.seats);
+      placements.push({ ...spot, clips, key: `${instance.instanceId}:${i}`, role });
+    }
+  }
+
+  const pool = ensureSpritePool(layer, layer.workers, placements.length, 'figure figure-worker');
+
+  placements.forEach((spot, i) => {
+    const entry = pool[i];
+    show(entry.node);
+    const clip = spot.clips.work ?? spot.clips.idle ?? spot.clips.still;
+    setClip(entry, clip, spot.role);
+    // Facing and loop phase are hashed from the placement, so a room reads as
+    // a group of people rather than a rank, and never twitches between frames.
+    placeSprite(entry, clip, spot.x, spot.y, visualJitter(`${spot.key}:face`) < 0.4 ? -1 : 1);
+    entry.strip.style.setProperty('--phase', `${(visualJitter(spot.key) * -2.4).toFixed(2)}s`);
+  });
+
+  for (let i = placements.length; i < pool.length; i++) hide(pool[i].node);
 }
 
 function renderPorters(layer, state, ctx, tick, alpha, viewport) {
@@ -129,16 +310,16 @@ function renderPorters(layer, state, ctx, tick, alpha, viewport) {
     show(node);
     // Trips that start on the same tick along the same route interpolate to
     // exactly the same point and would stack into one figure. A stable
-    // per-trip offset spreads them across the stairwell's width instead —
-    // derived from the trip id, so a porter never jitters between frames.
-    const lane = (visualJitter(trip.id) - 0.5) * 3.4;
+    // per-trip offset spreads them along the stair instead — derived from the
+    // trip id, so a porter never jitters between frames.
+    const step = stairWalk(pos.y + (visualJitter(trip.id) - 0.5) * 10, pos.descending);
 
     // Figures are anchored at their feet, so subtract the sprite height.
     node.setAttribute(
       'transform',
-      `translate(${pos.x + lane - FIGURE_W / 2} ${pos.y - FIGURE_H})`,
+      `translate(${Math.round(step.x - FIGURE_W / 2)} ${Math.round(step.y - FIGURE_H)})`,
     );
-    node.setAttribute('data-descending', pos.descending ? 'true' : 'false');
+    node.setAttribute('data-facing', step.facing < 0 ? 'west' : 'east');
   });
 
   for (let i = trips.length; i < pool.length; i++) hide(pool[i]);
@@ -150,7 +331,7 @@ function renderPorters(layer, state, ctx, tick, alpha, viewport) {
  * frames. Their idle animation is CSS, with a phase offset hashed from the
  * instance id so a row of workers is not in lockstep.
  */
-function renderWorkers(layer, state, ctx, viewport) {
+function renderWorkers(layer, state, ctx, viewport, art) {
   const placements = [];
 
   for (const instance of state.buildings) {
@@ -163,11 +344,12 @@ function renderWorkers(layer, state, ctx, viewport) {
     const count = workerFigureCount(instance, def);
     if (count === 0) continue;
 
-    const level = state.levels.find((l) => l.index === instance.level);
-    const rect = slotRect(instance.slot ?? 0, instance.slots ?? 1, level?.buildSlots ?? 10, instance.level);
+    const rect = roomRect(instance, state.buildings);
+    const room = art?.rooms.get(def.id);
+    const floorY = room?.floorY;
 
     for (let i = 0; i < count; i++) {
-      const spot = workerSlot(rect, i, count);
+      const spot = workerSlot(rect, i, count, floorY, room?.seats);
       placements.push({ ...spot, key: `${instance.instanceId}:${i}` });
     }
   }

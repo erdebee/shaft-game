@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figures in the shaft</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --amber: #f2b25a; --teal: #86b6a2; --bad: #d9785f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1700px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 36px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  p { max-width: 100ch; color: var(--dim); } b { color: var(--ink); } code { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--edge); padding: 8px 0; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 12px; color: var(--dim); }
+  .grp { display: flex; gap: 4px; align-items: center; }
+  .grp > span { margin-right: 4px; }
+  button, select, input, textarea { font: inherit; font-size: 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 9px; }
+  button { cursor: pointer; }
+  button.on { border-color: var(--amber); color: var(--amber); }
+  .wrap { overflow: auto; max-height: 82vh; border: 1px solid var(--edge); background: #010202; }
+  canvas { image-rendering: pixelated; display: block; }
+  .roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; margin-top: 12px; }
+  .role { background: var(--panel); border: 1px solid var(--edge); padding: 10px 12px; }
+  .role h3 { margin: 0 0 6px; font-size: 13px; color: var(--amber); }
+  .ver { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 8px; align-items: start; padding: 6px 0; border-top: 1px solid var(--edge); font-size: 12px; }
+  .ver.cur { background: #211a24; }
+  .ver .name { color: var(--ink); cursor: pointer; }
+  .ver .meta { grid-column: 2 / 4; color: var(--dim); font-size: 11px; }
+  .ver .meta i { font-style: normal; color: var(--teal); } .ver .meta s { text-decoration: none; color: #6d6168; }
+  .verdict button { padding: 1px 6px; }
+  .verdict button.keep.on { color: var(--teal); border-color: var(--teal); }
+  .verdict button.drop.on { color: var(--bad); border-color: var(--bad); }
+  .ver textarea { grid-column: 2 / 4; width: 100%; height: 34px; resize: vertical; }
+  .thumb { width: 72px; height: 72px; image-rendering: pixelated; background: #3a323a; }
+  .lineup-legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: var(--dim); margin: 6px 0; }
+  #out { width: 100%; height: 160px; margin-top: 8px; }
+  .hint { font-size: 11px; color: var(--dim); }
+  .anims { display: flex; flex-wrap: wrap; gap: 18px; }
+  .anims figure { background: var(--panel); border: 1px solid var(--edge); padding: 8px; margin: 0; }
+  .anims .row { display: flex; gap: 10px; align-items: flex-end; background: #3a2f26; padding: 6px; }
+  .anims canvas { image-rendering: pixelated; }
+</style>
+<body>
+<main>
+<h1>Figures in the shaft</h1>
+<p>Every figure version made so far, standing and moving in the real rooms at game scale. Choose a version per role below; the shaft and the line-up update at once.
+Mark each version <b>keep</b> or <b>drop</b> and add a note. <b>Copy feedback</b> gives a summary to paste back to me for the next round.</p>
+
+<div class="bar">
+  <div class="grp"><span>Zoom</span><button data-z="1">1×</button><button data-z="2">2×</button><button data-z="4">4×</button></div>
+  <div class="grp"><span>Motion</span><button data-m="mixed">mixed</button><button data-m="still">still</button><button data-m="idle">idle</button><button data-m="walk">walk</button><button data-m="work">action</button></div>
+  <div class="grp"><span>Per room</span><button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button></div>
+  <div class="grp"><span>Walk speed</span><input id="speed" type="range" min="8" max="50" value="26"><span id="speedv"></span></div>
+  <div class="grp"><span>Guides</span><button id="guides">floor lines</button><button id="flick">flicker on</button><button id="pause">pause</button><button id="pingpong">loops wrap</button></div>
+</div>
+
+<h2>The shaft</h2>
+<p class="hint"><b>Motion:</b> <i>mixed</i> puts each role's first room walking, the second idling and the third doing its action.
+A figure with no animation for the chosen motion stands still, marked with a small red tick above its head in <i>floor lines</i> mode. Walkers face their direction by mirroring the east view.</p>
+<div class="wrap" id="shaftwrap"><canvas id="shaft"></canvas></div>
+
+<h2>Line-up: every version of one role, in one room</h2>
+<div class="bar" style="position:static;border:0">
+  <div class="grp"><span>Role</span><select id="lrole"></select></div>
+  <div class="grp"><span>Room</span><select id="lroom"></select></div>
+</div>
+<div class="wrap"><canvas id="lineup"></canvas></div>
+<div class="lineup-legend" id="llegend"></div>
+
+<h2>Miner swing: four takes</h2>
+<p class="hint">The same miner, four attempts at the pickaxe loop, played at 2× and 4× on a rock-coloured strip. <b>Use this one</b> puts it in the shaft under <i>action</i> and writes it into the feedback. Ping-pong (the toolbar toggle) plays a take forward then back, which closes a loop that ends in a different pose.</p>
+<div class="anims" id="swings"></div>
+
+<h2>Versions and verdicts</h2>
+<p><button id="dropped">show dropped</button></p>
+<p class="hint">Click a version name to show it in the shaft. Heights are measured opaque pixels (target ≈ 36 adult, ≈ 25 child). Green animation names exist; grey ones are missing for that version.</p>
+<div class="roles" id="roles"></div>
+<h2>Feedback</h2>
+<button id="copy">Copy feedback</button> <span class="hint" id="copied"></span>
+<div><textarea id="general" placeholder="General notes (scale, style, motion, what to try next)…" style="width:100%;height:60px;margin-top:8px"></textarea></div>
+<textarea id="out" readonly></textarea>
+<p><a href="../index.html">← figure probe rounds</a></p>
+</main>
+<script>
+const ASSETS = '../../../../';
+const LEVELS = [
+  [4, 'shallow', ['presidential-suite', 'council-chamber', 'security-post', 'archive']],
+  [6, 'shallow', ['superior-suite', 'modest-suite', 'holding-cells', 'common-hall', 'dumbwaiter']],
+  [12, 'shallow', ['oxygen-garden', 'grove', 'scrubber-bank', 'duct-fan', 'seed-vault', 'junction']],
+  [22, 'mid', ['canteen', 'simple-suite', 'school', 'clinic', 'food-processing']],
+  [24, 'mid', ['hydroponics-bay', 'protein-vats', 'smelter', 'workshop', 'machine-shop']],
+  [34, 'deep', ['main-generator', 'battery-bank', 'recycler', 'reclamation-plant', 'purifier', 'cistern']],
+  [40, 'deep', ['deep-pump', 'dig-face', 'salvage-post', 'freight-elevator']],
+];
+const FONT = {
+  0: ['0110', '1001', '1001', '1001', '1001', '0110'], 1: ['0010', '0110', '0010', '0010', '0010', '0111'],
+  2: ['0110', '1001', '0001', '0010', '0100', '1111'], 3: ['1110', '0001', '0110', '0001', '0001', '1110'],
+  4: ['0011', '0101', '1001', '1111', '0001', '0001'], 5: ['1111', '1000', '1110', '0001', '0001', '1110'],
+  6: ['0110', '1000', '1110', '1001', '1001', '0110'], 7: ['1111', '0001', '0010', '0010', '0100', '0100'],
+  8: ['0110', '1001', '0110', '1001', '1001', '0110'], 9: ['0110', '1001', '1001', '0111', '0001', '0110'],
+};
+const GAP = 2;
+const load = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = s; });
+const rnd = (a, b) => a + Math.random() * (b - a);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(`v24shaft:${k}`); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(`v24shaft:${k}`, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+};
+
+let zoom = store.get('zoom', 2), mode = store.get('mode', 'mixed'), perRoom = store.get('perRoom', 1);
+let speed = 26, guides = false, flicker = true, paused = false, pingpong = false, showDropped = false;
+const chosen = store.get('chosen', {});      // role -> version id
+const verdicts = store.get('verdicts', {});
+const chosenAction = store.get('chosenAction', {});  // version id -> anim key used for "action" (work, work-cycle, …)  // version id -> {v: 'keep'|'drop'|'', note}
+
+function drawDigits(g, s, x, y, colour) {
+  g.fillStyle = colour;
+  [...String(s)].forEach((d, j) => FONT[d].forEach((row, rr) => [...row].forEach((bit, c) => { if (bit === '1') g.fillRect(x + j * 5 + c, y + rr, 1, 1); })));
+}
+function edge(img, x) {
+  const t = document.createElement('canvas'); t.width = 1; t.height = 96;
+  const g = t.getContext('2d'); g.drawImage(img, x, 0, 1, 96, 0, 0, 1, 96);
+  const d = g.getImageData(0, 0, 1, 96).data;
+  return Array.from({ length: 96 }, (_, k) => [d[k * 4], d[k * 4 + 1], d[k * 4 + 2]]);
+}
+function seam(g, left, right, px, y) {
+  const id = g.createImageData(GAP, 96);
+  for (let yy = 0; yy < 96; yy++) for (let c = 0; c < GAP; c++) {
+    const L = left[yy], R = right[yy], core = L.map((v, k) => (v + R[k]) * 0.2);
+    const t = (c + 0.5) / GAP, near = t < 0.5 ? L : R, d = Math.abs(t - 0.5) * 2;
+    const lit = near.map((v) => v * 0.62);
+    const col = (d > 0.6 || (d > 0.2 && ((px + c + yy) & 1) === 0)) ? lit : core, o = (yy * GAP + c) * 4;
+    id.data[o] = col[0]; id.data[o + 1] = col[1]; id.data[o + 2] = col[2]; id.data[o + 3] = 255;
+  }
+  g.putImageData(id, px, y);
+}
+
+(async () => {
+  const [manifest, figs] = await Promise.all([
+    fetch(`${ASSETS}manifest.json`, { cache: 'no-cache' }).then((r) => r.json()),
+    fetch('figures.json', { cache: 'no-cache' }).then((r) => r.json()),
+  ]);
+  const byId = new Map(manifest.sprites.map((s) => [s.id, s]));
+  const stair = await load(`${ASSETS}sprites/structure/stairwell.png`);
+  const rock = {};
+  for (const b of ['shallow', 'mid', 'deep']) rock[b] = await load(`${ASSETS}${byId.get(`${b}-rock`).path}`);
+
+  // ---- rooms ----
+  const roomImgs = new Map();
+  async function roomArt(id) {
+    if (roomImgs.has(id)) return roomImgs.get(id);
+    const e = byId.get(`${id}-on`), a = byId.get(`${id}-on-anim`), d = byId.get(`${id}-dim`);
+    const r = { id, on: await load(ASSETS + e.path), floorY: e.floorY ?? 88 };
+    if (a) { r.strip = await load(ASSETS + a.path); r.frames = a.animation.frames; r.ms = a.animation.frameMs; }
+    if (d) r.dim = await load(ASSETS + d.path);
+    r.w = r.on.width; r.left = edge(r.on, 0); r.right = edge(r.on, r.w - 1);
+    roomImgs.set(id, r); return r;
+  }
+  const rooms = [];
+  for (const [i, [, , ids]] of LEVELS.entries()) {
+    let x = 128;
+    for (const id of ids) {
+      const art = await roomArt(id);
+      x += GAP;
+      rooms.push({ ...art, art, row: i, x, y: i * 104, next: performance.now() + rnd(2000, 60000), blinks: [] });
+      x += art.w;
+    }
+  }
+  const stairEdge = edge(stair, 127);
+  const W = 128 + 10 * (64 + GAP), H = LEVELS.length * 104;
+
+  // ---- static backdrop ----
+  const bg = document.createElement('canvas'); bg.width = W; bg.height = H;
+  const b = bg.getContext('2d');
+  b.fillStyle = '#010202'; b.fillRect(0, 0, W, H);
+  LEVELS.forEach(([n, band], i) => {
+    const y = i * 104, r = rock[band];
+    for (let x = 128; x < W; x += r.width) b.drawImage(r, 0, 0, Math.min(r.width, W - x), 96, x, y, Math.min(r.width, W - x), 96);
+    b.fillStyle = '#4f4148'; b.fillRect(128, y + 96, W - 128, 8); b.fillStyle = '#8e7870'; b.fillRect(128, y + 96, W - 128, 1);
+    let left = stairEdge;
+    for (const rm of rooms) if (rm.row === i) { seam(b, left, rm.left, rm.x - GAP, y); left = rm.right; }
+    b.drawImage(stair, 0, y);
+    const s = String(n), w = s.length * 5 - 1;
+    drawDigits(b, s, Math.floor((102 + 116 + 1 - w) / 2), y + Math.floor((58 + 67 + 1 - 6) / 2), '#f3e6c8');
+  });
+
+  // ---- figures ----
+  const versions = new Map();
+  for (const role of figs.roles) {
+    for (const v of role.versions) {
+      v.role = role.role;
+      v.stillImg = await load(v.still.src);
+      for (const a of Object.values(v.anims)) a.img = await load(a.src);
+      versions.set(v.id, v);
+    }
+    const firstKept = role.versions.find((v) => v.status !== 'drop') || role.versions[0];
+    if (!versions.has(chosen[role.role])) chosen[role.role] = firstKept.id;
+  }
+  // Verdicts start from the ones recorded in figures.json; the viewer's own edits override them.
+  for (const v of versions.values()) if (!verdicts[v.id] && (v.status || v.feedback)) verdicts[v.id] = { v: v.status || '', note: v.feedback || '' };
+  const visible = (v) => showDropped || (verdicts[v.id]?.v ?? v.status) !== 'drop';
+  // A role whose shown version was dropped falls back to its first surviving version.
+  for (const role of figs.roles) {
+    if (!visible(versions.get(chosen[role.role]))) chosen[role.role] = (role.versions.find(visible) || role.versions[0]).id;
+  }
+  const roleOf = (r) => figs.roles.find((x) => x.role === r);
+
+  // Which clip a figure plays for a behaviour, falling back to the still. Returns {img, meta, missing}.
+  function clip(v, want) {
+    const act = v.anims[chosenAction[v.id]] ? chosenAction[v.id] : 'work';
+    const order = { walk: ['walk'], idle: ['idle'], work: [act, 'idle'], still: [] }[want];
+    for (const k of order) if (v.anims[k]?.img) return { img: v.anims[k].img, meta: v.anims[k], kind: k.startsWith('work') ? 'work' : k, missing: !k.startsWith(want) };
+    return { img: v.stillImg, meta: { ...v.still, frames: 1, ms: 1000 }, kind: 'still', missing: want !== 'still' };
+  }
+  // Draw one frame of a clip with its feet on floorY and its body centred on cx.
+  function drawFigure(g, c, t, cx, floorY, facing, phase = 0) {
+    const m = c.meta, n = m.frames, k = Math.floor((t + phase) / m.ms);
+    // ping-pong plays the actions forward then back, so an open loop (swing ending low) never snaps
+    const pp = (pingpong || m.pp) && c.kind !== 'walk' && n > 2;
+    const f = n <= 1 ? 0 : pp ? (k % (2 * n - 2) < n ? k % (2 * n - 2) : 2 * n - 2 - (k % (2 * n - 2))) : k % n;
+    const x = Math.round(facing > 0 ? cx - m.cx : cx - (m.w - m.cx)), y = Math.round(floorY - m.feet);
+    g.save();
+    if (facing < 0) { g.translate(x + m.w, y); g.scale(-1, 1); g.drawImage(c.img, f * m.w, 0, m.w, m.h, 0, 0, m.w, m.h); }
+    else g.drawImage(c.img, f * m.w, 0, m.w, m.h, x, y, m.w, m.h);
+    g.restore();
+    return { top: y + (m.feet - (m.heights ? m.heights[1] : m.h)), x };
+  }
+
+  // Actors: each role in each of its rooms, `perRoom` figures per role and room,
+  // spread evenly across the room so figures sharing a room do not stack.
+  let actors = [];
+  function buildActors() {
+    actors = [];
+    const byRoom = new Map();
+    for (const role of figs.roles) {
+      role.rooms.forEach((roomId, k) => {
+        const room = rooms.find((r) => r.id === roomId);
+        if (!room) return;
+        if (!byRoom.has(room)) byRoom.set(room, []);
+        for (let j = 0; j < perRoom; j++) byRoom.get(room).push({ role: role.role, behaviour: ['walk', 'idle', 'work'][k % 3], j, k });
+      });
+    }
+    for (const [room, list] of byRoom) {
+      const lo = room.x + 12, hi = room.x + room.w - 12;
+      list.forEach(({ role, behaviour, j, k }, i) => {
+        const pos = lo + (hi - lo) * (i + 0.5) / list.length;
+        actors.push({ role, room, behaviour, lo, hi, pos, facing: (i + k) % 2 ? -1 : 1, phase: Math.random() * 2000, rest: 0 });
+      });
+    }
+  }
+  buildActors();
+
+  const cv = document.getElementById('shaft'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const lcv = document.getElementById('lineup'); const lg = lcv.getContext('2d');
+  const size = () => { for (const c of [cv, lcv]) { c.style.width = `${c.width * zoom}px`; c.style.height = `${c.height * zoom}px`; } };
+
+  // ---- line-up ----
+  const lrole = document.getElementById('lrole'), lroom = document.getElementById('lroom');
+  lrole.innerHTML = '<option value="*">All roles (shown versions)</option>' + figs.roles.map((r) => `<option value="${r.role}">${r.label}</option>`).join('');
+  lroom.innerHTML = [...new Set(rooms.map((r) => r.id))].sort().map((id) => `<option>${id}</option>`).join('');
+  lrole.value = store.get('lrole', '*'); if (!lrole.value) lrole.value = '*';
+  lroom.value = store.get('lroom', 'common-hall');
+  let lineup = null;
+  async function buildLineup() {
+    store.set('lrole', lrole.value); store.set('lroom', lroom.value);
+    const all = lrole.value === '*', room = await roomArt(lroom.value);
+    const list = all ? figs.roles.map((r) => versions.get(chosen[r.role])) : roleOf(lrole.value).versions.filter(visible);
+    const need = list.length * 42 + 16;
+    const tiles = Math.max(1, Math.ceil(need / (room.w + GAP)));
+    lcv.width = tiles * (room.w + GAP) + GAP; lcv.height = 104 + 10;
+    const step = (lcv.width - 16) / list.length;
+    lineup = { all, room, tiles, slots: list.map((v, i) => ({ v, cx: Math.round(8 + step * (i + 0.5)) })) };
+    document.getElementById('llegend').innerHTML = lineup.slots.map((s, i) =>
+      `<span><b>${i + 1}</b> ${all ? roleOf(s.v.role).label + ' · ' : ''}${s.v.label} · ${s.v.still.heights[1]} px</span>`).join('');
+    size();
+  }
+  lrole.onchange = () => { if (lrole.value !== '*') lroom.value = roleOf(lrole.value).rooms[0]; buildLineup(); };
+  lroom.onchange = buildLineup;
+  await buildLineup();
+
+  // ---- frame loop ----
+  let clock = 0, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(100, now - last); last = now;
+    if (!paused) clock += dt;
+    const t = clock;
+    g.drawImage(bg, 0, 0);
+    for (const r of rooms) {
+      if (r.strip) { const f = Math.floor(t / r.ms) % r.frames; g.drawImage(r.strip, f * r.w, 0, r.w, 96, r.x, r.y, r.w, 96); continue; }
+      if (flicker && t >= r.next) {
+        let at = t; r.blinks = [];
+        for (let k = 0, n = 1 + Math.floor(Math.random() * 3); k < n; k++) { const len = rnd(40, 120); r.blinks.push([at, at + len]); at += len + rnd(40, 160); }
+        r.next = at + rnd(15000, 60000);
+      }
+      const dim = flicker && r.dim && r.blinks.some(([a, z]) => t >= a && t < z);
+      g.drawImage(dim ? r.dim : r.on, r.x, r.y);
+      if (guides) { g.fillStyle = '#86b6a2'; g.fillRect(r.x, r.y + r.floorY, r.w, 1); }
+    }
+    for (const a of actors) {
+      const v = versions.get(chosen[a.role]);
+      const want = mode === 'mixed' ? a.behaviour : mode;
+      let c = clip(v, want);
+      if (c.kind === 'walk' && !paused) {
+        if (a.rest > 0) { a.rest -= dt; }
+        else {
+          a.pos += a.facing * speed * dt / 1000;
+          if (a.pos > a.hi) { a.pos = a.hi; a.facing = -1; a.rest = rnd(600, 2200); }
+          if (a.pos < a.lo) { a.pos = a.lo; a.facing = 1; a.rest = rnd(600, 2200); }
+        }
+      }
+      if (c.kind === 'walk' && a.rest > 0) c = clip(v, 'idle');
+      const floorY = a.room.y + a.room.floorY;
+      const box = drawFigure(g, c, t, a.pos, floorY, a.facing, a.phase);
+      if (guides && c.missing) { g.fillStyle = '#d9785f'; g.fillRect(Math.round(a.pos) - 1, box.top - 4, 3, 2); }
+    }
+    // line-up
+    if (lineup) {
+      const { room, tiles, slots } = lineup;
+      lg.fillStyle = '#010202'; lg.fillRect(0, 0, lcv.width, lcv.height);
+      let left = null;
+      for (let i = 0; i < tiles; i++) {
+        const x = GAP + i * (room.w + GAP);
+        if (room.strip) { const f = Math.floor(t / room.ms) % room.frames; lg.drawImage(room.strip, f * room.w, 0, room.w, 96, x, 0, room.w, 96); }
+        else lg.drawImage(room.on, x, 0);
+        lg.fillStyle = '#4f4148'; lg.fillRect(0, 96, lcv.width, 8); lg.fillStyle = '#8e7870'; lg.fillRect(0, 96, lcv.width, 1);
+        if (guides) { lg.fillStyle = '#86b6a2'; lg.fillRect(x, room.floorY, room.w, 1); }
+      }
+      slots.forEach((s, i) => {
+        const want = mode === 'mixed' ? 'idle' : mode === 'walk' ? 'walk' : mode;
+        const c = clip(s.v, want);
+        drawFigure(lg, c, t, s.cx, room.floorY, 1, i * 137);
+        drawDigits(lg, i + 1, s.cx - 2, 104 + 2, !lineup.all && s.v.id === chosen[s.v.role] ? '#f2b25a' : '#a8988e');
+      });
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---- controls ----
+  const mark = (sel, val) => document.querySelectorAll(sel).forEach((btn) => btn.classList.toggle('on', btn.dataset[sel.slice(6, 7)] === String(val)));
+  const refresh = () => { mark('[data-z]', zoom); mark('[data-m]', mode); mark('[data-n]', perRoom); size(); };
+  document.querySelectorAll('[data-z]').forEach((btn) => btn.onclick = () => { zoom = Number(btn.dataset.z); store.set('zoom', zoom); refresh(); });
+  document.querySelectorAll('[data-m]').forEach((btn) => btn.onclick = () => { mode = btn.dataset.m; store.set('mode', mode); refresh(); });
+  document.querySelectorAll('[data-n]').forEach((btn) => btn.onclick = () => { perRoom = Number(btn.dataset.n); store.set('perRoom', perRoom); buildActors(); refresh(); });
+  const sp = document.getElementById('speed'), spv = document.getElementById('speedv');
+  sp.oninput = () => { speed = Number(sp.value); spv.textContent = `${speed} px/s`; }; sp.oninput();
+  const toggle = (id, get, set, on, off) => { const el = document.getElementById(id); const upd = () => { el.textContent = get() ? on : off; el.classList.toggle('on', get()); }; el.onclick = () => { set(!get()); upd(); }; upd(); };
+  toggle('guides', () => guides, (v) => guides = v, 'floor lines ✓', 'floor lines');
+  toggle('flick', () => flicker, (v) => flicker = v, 'flicker on', 'flicker off');
+  toggle('pause', () => paused, (v) => paused = v, 'paused', 'pause');
+  toggle('pingpong', () => pingpong, (v) => pingpong = v, 'loops ping-pong', 'loops wrap');
+  toggle('dropped', () => showDropped, (v) => { showDropped = v; renderRoles(); buildLineup(); }, 'hide dropped', 'show dropped');
+  refresh();
+
+  // ---- miner swing takes ----
+  // Every "work…" clip of the shown miner, side by side, so one loop can be picked.
+  function renderSwings() {
+    const host = document.getElementById('swings');
+    const v = versions.get(chosen.miner);
+    const keys = Object.keys(v.anims).filter((k) => k.startsWith('work'));
+    host.innerHTML = '';
+    for (const k of keys) {
+      const a = v.anims[k];
+      const fig = document.createElement('figure');
+      const row = document.createElement('div'); row.className = 'row';
+      const cs = [2, 4].map((z) => {
+        const c = document.createElement('canvas'); c.width = a.w; c.height = a.h;
+        c.style.width = `${a.w * z}px`; c.style.height = `${a.h * z}px`; row.appendChild(c); return c;
+      });
+      const cap = document.createElement('figcaption');
+      cap.innerHTML = `<b>${k === 'work' ? 'swing' : k.slice(5)}</b> · ${a.frames}f · ${a.note}${a.pp ? ' · plays ping-pong' : ''}<br>`;
+      const btn = document.createElement('button');
+      const mark = () => { btn.textContent = (chosenAction[v.id] || 'work') === k ? 'in the shaft ✓' : 'use this one'; btn.classList.toggle('on', (chosenAction[v.id] || 'work') === k); };
+      btn.onclick = () => { chosenAction[v.id] = k; store.set('chosenAction', chosenAction); renderSwings(); renderRoles(); feedback(); };
+      mark(); cap.appendChild(btn); fig.append(row, cap); host.appendChild(fig);
+      const draw = () => {
+        const n = a.frames, t = clock, kk = Math.floor(t / a.ms);
+        const f = (pingpong || a.pp) && n > 2 ? (kk % (2 * n - 2) < n ? kk % (2 * n - 2) : 2 * n - 2 - (kk % (2 * n - 2))) : kk % n;
+        for (const c of cs) { const g2 = c.getContext('2d'); g2.clearRect(0, 0, a.w, a.h); g2.drawImage(a.img, f * a.w, 0, a.w, a.h, 0, 0, a.w, a.h); }
+        if (host.contains(fig)) requestAnimationFrame(draw);
+      };
+      requestAnimationFrame(draw);
+    }
+  }
+  renderSwings();
+
+  // ---- versions and verdicts ----
+  const ANIM_KINDS = ['idle', 'walk', 'work'];
+  const rolesEl = document.getElementById('roles');
+  function renderRoles() {
+    rolesEl.innerHTML = figs.roles.map((role) => `<div class="role"><h3>${role.label}</h3>${role.versions.filter(visible).map((v) => {
+      const vd = verdicts[v.id] || {};
+      const anims = ANIM_KINDS.map((k) => v.anims[k] ? `<i title="${v.anims[k].note}">${k === 'work' ? 'action' : k} ${v.anims[k].heights.join('–')}</i>` : `<s>${k === 'work' ? 'action' : k}</s>`).join(' · ');
+      const acts = Object.keys(v.anims).filter((k) => k.startsWith('work'));
+      const cur = v.anims[chosenAction[v.id]] ? chosenAction[v.id] : 'work';
+      const actPick = acts.length > 1 ? `<br>action: ${acts.map((k) => `<button class="${k === cur ? 'on' : ''}" data-act="${k}" title="${v.anims[k].note}">${k === 'work' ? 'swing' : k.slice(5)}</button>`).join(' ')}<br><span class="hint">${v.anims[cur].note}</span>` : '';
+      return `<div class="ver ${chosen[role.role] === v.id ? 'cur' : ''}" data-v="${v.id}">
+        <img class="thumb" src="${v.still.src}" alt="">
+        <div><div class="name" data-pick="${v.id}">${chosen[role.role] === v.id ? '▶ ' : ''}${v.label}</div></div>
+        <div class="verdict"><button class="keep ${vd.v === 'keep' ? 'on' : ''}" data-vd="keep">keep</button><button class="drop ${vd.v === 'drop' ? 'on' : ''}" data-vd="drop">drop</button></div>
+        <div class="meta">${[v.still, ...Object.values(v.anims)].some((x) => x.clipped) ? '<b style="color:var(--bad)">⚠ cropped at the canvas edge</b><br>' : ''}${v.still.heights[1]} px · ${v.gens} gen · ${v.route}<br>${anims}${actPick}</div>
+        <textarea placeholder="note…" data-note>${vd.note || ''}</textarea></div>`;
+    }).join('')}</div>`).join('');
+  }
+  renderRoles();
+  rolesEl.addEventListener('click', (e) => {
+    const ver = e.target.closest('.ver'); if (!ver) return;
+    const v = versions.get(ver.dataset.v);
+    if (e.target.dataset.act) { chosenAction[v.id] = e.target.dataset.act; store.set('chosenAction', chosenAction); if (chosen[v.role] !== v.id) { chosen[v.role] = v.id; store.set('chosen', chosen); } renderRoles(); renderSwings(); feedback(); return; }
+    if (e.target.dataset.pick) { chosen[v.role] = v.id; store.set('chosen', chosen); renderRoles(); buildLineup(); feedback(); }
+    if (e.target.dataset.vd) { const vd = verdicts[v.id] ||= {}; vd.v = vd.v === e.target.dataset.vd ? '' : e.target.dataset.vd; store.set('verdicts', verdicts); renderRoles(); buildLineup(); feedback(); }
+  });
+  rolesEl.addEventListener('input', (e) => {
+    if (!('note' in e.target.dataset)) return;
+    const id = e.target.closest('.ver').dataset.v; (verdicts[id] ||= {}).note = e.target.value; store.set('verdicts', verdicts); feedback();
+  });
+  const general = document.getElementById('general');
+  general.value = store.get('general', '');
+  general.oninput = () => { store.set('general', general.value); feedback(); };
+  const out = document.getElementById('out');
+  function feedback() {
+    const lines = ['Figure feedback (probe v24/shaft)'];
+    for (const role of figs.roles) {
+      const sv = versions.get(chosen[role.role]);
+      lines.push(`${role.label}: shown = ${sv.label}${chosenAction[sv.id] ? ` · action = ${chosenAction[sv.id]}` : ''}`);
+      for (const v of role.versions) {
+        const vd = verdicts[v.id]; if (!vd || (!vd.v && !vd.note)) continue;
+        lines.push(`  - ${v.id}: ${vd.v || '—'}${vd.note ? ` · ${vd.note}` : ''}`);
+      }
+    }
+    if (general.value.trim()) lines.push(`General: ${general.value.trim()}`);
+    out.value = lines.join('\n');
+  }
+  feedback();
+  document.getElementById('copy').onclick = async () => {
+    try { await navigator.clipboard.writeText(out.value); document.getElementById('copied').textContent = 'copied'; }
+    catch { out.select(); document.getElementById('copied').textContent = 'select and copy the box below'; }
+  };
+})();
+</script>
+</body>
+</html>

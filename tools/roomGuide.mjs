@@ -64,6 +64,21 @@ const P = {
   rust: '#8e3f30', terracotta: '#cf6a40', amber: '#f2b25a',
 };
 
+/**
+ * A row of chairs in side elevation: back, seat and legs, repeated. Written as
+ * a function because the auditorium seats fourteen and listing them by hand
+ * would bury the rest of its blockout.
+ */
+const chairRow = (x0, count, step, seatY, colour) => Array.from({ length: count }, (_, i) => {
+  const x = x0 + i * step;
+  return [
+    ['rect', x, seatY - 14, x + 2, seatY, colour],        // back
+    ['rect', x, seatY, x + 9, seatY + 2, colour],         // seat
+    ['rect', x + 1, seatY + 3, x + 2, seatY + 10, colour], // legs
+    ['rect', x + 7, seatY + 3, x + 8, seatY + 10, colour],
+  ];
+}).flat();
+
 const LAYOUTS = {
   'main-generator': [
     ['rect', 8, 12, 183, 15, P.taupe],              // ceiling pipe run
@@ -709,6 +724,155 @@ const LAYOUTS = {
     ['rect', 55, 56, 56, 57, P.sand],
     ['rect', 55, 72, 56, 73, P.sand],
   ],
+  /**
+   * Where the Accord is amended and where it is applied to a person. The bench
+   * is raised and central, the dock is in front of it and the public bench is
+   * off to one side: the room states the hierarchy before anyone speaks.
+   */
+  judicial: [
+    ['rect', 10, 20, 30, 87, P.rust],               // law library
+    ['rect', 12, 32, 28, 33, P.plum],
+    ['rect', 12, 48, 28, 49, P.plum],
+    ['rect', 12, 64, 28, 65, P.plum],
+    ['circle', 52, 16, 2, P.amber],                 // lamps
+    ['circle', 140, 16, 2, P.amber],
+    ['circle', 62, 30, 9, P.sand],                  // scales seal
+    ['circle', 62, 30, 5, P.rust],
+    ['rect', 88, 18, 128, 46, P.tealDeep],          // the Accord, engraved
+    ['rect', 94, 24, 122, 25, P.cream],
+    ['rect', 94, 30, 116, 31, P.cream],
+    ['rect', 94, 36, 120, 37, P.cream],
+    ['rect', 150, 20, 172, 48, P.terracotta],       // hanging banner
+    ['rect', 96, 40, 102, 54, P.ink],               // judges' chair backs
+    ['rect', 108, 36, 116, 54, P.ink],
+    ['rect', 122, 40, 128, 54, P.ink],
+    ['rect', 82, 52, 142, 56, P.mauve],             // bench top
+    ['rect', 82, 57, 142, 79, P.plum],              // bench front
+    ['rect', 78, 80, 146, 87, P.ink],               // dais
+    ['rect', 38, 60, 64, 64, P.rust],               // the dock rail
+    ['rect', 38, 64, 40, 87, P.rust],
+    ['rect', 62, 64, 64, 87, P.rust],
+    ['rect', 150, 66, 182, 69, P.sand],             // public bench
+    ['rect', 152, 70, 154, 87, P.sand],
+    ['rect', 178, 70, 180, 87, P.sand],
+  ],
+
+  /**
+   * The way out, four slots so it and the auditorium fill level 1 exactly. One
+   * slot of cell, where someone leaving spends their last day on a bench; one
+   * slot of suit-up bay, full-body suits hanging on a rack above a bench and
+   * boots; and two slots of door — the only thing in the Shaft that opens onto
+   * the outside, so it is built like a vault and banded in hazard paint.
+   */
+  'shaft-exit': [
+    // The cell: bars across the front, the bench behind them.
+    ['circle', 30, 16, 2, P.amber],                 // caged lamp over the cell
+    ['rect', 18, 28, 42, 42, P.tealDeep],           // the notice, posted
+    ['rect', 21, 32, 38, 33, P.cream],
+    ['rect', 21, 37, 33, 38, P.cream],
+    ['rect', 10, 68, 50, 72, P.rust],               // the bench
+    ['rect', 12, 73, 14, 87, P.rust],
+    ['rect', 46, 73, 48, 87, P.rust],
+    ['rect', 8, 18, 56, 20, P.ink],                 // cell bars
+    ['rect', 8, 18, 9, 87, P.ink],
+    ['rect', 16, 18, 17, 87, P.ink],
+    ['rect', 24, 18, 25, 87, P.ink],
+    ['rect', 32, 18, 33, 87, P.ink],
+    ['rect', 40, 18, 41, 87, P.ink],
+    ['rect', 48, 18, 49, 87, P.ink],
+    ['rect', 55, 18, 56, 87, P.ink],
+    ['rect', 60, 12, 65, 87, P.taupe],              // divider: cell | suit bay
+    // The suit-up bay: three full-body suits on a rail, helmets on the shelf.
+    ['circle', 98, 16, 2, P.amber],                 // lamp
+    ['rect', 70, 22, 126, 23, P.ink],               // hanging rail
+    ['rect', 70, 24, 126, 26, P.mauve],             // helmet shelf
+    ['circle', 78, 20, 4, P.sand],                  // helmets, visors teal
+    ['circle', 98, 20, 4, P.sand],
+    ['circle', 118, 20, 4, P.sand],
+    ['rect', 72, 28, 84, 62, P.terracotta],         // suit: torso and arms
+    ['rect', 73, 62, 76, 74, P.terracotta],         // legs
+    ['rect', 80, 62, 83, 74, P.terracotta],
+    ['rect', 92, 28, 104, 62, P.sand],              // suit
+    ['rect', 93, 62, 96, 74, P.sand],
+    ['rect', 100, 62, 103, 74, P.sand],
+    ['rect', 112, 28, 124, 62, P.terracotta],       // suit
+    ['rect', 113, 62, 116, 74, P.terracotta],
+    ['rect', 120, 62, 123, 74, P.terracotta],
+    ['rect', 74, 34, 82, 36, P.tealLit],            // visor straps / chest plates
+    ['rect', 94, 34, 102, 36, P.tealLit],
+    ['rect', 114, 34, 122, 36, P.tealLit],
+    ['rect', 70, 78, 126, 80, P.rust],              // changing bench
+    ['rect', 72, 81, 74, 87, P.rust],
+    ['rect', 122, 81, 124, 87, P.rust],
+    ['rect', 84, 83, 90, 87, P.ink],                // boots under the bench
+    ['rect', 104, 83, 110, 87, P.ink],
+    ['rect', 128, 12, 133, 87, P.taupe],            // divider: suit bay | door
+    // The door, two slots.
+    ['rect', 140, 14, 148, 87, P.plum],             // door jamb, left
+    ['rect', 228, 14, 236, 87, P.plum],             // door jamb, right
+    ['rect', 142, 26, 234, 32, P.taupe],            // lintel over the door
+    ['rect', 150, 34, 226, 87, P.mauve],            // the door leaf, set in its frame
+    ['rect', 150, 34, 226, 37, P.amber],            // hazard band, head
+    ['rect', 150, 82, 226, 85, P.amber],            // hazard band, sill
+    ['circle', 188, 60, 17, P.taupe],               // the wheel
+    ['circle', 188, 60, 5, P.plum],
+    ['rect', 186, 46, 190, 74, P.plum],             // spokes
+    ['rect', 174, 58, 202, 62, P.plum],
+    ['rect', 206, 42, 222, 56, P.tealDeep],         // release panel
+    ['circle', 211, 48, 2, P.terracotta],
+    ['circle', 217, 48, 2, P.mint],
+    ['circle', 158, 18, 3, P.rust],                 // warning lamp, above the frame
+    ['rect', 168, 14, 212, 22, P.tealDeep],         // stencilled sign over the door
+    ['rect', 172, 17, 208, 18, P.cream],
+  ],
+
+  /**
+   * Six slots: the only room wide enough to hold the Shaft at once. A lectern
+   * and a low stage on the left, raked seating through the middle, and at the
+   * back a window onto a dead landscape — which is a screen, though the room is
+   * built so you forget that. A departure through the exit on this level is
+   * watched from these chairs. Six slots and not seven because 384 px is the
+   * widest canvas pixflux will draw in one pass (probe/v26: a 448-px hall
+   * generated as two halves never agreed about its floor or its chairs).
+   */
+  auditorium: [
+    ['rect', 8, 12, 376, 14, P.taupe],              // ceiling beam run
+    ['circle', 30, 19, 2, P.amber],                 // lamps
+    ['circle', 120, 17, 2, P.amber],
+    ['circle', 264, 17, 2, P.amber],
+    ['circle', 354, 19, 2, P.amber],
+    // The window is the room: centred and 72% of the wall wide. Kept SHORT so
+    // the seating has a band of its own — at full height the generator drops
+    // the chairs and the lectern entirely (probe/v26, seed 26072).
+    ['rect', 54, 16, 330, 54, P.ink],               // the frame
+    ['rect', 59, 20, 325, 50, P.taupe],             // a bleached sky
+    ['rect', 59, 38, 325, 50, P.mauve],             // and the dust under it
+    ['rect', 59, 38, 325, 39, P.plum],              // the horizon
+    ['rect', 190, 22, 193, 44, P.ink],              // dead tree: trunk
+    ['rect', 188, 42, 195, 46, P.ink],              // its root flare
+    ['rect', 186, 27, 189, 28, P.ink],              // bare branches, forking up
+    ['rect', 182, 25, 186, 26, P.ink],
+    ['rect', 178, 23, 182, 24, P.ink],
+    ['rect', 194, 29, 198, 30, P.ink],
+    ['rect', 198, 26, 202, 27, P.ink],
+    ['rect', 202, 24, 205, 25, P.ink],
+    ['rect', 194, 21, 196, 22, P.ink],
+    ['rect', 184, 34, 189, 35, P.ink],
+    ['rect', 50, 54, 334, 58, P.mauve],             // the sill under it
+    // A lectern on a low dais at one end, standing in front of the window.
+    ['rect', 8, 76, 60, 79, P.mauve],
+    ['rect', 8, 79, 60, 87, P.plum],
+    ['rect', 28, 58, 36, 76, P.rust],               // lectern column
+    ['rect', 20, 52, 44, 58, P.sand],               // lectern desk
+    ['rect', 14, 18, 17, 76, P.taupe],              // standard
+    ['rect', 17, 22, 30, 44, P.terracotta],         // banner
+    // One flat row of chairs, all the same size, in the band below the window.
+    ...chairRow(72, 11, 27, 78, P.rust),
+    ['rect', 66, 86, 376, 87, P.ink],               // the aisle floor line
+    ['rect', 348, 66, 372, 70, P.sand],             // a small bench at the far end
+    ['rect', 350, 71, 352, 87, P.sand],
+    ['rect', 368, 71, 370, 87, P.sand],
+  ],
 };
 
 /**
@@ -771,7 +935,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const width = Number(args[0]);
   const kind = args[1] ?? 'room';
   const layout = args[2] ?? null;
-  if (![64, 128, 192, 256].includes(width)) throw new Error("width must be 64, 128, 192 or 256");
+  // One slot to the full width of a level; the guide itself has no limit, but
+  // pixflux stops at 400 px, so anything wider is generated in pieces (§2.4).
+  if (!Number.isInteger(width / 64) || width < 64 || width > 640) {
+    throw new Error('width must be a whole number of 64-px slots, 64 to 640');
+  }
   if (!['room', 'open'].includes(kind)) throw new Error('kind must be room or open');
   const name = (layout ? `${width}-${kind}-${layout}` : `${width}-${kind}`) + (lit ? '-lit' : '');
   const out = resolve(ROOT, `resources/assets/room-guide-${name}.png`);

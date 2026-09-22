@@ -3,38 +3,56 @@
  * What part of the shaft is on screen, and therefore what needs drawing.
  *
  * One mechanism answers four requirements at once. All geometry is authored in
- * shaft units; the viewBox maps a range of levels onto whatever pixel box
- * exists. So:
- *   - resolution independence is free (no devicePixelRatio, no redraw on zoom)
+ * shaft units (1:1 with sprite pixels); the viewBox maps a range of levels
+ * onto whatever pixel box exists. So:
  *   - pan is a change of `topLevel`
- *   - zoom is a change of `visibleLevels`
+ *   - zoom is a change of `scale`
  *   - culling is "which levels does the range cover"
  *
- * A phone showing 8 levels and a 4K monitor showing 40 run the same code with
- * a different viewBox. Nothing here knows about pixels.
+ * Zoom is INTEGER ONLY (asset-production-spec §1). Pixel art scaled by a
+ * fractional factor shimmers, so the scale is a whole number of screen pixels
+ * per sprite pixel and the visible area is derived from it: a bigger window
+ * shows more levels, not bigger ones. The one exception is a host narrower
+ * than the shaft at 1x, which fits the width instead so nothing is cut off.
+ *
+ * When the shaft is wider than the view it scrolls sideways too (`left`).
  */
 
 import { LEVEL_HEIGHT, SHAFT_WIDTH, levelY } from './interpolate.js';
 
-export const MIN_VISIBLE_LEVELS = 4;
-export const MAX_VISIBLE_LEVELS = 60;
+export const MIN_SCALE = 1;
+export const MAX_SCALE = 4;
 
-export function createViewport({ levelCount, visibleLevels = 14, topLevel = 1 } = {}) {
+/** Fraction of the shaft width the default zoom may push out of view. */
+const OVERFLOW_ALLOWANCE = 0.08;
+
+export function createViewport({ levelCount, topLevel = 1 } = {}) {
   return {
     levelCount,
-    visibleLevels: clampVisible(visibleLevels, levelCount),
     topLevel,
+    /** Screen pixels per sprite pixel. */
+    scale: 1,
+    /** The player's chosen scale, or null to take the largest that fits. */
+    chosenScale: null,
+    /** Visible area in shaft units, derived from the host size and scale. */
+    viewWidth: SHAFT_WIDTH,
+    /** Left edge in shaft units, used only when the shaft overflows the view. */
+    left: 0,
+    visibleLevels: 7,
+    host: null,
   };
 }
 
 /**
- * The SVG viewBox string. Height is derived from the visible level count, so
- * levels keep their aspect ratio regardless of the element's pixel size.
+ * The SVG viewBox string. Origins are rounded to whole sprite pixels so that,
+ * at an integer scale, every sprite pixel lands on whole screen pixels even
+ * mid-pan. The shaft is centred when the view is wider than it.
  */
 export function viewBoxOf(viewport) {
-  const y = levelY(viewport.topLevel);
-  const height = viewport.visibleLevels * LEVEL_HEIGHT;
-  return `0 ${y} ${SHAFT_WIDTH} ${height}`;
+  const spare = SHAFT_WIDTH - viewport.viewWidth;
+  const x = spare <= 0 ? Math.round(spare / 2) : Math.round(clamp(viewport.left, 0, spare));
+  const y = Math.round(levelY(viewport.topLevel));
+  return `${x} ${y} ${viewport.viewWidth} ${viewport.visibleLevels * LEVEL_HEIGHT}`;
 }
 
 /**
@@ -52,6 +70,12 @@ export function isLevelVisible(viewport, level) {
   return level >= first && level <= last;
 }
 
+/** Scroll sideways by shaft units; only has an effect when the shaft overflows. */
+export function panX(viewport, deltaUnits) {
+  viewport.left = clamp(viewport.left + deltaUnits, 0, Math.max(0, SHAFT_WIDTH - viewport.viewWidth));
+  return viewport;
+}
+
 /** Scroll by a number of levels, stopping at the ends of the shaft. */
 export function pan(viewport, deltaLevels) {
   const maxTop = Math.max(1, viewport.levelCount - viewport.visibleLevels + 1);
@@ -60,39 +84,43 @@ export function pan(viewport, deltaLevels) {
 }
 
 /**
- * Zoom, keeping `anchorLevel` at the same relative screen position — so
- * zooming does not throw away the thing the player was looking at. That anchor
- * is also what a pinch gesture would need, when touch support lands.
+ * Zoom one integer step in (+1) or out (-1), keeping `anchorLevel` at the same
+ * relative screen position — so zooming does not throw away the thing the
+ * player was looking at.
  */
-export function zoom(viewport, factor, anchorLevel = null) {
+export function zoom(viewport, step, anchorLevel = null) {
   const before = viewport.visibleLevels;
-  const after = clampVisible(before * factor, viewport.levelCount);
-  if (after === before) return viewport;
+  const next = clamp(Math.round(viewport.scale) + Math.sign(step), MIN_SCALE, MAX_SCALE);
+  if (next === viewport.scale) return viewport;
 
   const anchor = anchorLevel ?? viewport.topLevel + before / 2;
   const ratio = (anchor - viewport.topLevel) / before;
 
-  viewport.visibleLevels = after;
-  viewport.topLevel = anchor - ratio * after;
+  viewport.chosenScale = next;
+  fitToElement(viewport, viewport.host);
+  viewport.topLevel = anchor - ratio * viewport.visibleLevels;
   return pan(viewport, 0); // re-clamp to the shaft's ends
 }
 
 /**
- * Fit the visible level count to the element's own aspect ratio, so the shaft
- * fills its box instead of letterboxing.
- *
- * This is where resolution independence actually pays off: a tall narrow phone
- * gets fewer, larger levels and a wide monitor gets more, from the same
- * geometry and with no breakpoint. `zoomBias` lets the player zoom relative to
- * whatever the fitted baseline is, so a resize does not undo their zoom.
+ * Derive the visible area from the element's size and the scale, so the shaft
+ * fills its box instead of letterboxing. The default scale is the largest
+ * whole number at which the full shaft width still fits.
  */
-export function fitToElement(viewport, rect, zoomBias = 1) {
+export function fitToElement(viewport, rect) {
   if (!rect || rect.width <= 0 || rect.height <= 0) return viewport;
+  viewport.host = { width: rect.width, height: rect.height };
 
-  const unitsTall = (rect.height / rect.width) * SHAFT_WIDTH;
-  const fitted = (unitsTall / LEVEL_HEIGHT) * zoomBias;
+  // Round up when only a sliver would be cut: losing a few pixels at the far
+  // end of the build area is better than a whole zoom step less.
+  const fits = Math.floor(rect.width / SHAFT_WIDTH + OVERFLOW_ALLOWANCE);
+  viewport.scale = fits < 1 && viewport.chosenScale === null
+    ? rect.width / SHAFT_WIDTH
+    : clamp(viewport.chosenScale ?? fits, MIN_SCALE, MAX_SCALE);
 
-  viewport.visibleLevels = clampVisible(fitted, viewport.levelCount);
+  viewport.viewWidth = rect.width / viewport.scale;
+  viewport.visibleLevels = rect.height / viewport.scale / LEVEL_HEIGHT;
+  panX(viewport, 0);
   return pan(viewport, 0);
 }
 
@@ -110,10 +138,6 @@ export function focusLevel(viewport, level) {
 export function levelAtClientY(viewport, clientY, rect) {
   const fraction = (clientY - rect.top) / rect.height;
   return Math.floor(viewport.topLevel + fraction * viewport.visibleLevels);
-}
-
-function clampVisible(n, levelCount) {
-  return Math.round(clamp(n, MIN_VISIBLE_LEVELS, Math.min(MAX_VISIBLE_LEVELS, levelCount)));
 }
 
 function clamp(v, min, max) {

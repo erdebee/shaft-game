@@ -1,0 +1,2084 @@
+{
+ "roles": [
+  {
+   "role": "engineer",
+   "label": "Engineer",
+   "rooms": [
+    "main-generator",
+    "workshop",
+    "machine-shop",
+    "battery-bank"
+   ],
+   "versions": [
+    {
+     "id": "engineer-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "create_character v3, size 40, plain wording",
+     "gens": 2,
+     "still": {
+      "src": "img/engineer-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "walk": {
+       "src": "img/engineer-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      },
+      "idle": {
+       "src": "img/engineer-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template breathing-idle",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "engineer-std32",
+     "label": "standard \u00b7 size 32",
+     "route": "create_character standard, size 32",
+     "gens": 1,
+     "still": {
+      "src": "img/engineer-std32-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 26,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {
+      "walk": {
+       "src": "img/engineer-std32-walk.png",
+       "w": 48,
+       "h": 48,
+       "frames": 8,
+       "feet": 43,
+       "cx": 26,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      },
+      "idle": {
+       "src": "img/engineer-std32-idle.png",
+       "w": 48,
+       "h": 48,
+       "frames": 4,
+       "feet": 43,
+       "cx": 26,
+       "heights": [
+        37,
+        37
+       ],
+       "ms": 260,
+       "note": "template breathing-idle",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "lacks outline"
+    },
+    {
+     "id": "engineer-v3s48",
+     "label": "v3 \u00b7 size 48 (44 px)",
+     "route": "create_character v3, size 48",
+     "gens": 2,
+     "still": {
+      "src": "img/engineer-v3s48-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 46,
+      "cx": 23,
+      "heights": [
+       44,
+       44
+      ]
+     },
+     "status": "drop",
+     "feedback": "very nice detail, shading, and outline, but too big",
+     "anims": {}
+    },
+    {
+     "id": "engineer-proflash",
+     "label": "pro flash + room style",
+     "route": "create_character_pro_flash with a room patch as style",
+     "gens": 6,
+     "still": {
+      "src": "img/engineer-proflash-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 46,
+      "cx": 24,
+      "heights": [
+       44,
+       44
+      ]
+     },
+     "status": "drop",
+     "feedback": "too big, and we do not see its eyes (as if facing away)",
+     "anims": {}
+    }
+   ]
+  },
+  {
+   "role": "porter",
+   "label": "Porter",
+   "rooms": [
+    "freight-elevator",
+    "salvage-post",
+    "dumbwaiter"
+   ],
+   "versions": [
+    {
+     "id": "porter-v3-smallcrate",
+     "label": "v3 \u00b7 small crate",
+     "route": "v3 size 40, 'small wooden crate strapped high on his back'",
+     "gens": 2,
+     "still": {
+      "src": "img/porter-v3-smallcrate-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 18,
+      "heights": [
+       35,
+       35
+      ]
+     },
+     "anims": {
+      "walk": {
+       "src": "img/porter-v3-smallcrate-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 16,
+       "heights": [
+        33,
+        34
+       ],
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      },
+      "idle": {
+       "src": "img/porter-v3-smallcrate-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 17,
+       "heights": [
+        34,
+        34
+       ],
+       "ms": 260,
+       "note": "template breathing-idle",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "porter-v3s40",
+     "label": "v3 \u00b7 big crate",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": {
+      "src": "img/porter-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 16,
+      "heights": [
+       37,
+       37
+      ]
+     },
+     "anims": {
+      "walk": {
+       "src": "img/porter-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 16,
+       "heights": [
+        35,
+        37
+       ],
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "porter-w1",
+     "label": "standard \u00b7 w1",
+     "route": "create_character standard, size 32, plain wording",
+     "gens": 1,
+     "still": {
+      "src": "img/porter-w1-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 22,
+      "heights": [
+       34,
+       34
+      ]
+     },
+     "anims": {
+      "walk": {
+       "src": "img/porter-w1-walk.png",
+       "w": 48,
+       "h": 48,
+       "frames": 8,
+       "feet": 43,
+       "cx": 22,
+       "heights": [
+        33,
+        34
+       ],
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      },
+      "work": {
+       "src": "img/porter-w1-work.png",
+       "w": 56,
+       "h": 56,
+       "frames": 8,
+       "feet": 47,
+       "cx": 27,
+       "heights": [
+        34,
+        35
+       ],
+       "ms": 120,
+       "note": "v3 'leaning under a heavy load' (walks)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline"
+    },
+    {
+     "id": "porter-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": {
+      "src": "img/porter-w2-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 22,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline, too little detail",
+     "anims": {}
+    },
+    {
+     "id": "porter-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": {
+      "src": "img/porter-w3-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 42,
+      "cx": 22,
+      "heights": [
+       35,
+       35
+      ]
+     },
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline, too little detail",
+     "anims": {}
+    }
+   ]
+  },
+  {
+   "role": "councillor",
+   "label": "Councillor",
+   "rooms": [
+    "council-chamber",
+    "presidential-suite"
+   ],
+   "versions": [
+    {
+     "id": "councillor-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": {
+      "src": "img/councillor-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/councillor-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        38,
+        38
+       ],
+       "ms": 260,
+       "note": "template breathing-idle",
+       "pp": false
+      },
+      "work": {
+       "src": "img/councillor-v3s40-work.png",
+       "w": 56,
+       "h": 56,
+       "frames": 9,
+       "feet": 47,
+       "cx": 28,
+       "heights": [
+        37,
+        39
+       ],
+       "ms": 180,
+       "note": "v3 'standing still, breathing, head tilting'",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/councillor-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "councillor-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, plain wording",
+     "gens": 1,
+     "still": {
+      "src": "img/councillor-w1-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 24,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {
+      "work": {
+       "src": "img/councillor-w1-work.png",
+       "w": 56,
+       "h": 56,
+       "frames": 8,
+       "feet": 47,
+       "cx": 28,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 180,
+       "note": "v3 'shifting weight, nodding' (turns into a stride)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "lacks outline"
+    },
+    {
+     "id": "councillor-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": {
+      "src": "img/councillor-w2-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 24,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "status": "drop",
+     "feedback": "lacks detail and outline",
+     "anims": {}
+    },
+    {
+     "id": "councillor-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": {
+      "src": "img/councillor-w3-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 44,
+      "cx": 24,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "status": "drop",
+     "feedback": "okayish, little outline, a bit too thin",
+     "anims": {}
+    }
+   ]
+  },
+  {
+   "role": "miner",
+   "label": "Miner",
+   "rooms": [
+    "dig-face",
+    "smelter",
+    "salvage-post"
+   ],
+   "versions": [
+    {
+     "id": "miner-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": {
+      "src": "img/miner-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 19,
+      "heights": [
+       36,
+       36
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "walk": {
+       "src": "img/miner-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 18,
+       "heights": [
+        35,
+        36
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template walking-8-frames",
+       "pp": false
+      },
+      "idle": {
+       "src": "img/miner-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 18,
+       "heights": [
+        35,
+        36
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template breathing-idle",
+       "pp": false
+      },
+      "work": {
+       "src": "img/miner-v3s40-work.png",
+       "w": 52,
+       "h": 52,
+       "frames": 13,
+       "feet": 44,
+       "cx": 25,
+       "heights": [
+        35,
+        37
+       ],
+       "clipped": false,
+       "ms": 95,
+       "note": "take 2, chosen: same loop with every frame held to the first frame's palette (fixpalette.py)",
+       "pp": false
+      },
+      "work-cycle": {
+       "src": "img/miner-v3s40-work-cycle.png",
+       "w": 52,
+       "h": 52,
+       "frames": 13,
+       "feet": 44,
+       "cx": 25,
+       "heights": [
+        35,
+        37
+       ],
+       "clipped": false,
+       "ms": 95,
+       "note": "take 2 raw: v3 12f full cycle \u2014 trousers drift green mid-swing",
+       "pp": false
+      },
+      "work-interp": {
+       "src": "img/miner-v3s40-work-interp.png",
+       "w": 60,
+       "h": 52,
+       "frames": 7,
+       "feet": 44,
+       "cx": 25,
+       "heights": [
+        35,
+        36
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "v3 interpolation raised \u2192 strike (play ping-pong)",
+       "pp": true
+      },
+      "work-chop": {
+       "src": "img/miner-v3s40-work-chop.png",
+       "w": 52,
+       "h": 52,
+       "frames": 9,
+       "feet": 44,
+       "cx": 25,
+       "heights": [
+        35,
+        36
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "v3 'chopping repeatedly at a rock wall'",
+       "pp": false
+      },
+      "work-raise": {
+       "src": "img/miner-v3s40-work-raise.png",
+       "w": 52,
+       "h": 52,
+       "frames": 9,
+       "feet": 45,
+       "cx": 25,
+       "heights": [
+        34,
+        37
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "take 1: v3 'raise overhead and strike down' \u2014 ends low, open loop",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "best sprite of all; pickaxe animation not good, redo"
+    },
+    {
+     "id": "miner-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, plain wording",
+     "gens": 1,
+     "still": {
+      "src": "img/miner-w1-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 28,
+      "heights": [
+       37,
+       37
+      ]
+     },
+     "anims": {
+      "work": {
+       "src": "img/miner-w1-work.png",
+       "w": 56,
+       "h": 56,
+       "frames": 8,
+       "feet": 47,
+       "cx": 31,
+       "heights": [
+        36,
+        38
+       ],
+       "ms": 110,
+       "note": "v3 'swinging a pickaxe' (small chop)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "too thin, no outline"
+    },
+    {
+     "id": "miner-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": {
+      "src": "img/miner-w2-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 28,
+      "heights": [
+       34,
+       34
+      ]
+     },
+     "status": "drop",
+     "feedback": "too thin, no outline",
+     "anims": {}
+    },
+    {
+     "id": "miner-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": {
+      "src": "img/miner-w3-still.png",
+      "w": 48,
+      "h": 48,
+      "frames": 1,
+      "feet": 43,
+      "cx": 25,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "status": "drop",
+     "feedback": "too thin, no outline, too little detail",
+     "anims": {}
+    }
+   ]
+  },
+  {
+   "role": "grower",
+   "label": "Grower",
+   "rooms": [
+    "hydroponics-bay",
+    "grove",
+    "oxygen-garden"
+   ],
+   "versions": [
+    {
+     "id": "grower-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: mint apron, brimmed straw hat, watering can",
+     "gens": 2,
+     "char": "5a4b77fe-ade8-47e6-839e-737d5a8cc8c6",
+     "still": {
+      "src": "img/grower-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 19,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/grower-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        38,
+        38
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/grower-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 19,
+       "heights": [
+        36,
+        38
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "kitchen-hand",
+   "label": "Kitchen hand",
+   "rooms": [
+    "canteen",
+    "food-processing",
+    "protein-vats"
+   ],
+   "versions": [
+    {
+     "id": "kitchen-hand-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream apron over terracotta, headscarf",
+     "gens": 2,
+     "char": "1a75fc44-ef95-4c04-9da1-311407c1cb31",
+     "still": {
+      "src": "img/kitchen-hand-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/kitchen-hand-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/kitchen-hand-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "pump-tech",
+   "label": "Pump tech",
+   "rooms": [
+    "deep-pump",
+    "cistern",
+    "purifier"
+   ],
+   "versions": [
+    {
+     "id": "pump-tech-r6c",
+     "label": "r6c",
+     "route": "r6: 'heavyset, short beard, wide build'",
+     "gens": 2,
+     "char": "883e9a8b-5209-40a7-947c-f752553ff1e5",
+     "still": {
+      "src": "img/pump-tech-r6c-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 40,
+      "cx": 20,
+      "heights": [
+       39,
+       39
+      ],
+      "clipped": true
+     },
+     "anims": {
+      "idle": {
+       "src": "img/pump-tech-r6c-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        38,
+        38
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/pump-tech-r6c-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "pump-tech-r6d",
+     "label": "r6d",
+     "route": "r6: padded jacket, proportions shoulders 1.3 / hips 1.2",
+     "gens": 2,
+     "char": "224c20e4-4722-48e0-a26f-cd7b1556e333",
+     "still": {
+      "src": "img/pump-tech-r6d-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "idle": {
+       "src": "img/pump-tech-r6d-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/pump-tech-r6d-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        35,
+        36
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "no face"
+    },
+    {
+     "id": "pump-tech-r6a",
+     "label": "r6a",
+     "route": "r6: 'stocky', grey shirt, large valve wrench",
+     "gens": 2,
+     "char": "7dae23c6-2b14-4ebe-8d9a-ff28c91fcfa2",
+     "still": {
+      "src": "img/pump-tech-r6a-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 18,
+      "heights": [
+       39,
+       39
+      ],
+      "clipped": true
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": "auto: head cropped at the canvas top"
+    },
+    {
+     "id": "pump-tech-r6b",
+     "label": "r6b",
+     "route": "r6: 'broad-shouldered', knitted cap, valve key on shoulder",
+     "gens": 2,
+     "char": "47e992ed-817a-4dbd-99af-ac6618c49f0f",
+     "still": {
+      "src": "img/pump-tech-r6b-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ],
+      "clipped": false
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": "weird white thing on his shoulder"
+    },
+    {
+     "id": "pump-tech-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: dark teal overalls, rubber boots, valve key",
+     "gens": 2,
+     "char": "58c01199-093e-4c34-be24-65a79f70b774",
+     "still": {
+      "src": "img/pump-tech-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 22,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/pump-tech-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 24,
+       "heights": [
+        37,
+        37
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/pump-tech-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 21,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "too thin, inconsistent style"
+    }
+   ]
+  },
+  {
+   "role": "air-tech",
+   "label": "Air tech",
+   "rooms": [
+    "scrubber-bank",
+    "duct-fan",
+    "reclamation-plant"
+   ],
+   "versions": [
+    {
+     "id": "air-tech-v3s40c",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: plain cream coveralls, cloth mask at the neck, no helmet",
+     "gens": 2,
+     "char": "519f6b3e-de35-44af-ae47-643bfe796f52",
+     "still": {
+      "src": "img/air-tech-v3s40c-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 22,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/air-tech-v3s40c-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 21,
+       "heights": [
+        36,
+        36
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/air-tech-v3s40c-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 21,
+       "heights": [
+        34,
+        35
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "air-tech-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream coveralls, filter mask at the neck, clipboard \u2014 first try: hazmat astronaut, off-brief",
+     "gens": 2,
+     "char": "82205cdc-789f-4930-ac3e-2d138632d6f8",
+     "still": {
+      "src": "img/air-tech-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": "colors are off"
+    }
+   ]
+  },
+  {
+   "role": "medic",
+   "label": "Medic",
+   "rooms": [
+    "clinic",
+    "common-hall"
+   ],
+   "versions": [
+    {
+     "id": "medic-v3s40b",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: long white-cream doctor's coat, armband, medical bag",
+     "gens": 2,
+     "char": "bfb633d6-bbe1-48a6-a765-4e6771041f03",
+     "still": {
+      "src": "img/medic-v3s40b-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/medic-v3s40b-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        37
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/medic-v3s40b-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        35,
+        37
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "medic-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream knee coat, mint armband, small case \u2014 first try: plain, coat reads as a shirt",
+     "gens": 2,
+     "char": "c5295512-94f2-43b5-aab1-60e282e07c27",
+     "still": {
+      "src": "img/medic-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "teacher",
+   "label": "Teacher",
+   "rooms": [
+    "school",
+    "archive"
+   ],
+   "versions": [
+    {
+     "id": "teacher-r6a",
+     "label": "r6a",
+     "route": "r6: 'full body with shoes visible, petite', skirt",
+     "gens": 2,
+     "char": "48ce42f3-4783-4f72-9605-45ae26043ad8",
+     "still": {
+      "src": "img/teacher-r6a-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "idle": {
+       "src": "img/teacher-r6a-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        36,
+        36
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/teacher-r6a-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        34,
+        35
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "great"
+    },
+    {
+     "id": "teacher-r6b",
+     "label": "r6b",
+     "route": "r6: 'full body from head to shoes', trousers, glasses",
+     "gens": 2,
+     "char": "186a3d4b-48c6-4dfd-9783-b1ba5c0404f6",
+     "still": {
+      "src": "img/teacher-r6b-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "idle": {
+       "src": "img/teacher-r6b-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        37
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/teacher-r6b-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        36,
+        37
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": "great"
+    },
+    {
+     "id": "teacher-r6c",
+     "label": "r6c",
+     "route": "r6: 'feet on the ground', long skirt, bun",
+     "gens": 2,
+     "char": "c5d5d43b-3f3b-4d69-ad14-b725d5a62d6a",
+     "still": {
+      "src": "img/teacher-r6c-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 40,
+      "cx": 20,
+      "heights": [
+       39,
+       39
+      ],
+      "clipped": true
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": "auto: hair bun cropped at the canvas top"
+    },
+    {
+     "id": "teacher-v3s40b",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: 'of average height', hair tied back",
+     "gens": 2,
+     "char": "2037a9b5-6a08-4351-88c1-2cbc04d1c531",
+     "still": {
+      "src": "img/teacher-v3s40b-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 40,
+      "cx": 20,
+      "heights": [
+       39,
+       39
+      ],
+      "clipped": true
+     },
+     "anims": {
+      "idle": {
+       "src": "img/teacher-v3s40b-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 40,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "clipped": true,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/teacher-v3s40b-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 40,
+       "cx": 19,
+       "heights": [
+        39,
+        39
+       ],
+       "clipped": true,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "legs cut off"
+    },
+    {
+     "id": "teacher-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: brown cardigan, books under the arm \u2014 first try: 40 px, a bit tall",
+     "gens": 2,
+     "char": "1d4fe44f-00b9-4268-8240-5319b26c897c",
+     "still": {
+      "src": "img/teacher-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 40,
+      "cx": 21,
+      "heights": [
+       40,
+       40
+      ],
+      "clipped": true
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": "legs cut off"
+    }
+   ]
+  },
+  {
+   "role": "constable",
+   "label": "Constable",
+   "rooms": [
+    "security-post",
+    "holding-cells",
+    "junction"
+   ],
+   "versions": [
+    {
+     "id": "constable-v3s40c",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: 'of adult height \u2026 standing upright'",
+     "gens": 2,
+     "char": "f1592493-1747-4072-baed-893f9933be77",
+     "still": {
+      "src": "img/constable-v3s40c-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/constable-v3s40c-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        36,
+        36
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/constable-v3s40c-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        35,
+        35
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "constable-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: near-black coat, peaked cap, pale badge \u2014 first try: 32 px, too short",
+     "gens": 2,
+     "char": "35fa5498-aa7d-456d-a224-5d08bea3bc13",
+     "still": {
+      "src": "img/constable-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 36,
+      "cx": 20,
+      "heights": [
+       32,
+       32
+      ]
+     },
+     "anims": {},
+     "status": "drop",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "archivist",
+   "label": "Archivist",
+   "rooms": [
+    "archive",
+    "seed-vault"
+   ],
+   "versions": [
+    {
+     "id": "archivist-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: grey-brown coat, round spectacles, paper bundle",
+     "gens": 2,
+     "char": "fb725cae-bfd6-47b2-9dd1-70fac32df473",
+     "still": {
+      "src": "img/archivist-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 22,
+      "heights": [
+       39,
+       39
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/archivist-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        38,
+        38
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/archivist-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        35,
+        36
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "investigator",
+   "label": "Investigator",
+   "rooms": [
+    "junction",
+    "holding-cells",
+    "recycler"
+   ],
+   "versions": [
+    {
+     "id": "investigator-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: charcoal coat, fedora, notebook",
+     "gens": 2,
+     "char": "be798bf4-3c5c-4347-8eaa-47767d6b2564",
+     "still": {
+      "src": "img/investigator-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/investigator-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 40,
+       "cx": 22,
+       "heights": [
+        38,
+        39
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/investigator-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 21,
+       "heights": [
+        37,
+        38
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "resident",
+   "label": "Resident",
+   "rooms": [
+    "simple-suite",
+    "common-hall",
+    "modest-suite"
+   ],
+   "versions": [
+    {
+     "id": "resident-v3s40d",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: bright terracotta jumper, short brown hair",
+     "gens": 2,
+     "char": "47fec6e0-7ea6-4a07-bb6d-2d80baf2ecda",
+     "still": {
+      "src": "img/resident-v3s40d-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 38,
+      "cx": 20,
+      "heights": [
+       36,
+       36
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/resident-v3s40d-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        36,
+        36
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/resident-v3s40d-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 38,
+       "cx": 20,
+       "heights": [
+        35,
+        35
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "resident-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: terracotta jumper, bare-headed, cloth bag \u2014 first try: 'bare-headed' came out bald",
+     "gens": 2,
+     "char": "7e56a44f-3a70-4a9d-9ea7-1a409a3d147a",
+     "still": {
+      "src": "img/resident-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "resident-v3s40c",
+     "label": "v3 \u00b7 re-roll (dark)",
+     "route": "re-roll: 'with short dark hair' \u2014 jumper came out near-black",
+     "gens": 2,
+     "char": "0752ac24-bafb-4b2d-adb7-a016afff1697",
+     "still": {
+      "src": "img/resident-v3s40c-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/resident-v3s40c-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        38,
+        38
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/resident-v3s40c-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        36,
+        37
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "inconsistent proportions and color"
+    }
+   ]
+  },
+  {
+   "role": "elder",
+   "label": "Elder",
+   "rooms": [
+    "common-hall",
+    "superior-suite",
+    "council-chamber"
+   ],
+   "versions": [
+    {
+     "id": "elder-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: white hair, olive shawl, walking cane, stooped",
+     "gens": 2,
+     "char": "991b42bd-2d05-406e-bde6-196e93f19a49",
+     "still": {
+      "src": "img/elder-v3s40-still.png",
+      "w": 40,
+      "h": 40,
+      "frames": 1,
+      "feet": 39,
+      "cx": 20,
+      "heights": [
+       38,
+       38
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/elder-v3s40-idle.png",
+       "w": 40,
+       "h": 40,
+       "frames": 4,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/elder-v3s40-walk.png",
+       "w": 40,
+       "h": 40,
+       "frames": 8,
+       "feet": 39,
+       "cx": 20,
+       "heights": [
+        37,
+        38
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "child",
+   "label": "Child",
+   "rooms": [
+    "school",
+    "common-hall",
+    "simple-suite"
+   ],
+   "versions": [
+    {
+     "id": "child-v3s32",
+     "label": "v3 \u00b7 size 32",
+     "route": "v3 size 32: same wording",
+     "gens": 2,
+     "char": "28e7571f-9cb0-49de-9c29-7938c09c8fac",
+     "still": {
+      "src": "img/child-v3s32-still.png",
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "feet": 31,
+      "cx": 16,
+      "heights": [
+       30,
+       30
+      ],
+      "clipped": false
+     },
+     "anims": {
+      "idle": {
+       "src": "img/child-v3s32-idle.png",
+       "w": 32,
+       "h": 32,
+       "frames": 4,
+       "feet": 31,
+       "cx": 17,
+       "heights": [
+        29,
+        29
+       ],
+       "clipped": false,
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/child-v3s32-walk.png",
+       "w": 32,
+       "h": 32,
+       "frames": 8,
+       "feet": 31,
+       "cx": 16,
+       "heights": [
+        30,
+        30
+       ],
+       "clipped": false,
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "child-v3s28",
+     "label": "v3 \u00b7 size 28",
+     "route": "v3 size 28: mint shirt, short trousers, scarf, big head",
+     "gens": 2,
+     "char": "b0de7025-0d8e-4034-b1f5-409eac4a4527",
+     "still": {
+      "src": "img/child-v3s28-still.png",
+      "w": 28,
+      "h": 28,
+      "frames": 1,
+      "feet": 27,
+      "cx": 14,
+      "heights": [
+       25,
+       25
+      ]
+     },
+     "anims": {
+      "idle": {
+       "src": "img/child-v3s28-idle.png",
+       "w": 28,
+       "h": 28,
+       "frames": 4,
+       "feet": 27,
+       "cx": 14,
+       "heights": [
+        25,
+        25
+       ],
+       "ms": 260,
+       "note": "template (idle)",
+       "pp": false
+      },
+      "walk": {
+       "src": "img/child-v3s28-walk.png",
+       "w": 28,
+       "h": 28,
+       "frames": 8,
+       "feet": 27,
+       "cx": 14,
+       "heights": [
+        23,
+        25
+       ],
+       "ms": 110,
+       "note": "template (walk)",
+       "pp": false
+      }
+     },
+     "status": "drop",
+     "feedback": "too little outline"
+    },
+    {
+     "id": "child-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, size 24, plain wording",
+     "gens": 1,
+     "still": {
+      "src": "img/child-w1-still.png",
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "feet": 28,
+      "cx": 16,
+      "heights": [
+       25,
+       25
+      ]
+     },
+     "status": "drop",
+     "feedback": "no outline visible, inconsistent with the keepers",
+     "anims": {}
+    },
+    {
+     "id": "child-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": {
+      "src": "img/child-w2-still.png",
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "feet": 28,
+      "cx": 17,
+      "heights": [
+       25,
+       25
+      ]
+     },
+     "status": "drop",
+     "feedback": "poor facial details",
+     "anims": {}
+    },
+    {
+     "id": "child-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": {
+      "src": "img/child-w3-still.png",
+      "w": 32,
+      "h": 32,
+      "frames": 1,
+      "feet": 28,
+      "cx": 16,
+      "heights": [
+       25,
+       25
+      ]
+     },
+     "status": "drop",
+     "feedback": "lacks face detail, outline should be more pronounced",
+     "anims": {}
+    }
+   ]
+  }
+ ]
+}

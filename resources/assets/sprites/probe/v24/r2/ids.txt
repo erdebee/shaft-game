@@ -1,0 +1,12 @@
+porter-w1 b32032cc-4283-4fc9-9816-a7b2b26c685f
+porter-w2 6a6dae74-cbbe-489c-8577-a105f9775b82
+porter-w3 2e319ebd-394d-488b-9a80-ba9d782a05d9
+councillor-w1 47f89073-7bde-4e71-8b77-ed9cf5fa2d87
+councillor-w2 a7c95a16-99e4-460c-bbcf-9ac48977c70a
+councillor-w3 dcaa5cef-5f53-4e7e-95f1-fbe6d19e3c14
+miner-w1 bda0c2a8-09f5-4b5e-a623-25cb709b23f3
+miner-w2 3c0ea0c4-3a0b-4fc7-bde7-d0230d26db05
+miner-w3 9e66ddcd-9826-445c-8b81-477c278ba0ac
+child-w1 fa08ac04-6843-40a2-9ac5-bacb086f02bc
+child-w2 bed4aa50-e833-4f04-929a-178dbb7ecca0
+child-w3 db1eed36-bd3b-4a61-bf28-2e1d80714531

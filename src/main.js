@@ -15,6 +15,7 @@ import { on } from './core/eventBus.js';
 import * as router from './ui/router.js';
 import * as dashboard from './ui/screens/dashboard.js';
 import { createShaftView, loadSprites } from './ui/view/shaftView.js';
+import { loadRoomArt } from './ui/view/roomArt.js';
 import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
 import { append as logAppend } from './ui/components/logPanel.js';
@@ -28,6 +29,12 @@ import { append as logAppend } from './ui/components/logPanel.js';
  * they can be watched. Balance is placeholder throughout (see base.json).
  */
 const OPENING_LAYOUT = [
+  // Level 1 was built before the player: the hall takes six slots at one end
+  // and the Exit four at the other, which fills the level. Both carry a
+  // `fixed` block, so the command path puts them where the catalogue says and
+  // nowhere else.
+  ['auditorium', 1],
+  ['shaft-exit', 1],
   ['council-chamber', 2],
   ['archive', 3],
   ['oxygen-garden', 6],
@@ -57,6 +64,7 @@ const OPENING_LAYOUT = [
   ['workshop', 36],
   ['smelter', 37],
   ['main-generator', 38],
+  ['judicial', 4],
   ['dig-face', 40],
   ['deep-pump', 40],
   ['reclamation-plant', 42],
@@ -82,6 +90,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
 
   // --- UI --------------------------------------------------------------
   await loadSprites();
+  const roomArt = await loadRoomArt();
 
   const app = document.getElementById('app');
   app.replaceChildren();
@@ -101,7 +110,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   document.documentElement.dataset.chapter = String(chapter);
 
   const timeControls = mountTimeControls(topbar, dispatch);
-  const shaftView = createShaftView(shaftHost, state, ctx);
+  const shaftView = createShaftView(shaftHost, state, ctx, roomArt);
 
   // Open on the inhabited middle of the shaft rather than level 1. The top
   // levels are administration and mostly still; the traffic is between

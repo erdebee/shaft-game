@@ -25,6 +25,12 @@
   --rock-deep:     #030709;
   --floor:         #0c0e11;
 
+  /* ---- Pixel structure: the slab between levels and the stairwell's sign
+     ink, sampled from the approved v19-v23 shaft renders ---- */
+  --slab:          #4f4148;
+  --slab-lit:      #8e7870;
+  --sign-ink:      #f3e6c8;
+
   /* ---- Cool steel: the primary material ramp ---- */
   --steel-darkest: #1e1d27;
   --steel-dark:    #2f323e;
