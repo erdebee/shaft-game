@@ -16,13 +16,14 @@ const FUEL = { fuel: 1000 };
 
 test('residents fill homes, and the overflow spreads over the habitable levels', async () => {
   const run = await runWith([['simple-suite', 24]]);
-  run.state.population.headcount = 80 + 340;
+  const places = run.ctx.catalog.buildings.byId['simple-suite'].housing;
+  run.state.population.headcount = places + 340;
   const byLevel = residentsByLevel(run.state, run.ctx);
-  assert.equal(housingCapacity(run.state, run.ctx), 80);
+  assert.equal(housingCapacity(run.state, run.ctx), places);
   const deepest = run.ctx.shaft.layout.deepestHabitedLevel;
-  assert.ok(Math.abs(byLevel[24] - (80 + 340 / deepest)) < 1e-9);
+  assert.ok(Math.abs(byLevel[24] - (places + 340 / deepest)) < 1e-9);
   assert.equal(byLevel[deepest + 1] ?? 0, 0);
-  assert.ok(Math.abs(byLevel.reduce((a, b) => a + b, 0) - 420) < 1e-9);
+  assert.ok(Math.abs(byLevel.reduce((a, b) => a + b, 0) - (places + 340)) < 1e-9);
 });
 
 test('when water runs short, people drink first and buildings are rationed', async () => {

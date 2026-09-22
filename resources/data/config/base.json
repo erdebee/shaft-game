@@ -22,10 +22,10 @@
   },
 
   "air": {
-    "contaminantPerCapitaPerTick": 0.02,
+    "contaminantPerCapitaPerTick": 0.01,
     "migrationRateBetweenLevels": 0.15,
     "scrubberVolumePerTick": 40,
-    "scrubberRadiusLevels": 3,
+    "scrubberRadiusLevels": 4,
     "catalystConsumptionPerTick": 0.05,
     "qualityWarnThreshold": 60,
     "qualityCriticalThreshold": 30,
@@ -35,7 +35,7 @@
   },
 
   "water": {
-    "potablePerCapitaPerTick": 0.05,
+    "potablePerCapitaPerTick": 0.025,
     "reclamationEfficiency": 0.68,
     "groundwaterIntakePerTick": 90,
     "pumpPowerPerLevelLifted": 1.4,
@@ -110,7 +110,7 @@
     "earlyWarningThreshold": 75,
     "satisfactionApproachPerTick": 0.05,
     "satisfactionFloor": 25,
-    "satisfactionRange": 50,
+    "satisfactionRange": 60,
     "discontentWeight": 0.3
   },
 

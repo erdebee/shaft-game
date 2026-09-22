@@ -33,7 +33,14 @@ the symptom is a change that appears to do nothing.
 
 ```
 npm test          # node --test
+npm run sim       # play the opening headlessly, one line per day
+npm run sim -- --days 60 --every 5 --set population.foodPerCapitaPerTick=0.02
 ```
+
+`tools/simRun.mjs` is the balance instrument: it builds a run exactly as the
+browser does and prints population, health, food, water, air, power, stores,
+the meters and the labour pool per day, plus strikes, riots and breakdowns.
+`--set` overrides any tunable for an experiment without touching the data.
 
 ## Layout
 

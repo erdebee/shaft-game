@@ -85,6 +85,7 @@ export function buildDataset(manifest, docs, selection = {}) {
     layout: shaftProfile.layout ?? {},
     veins: shaftProfile.veins ?? [],
     startingStocks: stripNotes(shaftProfile.startingStocks ?? {}),
+    opening: shaftProfile.opening?.buildings ?? [],
   };
 
   // --- catalog tier ----------------------------------------------------

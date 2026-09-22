@@ -12,7 +12,7 @@
       "staffing": 2,
       "wearPerTick": 0.003,
       "consumes": [],
-      "produces": [{ "id": "water", "qty": 30 }],
+      "produces": [{ "id": "water", "qty": 50 }],
       "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "electrical-components", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.5, "breakdown": 0.2 },
       "effects": [],

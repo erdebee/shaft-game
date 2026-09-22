@@ -156,3 +156,14 @@ test('no file reintroduces the term "silo"', () => {
     assert.ok(!/silo/i.test(raw), `${p} contains "silo" — not project vocabulary, see CONVENTIONS.md §1`);
   }
 });
+
+test('every Shaft profile opens with buildings that exist, on levels it has', async () => {
+  for (const profile of Object.keys(manifest.config.profiles ?? {})) {
+    const ds = await loadDataset({ readJson, chapter: 1, profile });
+    const levels = ds.shaft.layout.levels ?? ds.config.structure.levels;
+    for (const [buildingId, level] of ds.shaft.opening) {
+      assert.ok(ds.catalog.buildings.byId[buildingId], `${profile}: unknown opening building "${buildingId}"`);
+      assert.ok(level >= 1 && level <= levels, `${profile}: ${buildingId} on level ${level} of ${levels}`);
+    }
+  }
+});

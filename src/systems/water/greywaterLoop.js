@@ -25,7 +25,7 @@ export function initialWater() {
     generation: 0,
     demand: 0,
     brownedOut: [],
-    stored: 0,
+    stored: null, // null until the first tick fills the cisterns
     capacity: 0,
     greywater: 0,
     quality: 100,
@@ -81,6 +81,9 @@ export function tick(state, ctx) {
   // what is still needed, plus what the cisterns have room for — and the
   // aquifer yields what it yields, however many pumps are sunk into it.
   water.capacity = ctx.modifiers.buffer.water ?? 0;
+  // The Shaft opens with its cisterns full, not dry: nothing has been
+  // reclaimed yet on the first tick, and that is not a drought.
+  if (water.stored === null) water.stored = water.capacity;
   const wanted = peopleDemand + buildingDemand + (water.capacity - water.stored) - reclaimed;
   const pumped = clamp(wanted, 0, Math.min(pumpCapacity, cfg.groundwaterIntakePerTick));
   const available = pumped + reclaimed + water.stored;

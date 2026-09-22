@@ -8,7 +8,7 @@
  */
 
 import { start, stepOnce } from './core/engine.js';
-import { createRun } from './core/run.js';
+import { createRun, placeOpening } from './core/run.js';
 import { dispatch as dispatchCommand } from './core/commands.js';
 import { on } from './core/eventBus.js';
 
@@ -20,56 +20,6 @@ import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
 import { append as logAppend } from './ui/components/logPanel.js';
 
-/**
- * Starting layout for the slice. Placed through the same command path the
- * player uses, so nothing here is a special case the UI cannot also produce.
- *
- * Cultivation deliberately sits high and the canteens low, so food has to be
- * hauled a long way down — which is what puts porters on the stairwell where
- * they can be watched. Balance is placeholder throughout (see base.json).
- */
-const OPENING_LAYOUT = [
-  // Level 1 was built before the player: the hall takes six slots at one end
-  // and the Exit four at the other, which fills the level. Both carry a
-  // `fixed` block, so the command path puts them where the catalogue says and
-  // nowhere else.
-  ['auditorium', 1],
-  ['shaft-exit', 1],
-  ['council-chamber', 2],
-  ['archive', 3],
-  ['oxygen-garden', 6],
-  ['superior-suite', 8],
-  ['common-hall', 10],
-  ['junction', 12],
-  ['hydroponics-bay', 13],
-  ['hydroponics-bay', 13],
-  ['hydroponics-bay', 14],
-  ['hydroponics-bay', 14],
-  ['protein-vats', 15],
-  ['protein-vats', 15],
-  ['hydroponics-bay', 16],
-  ['hydroponics-bay', 16],
-  ['food-processing', 17],
-  ['grove', 5],
-  ['scrubber-bank', 20],
-  ['freight-elevator', 20],
-  ['clinic', 22],
-  ['simple-suite', 24],
-  ['canteen', 26],
-  ['simple-suite', 27],
-  ['canteen', 28],
-  ['junction', 30],
-  ['cistern', 32],
-  ['scrubber-bank', 34],
-  ['workshop', 36],
-  ['smelter', 37],
-  ['main-generator', 38],
-  ['judicial', 4],
-  ['dig-face', 40],
-  ['deep-pump', 40],
-  ['reclamation-plant', 42],
-];
-
 async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   // createRun owns everything deterministic: dataset, state, streams, systems,
   // opening stores and the porter roster. Nothing that shapes a run may live
@@ -78,15 +28,10 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
 
   const dispatch = (command) => dispatchCommand(state, ctx, command);
 
-  // The opening layout goes through the command path the player uses, so it
-  // lands in the command log and replays with everything else.
-  for (const [buildingId, level] of OPENING_LAYOUT) {
-    dispatch({ type: 'player:placeBuilding', buildingId, level });
-  }
-  for (const instance of state.buildings) {
-    const def = dataset.catalog.buildings.byId[instance.buildingId];
-    dispatch({ type: 'player:assignStaff', instanceId: instance.instanceId, count: def.staffing ?? 0 });
-  }
+  // The opening layout (the Shaft profile's `opening`) goes through the
+  // command path the player uses, so it lands in the command log and replays
+  // with everything else.
+  placeOpening(state, ctx, dispatchCommand);
 
   // --- UI --------------------------------------------------------------
   const roomArt = await loadRoomArt();

@@ -68,6 +68,21 @@ export async function createRun({
 }
 
 /**
+ * Place the Shaft profile's opening layout and staff it fully, through the
+ * player's own commands. Boot, the sim runner and the tests all open a Shaft
+ * this way, so none of them can drift from what the player inherits.
+ */
+export function placeOpening(state, ctx, dispatch) {
+  for (const [buildingId, level] of ctx.shaft.opening ?? []) {
+    dispatch(state, ctx, { type: 'player:placeBuilding', buildingId, level });
+  }
+  for (const instance of state.buildings) {
+    const def = ctx.catalog.buildings.byId[instance.buildingId];
+    dispatch(state, ctx, { type: 'player:assignStaff', instanceId: instance.instanceId, count: def.staffing ?? 0 });
+  }
+}
+
+/**
  * Replay a run from its command log.
  *
  * A run is `seed + configHash + commandLog`, so this is the whole

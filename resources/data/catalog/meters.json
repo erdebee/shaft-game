@@ -162,7 +162,7 @@
       "scope": "global",
       "min": 0,
       "max": 100,
-      "start": 60,
+      "start": 55,
       "failsAt": null,
       "chapters": [
         1,
@@ -191,7 +191,7 @@
           {
             "source": "need.housing",
             "below": 1,
-            "weight": -25
+            "weight": -40
           },
           {
             "source": "need.homePower",
@@ -244,7 +244,7 @@
       "scope": "global",
       "min": 0,
       "max": 100,
-      "start": 5,
+      "start": 15,
       "failsAt": null,
       "chapters": [
         1,
@@ -266,7 +266,7 @@
           },
           {
             "source": "meter.freedom",
-            "pivot": 40,
+            "pivot": 60,
             "weight": -0.3
           }
         ]
