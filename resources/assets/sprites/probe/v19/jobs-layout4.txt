@@ -1,0 +1,8 @@
+salvage-post-a 9e25b622-098f-42a3-b4c6-f3aedfcdb4c8
+salvage-post-b 167b88e9-b2ea-493b-81f8-53a164695ea0
+junction-a 5601c7d9-ac53-4063-a5ac-588c9bd6d5bd
+junction-b e64f0b8e-edac-44b1-88bf-8b9b86f8dff1
+purifier-a ccfd548c-e6d9-480a-9cc7-782b03018fce
+purifier-b 89c2cb8a-fb36-4cc8-b035-9d23c8f82b5a
+cistern-a f46cc7be-0bba-407b-b88f-3887c4f5a495
+cistern-b da1b12af-d005-4467-9c72-96313e236443

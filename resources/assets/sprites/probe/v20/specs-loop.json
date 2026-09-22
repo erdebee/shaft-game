@@ -1,0 +1,57 @@
+[
+ {
+  "room": "../v19/purifier-on.png",
+  "out": "purifier-on-anim",
+  "n": 9,
+  "ms": 140,
+  "parts": [
+   {
+    "frames": "puril",
+    "at": [
+     0,
+     0
+    ],
+    "shapes": [
+     [
+      "rect",
+      18,
+      33,
+      26,
+      67
+     ],
+     [
+      "ellipse",
+      42,
+      40,
+      49,
+      48
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "room": "../v16/canteen-on.png",
+  "out": "canteen-on-anim",
+  "n": 8,
+  "ms": 140,
+  "parts": [
+   {
+    "frames": "cantl",
+    "at": [
+     0,
+     16
+    ],
+    "shapes": [
+     [
+      "rect",
+      10,
+      42,
+      32,
+      66
+     ]
+    ]
+   }
+  ]
+ }
+]

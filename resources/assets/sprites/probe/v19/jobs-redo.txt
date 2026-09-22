@@ -1,0 +1,8 @@
+dumbwaiter-c fd031805-bab6-44fd-8564-155d8a4d8d08
+dumbwaiter-d e3175b1d-c9b7-419a-b688-2dc56d3f01a9
+junction-c e691af87-4b7e-4c48-a251-90879e41f4d5
+junction-d d5ecc23b-94a7-4fdd-8cb3-7b9eb434bd16
+purifier-c 96c6fc77-e14c-4860-a32a-d56a2d19086f
+purifier-d 708aeb11-587e-4b1a-a7fd-6f88d33f58cd
+cistern-c 2f3e67df-4f35-4e24-a7d9-2425e42b5b77
+cistern-d 00a8c884-12a1-41c5-93b8-b4fa075729b0

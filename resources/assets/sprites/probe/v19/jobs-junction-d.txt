@@ -1,0 +1,2 @@
+3454407b-50ff-413e-a815-d21b56352e10 junction-off
+f932914e-9821-494d-9cf0-0723a806bca2 junction-broken

@@ -1,0 +1,8 @@
+seed-vault-a 02c9da3e-48a8-4f9f-bdbb-1d5bede92564
+seed-vault-b 799a3d9f-274b-459e-959a-1606d3bd6dbc
+common-hall-a 608d738c-09bd-4562-8cc9-3870b60b1d48
+common-hall-b 61d9a12e-90ad-46c7-b74a-d3dda61cdf40
+freight-elevator-a ead19210-0890-4761-b384-86d29476ad08
+freight-elevator-b 3e7a27dd-820c-471c-9860-5c088310bd63
+dumbwaiter-a a7563e28-74ef-4f59-9774-436dbb395660
+dumbwaiter-b 0e9ecdc6-c4ce-4097-a114-c0b5366234d2

@@ -1,0 +1,11 @@
+{
+ "dig-face": "../../buildings", "deep-pump": "../../buildings", "hydroponics-bay": "../../buildings",
+ "simple-suite": "../../buildings", "council-chamber": "../../buildings", "grove": "../../buildings",
+ "archive": "../v16", "clinic": "../v16", "workshop": "../v16", "scrubber-bank": "../v16",
+ "oxygen-garden": "../v16", "reclamation-plant": "../v16", "battery-bank": "../v16",
+ "school": "../v17", "security-post": "../v17",
+ "modest-suite": "../v19", "machine-shop": "../v19", "recycler": "../v19", "holding-cells": "../v19",
+ "food-processing": "../v19", "seed-vault": "../v19", "common-hall": "../v19", "freight-elevator": "../v19",
+ "dumbwaiter": "../v19", "salvage-post": "../v19", "junction": "../v19", "cistern": "../v19",
+ "superior-suite": "../v21", "luxury-suite": "../v22"
+}

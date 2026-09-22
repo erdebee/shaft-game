@@ -1,0 +1,2 @@
+d777659b-6052-4169-96a2-c42591a4bf4a holding-cells-off common-hall-off dumbwaiter-off
+20cc8151-a2d4-4a92-a08e-79646b4d873a holding-cells-broken common-hall-broken dumbwaiter-broken

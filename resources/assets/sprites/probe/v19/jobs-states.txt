@@ -1,0 +1,8 @@
+8bf3e376-d224-4f05-8e9f-f05f933c72b8 protein-vats-off modest-suite-off machine-shop-off recycler-off
+66bb92df-4260-458d-a1f1-a6ab6b30a0d6 protein-vats-broken modest-suite-broken machine-shop-broken recycler-broken
+260eb081-ebdb-48d6-b827-d90dcf7bbe1e luxury-suite-off
+5a190f83-0efd-4cbe-8360-277859d98622 luxury-suite-broken
+ef8f4860-4636-4d56-81e1-a6eae7610442 duct-fan-off junction-off purifier-off cistern-off
+4d740eb5-c2d3-4966-b13e-1604c90e8285 duct-fan-broken junction-broken purifier-broken cistern-broken
+3a48af62-b64c-42a0-992b-3e7c0f82a074 freight-elevator-off salvage-post-off seed-vault-off food-processing-off
+e1521a12-d7ed-4a18-94f2-8f15ca0455ec freight-elevator-broken salvage-post-broken seed-vault-broken food-processing-broken

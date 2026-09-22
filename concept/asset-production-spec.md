@@ -254,7 +254,7 @@ from row 81 to 90. So every room goes through four steps, cheap ones first:
 | Step | What | Tool | Cost |
 |---|---|---|---|
 | 1. Blockout | Add the building's main masses to `LAYOUTS` in `tools/roomGuide.mjs` (about 15 flat shapes), then run `node tools/roomGuide.mjs <width> room <building-id> --lit` for the lit, dithered guide | local | 0 |
-| 2. Layout | `create_image_pixflux` with `init_image` = the **lit** guide at strength **75** for 128 px and wider; **120–160 for 64-px rooms**, which the model otherwise reads as a box seen from the front (v17; 200 loses the props), `shading: "detailed shading"`, `detail: "highly detailed"`, and the detail lead in the prompt (§4). Two seeds per room, then pick | pixflux | 1 per try |
+| 2. Layout | `create_image_pixflux` with `init_image` = the **lit** guide at strength **75** for 128 px and wider; **135 and 165 for 64-px rooms** with the flat-wall wording below, which the model otherwise reads as a box seen from the front (v17, v19; 200 loses the props), `shading: "detailed shading"`, `detail: "highly detailed"`, and the detail lead in the prompt (§4). Two seeds per room, then pick | pixflux | 1 per try |
 | 3. Master *(optional)* | Only when the layout render is not good enough to ship. `inpaint_image` over the approved layout, masking only the interior: `mask_x 7, mask_y 10, mask_width width − 14, mask_height 78` (open areas: `mask_x 0`, full width). The ceiling, side walls and floor line cannot move. **It redraws the room from the description; it does not keep the layout** (v13) | inpaint | ~20 |
 | 4. States | `off`, `broken` (and `damaged`) with **`edit_image`** on the `on` render: a text instruction that changes only light or damage, ending in "keep all the detail, texture and dithering". Pass the `on` render by its PixelLab URL in `image_urls`, not as base64. Up to **four rooms of ≤128 px per call** for the same price; 192 and 256 px rooms go one per call | edit | ~20 per call |
 
@@ -287,6 +287,13 @@ v13 measured **~46 generations per building** with every step, including one inp
   interiors; at 75 they hold.
 - **Broken states of 64-px rooms** ask for "one single short strip" of warning tape;
   the generic wording criss-crosses the whole room with tape (v16).
+- **64-px rooms turn into alcoves.** A tall, narrow frame reads as a doorway or a box
+  seen from the front. Describe the back wall as "one flat plane filling the whole room
+  edge to edge, no alcove, no inset box" and use strength 135 and 165 as the two tries;
+  in v19 that fixed every room that failed at 120/150. Two 1-slot rooms on one 128-px
+  canvas does not work: the model ignores the centre line.
+- **Never paint a blockout shape in the wall colour.** `P.slate` equals the guide's
+  back wall, so shapes drawn in it vanish (the v19 cell bars did).
 - **Pale blocks high on the back wall become windows.** Name that object in the
   prompt and add "windowless, no window frame, no glass pane" (the v16 clinic).
 - **Passing images.** Pasted base64 sometimes arrives garbled ("Could not decode

@@ -1,0 +1,8 @@
+luxury-suite-a 6762ecef-c265-4aa1-8ea1-1d45a8b12c8a
+luxury-suite-b 979ba170-a716-4edc-87a5-f550c1a7fa72
+holding-cells-a 45bd37ff-4995-43e6-aa59-8bd2153da356
+holding-cells-b 1ab0bd51-e17d-4eb5-91e1-d3da0d08ce30
+duct-fan-a 14808dc5-6f7f-4c74-ba14-5a639b12c9ae
+duct-fan-b a635b23f-c5e9-410c-b9f5-cf90a38643f9
+food-processing-a ea82fb73-a631-4389-9ea0-21c6ad48a225
+food-processing-b 21f61c14-5018-4f3e-a4cf-45132a65037e

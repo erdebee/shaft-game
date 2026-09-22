@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The last sixteen rooms</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --good: #86b6a2; --bad: #cf6a40;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 30px 0 6px; }
+  h3 small { color: var(--faint); letter-spacing: 0; text-transform: none; font-size: 11px; margin-left: 8px; }
+  p { max-width: 90ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  a { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .seg { display: inline-flex; }
+  .seg button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { color: var(--amber); border-color: var(--amber); position: relative; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .summary p { margin: 4px 0; }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+  .shaftwrap { overflow-x: auto; padding-bottom: 6px; }
+  canvas { image-rendering: pixelated; display: block; }
+  .pipe { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; margin: 8px 0; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; max-width: 42ch; }
+  figcaption .k { color: var(--ink); }
+  figure.rej img { opacity: .55; } figure.rej figcaption { color: var(--faint); }
+  .note { font-size: 12px; color: var(--dim); max-width: 100ch; margin: 2px 0 0; }
+  ul { color: var(--dim); max-width: 95ch; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+<body>
+<main>
+<h1>The last sixteen rooms</h1>
+<p class="lead">Every building in the catalog now has an Eastward-style render with on, off and broken states: <b>36 of 36</b>.
+These sixteen use the same detail recipe as v16 and v17. The shaft below shows all of them together at the adopted width:
+the 128-px stairwell plus ten build slots.</p>
+
+<div class="bar">
+  <span>Zoom</span>
+  <span class="seg" id="zoom"><button data-z="1">1&times;</button><button data-z="2" class="on">2&times;</button><button data-z="3">3&times;</button></span>
+  <span>State</span>
+  <span class="seg" id="state"><button data-s="on" class="on">on</button><button data-s="off">off</button><button data-s="broken">broken</button></span>
+  <span>&middot;</span>
+  <a href="#shaft">Shaft</a><a href="#rooms">Rooms</a><a href="#findings">Findings</a>
+</div>
+
+<div class="summary">
+  <p><b>2&ndash;3 slot rooms</b> (protein vats, modest suite, machine shop, recycler, luxury suite): a usable render in the first pair of tries at strength 75.</p>
+  <p><b>1-slot rooms</b> (eleven of them): a first pass at strength 120 and 150 held flat for six; the rest came back as a box seen from the front.
+     A second pass at <b>135 and 165</b>, with the back wall described as "one flat plane filling the whole room edge to edge, no alcove, no inset box", fixed all four that were left.</p>
+  <p><b>Tried and dropped:</b> rendering two 1-slot rooms side by side on one 128-px canvas and cutting it in half. The model ignores the centre line, so the rooms do not split cleanly.</p>
+  <p><b>Cost:</b> 45 layout tries + 10 batched edit calls = <b>242 generations</b> (~15 per building).</p>
+  <p><b>Redone on request:</b> dumbwaiter, junction, purifier and cistern sat inside a brick or stone surround. 10 more tries plus 2 edit calls (~50 generations); the first versions are kept below each room.</p>
+</div>
+
+<h2 id="shaft">In the shaft &mdash; all 36 buildings</h2>
+<p class="note">Levels picked for the demo, not the game's layout. Floor numbers are printed by the game's 4&times;6 font on the stairwell sign.</p>
+<div class="shaftwrap"><canvas id="shaftcv"></canvas></div>
+
+<h2 id="rooms">The sixteen rooms</h2>
+<div id="rooms-list"></div>
+
+<h2 id="findings">Findings</h2>
+<ul>
+  <li><b>1-slot rooms turn into boxes</b> because the model reads a tall, narrow frame as a doorway or alcove. Saying so explicitly
+      ("one flat plane &hellip; no alcove, no inset box") plus strength 135&ndash;165 fixed every one that failed. Recommended default for 64-px rooms.</li>
+  <li><b>Guide colour clash:</b> the palette's "slate" is the same colour as the guide's back wall, so shapes painted in it vanish from the guide
+      (the cell bars were invisible at first). The new blockouts avoid it.</li>
+  <li><b>Holding cells</b> is the plainest room (12 colours); C is a richer alternative with a slightly deeper floor.</li>
+  <li><b>Freight elevator and dumbwaiter</b> were drawn as ordinary 1-slot rooms (a lift car in its shaft, a serving hatch). Whether they stay in the game is still open.</li>
+</ul>
+<p><a href="../v17/index.html">&larr; v17: smelter, school, security post</a></p>
+</main>
+<script>
+const NEW = [
+  { id: 'protein-vats', name: 'Protein vats', w: 128, tries: 'ab', pick: 'a', note: 'B draws a floor strip that recedes slightly. Strength 75.' },
+  { id: 'modest-suite', name: 'Modest suite', w: 128, tries: 'ab', pick: 'b', note: 'A has receding floorboards. Strength 75.' },
+  { id: 'machine-shop', name: 'Machine shop', w: 128, tries: 'ab', pick: 'a', note: 'B is busier but gains a floor plane. Strength 75.' },
+  { id: 'recycler', name: 'Recycler', w: 128, tries: 'ab', pick: 'b', note: 'A is sparse. Strength 75.' },
+  { id: 'luxury-suite', name: 'Luxury suite', w: 192, tries: 'ab', pick: 'b', note: 'Both flat; B has the gramophone and a real four-poster. Strength 75.' },
+  { id: 'holding-cells', name: 'Holding cells', w: 64, tries: 'abcd', pick: 'd', note: 'A (120) and B (150) are boxes. C (135) and D (165) use the flat-wall wording.' },
+  { id: 'duct-fan', name: 'Duct fan', w: 64, tries: 'abcd', pick: 'c', note: 'A has a tiled floor, B is a box. C (135) is flat.' },
+  { id: 'food-processing', name: 'Food processing', w: 64, tries: 'abcd', pick: 'd', note: 'A and B are boxes. D (165) is flat and has the tins, hopper and table.' },
+  { id: 'seed-vault', name: 'Seed vault', w: 64, tries: 'ab', pick: 'b', note: 'A has a tiled floor. B (150).' },
+  { id: 'common-hall', name: 'Common hall', w: 64, tries: 'bcd', pick: 'c', note: 'A was dropped by the server. B has a deep floor band. C (135).' },
+  { id: 'freight-elevator', name: 'Freight elevator', w: 64, tries: 'ab', pick: 'a', note: 'B has angled walls. A (120).' },
+  { id: 'dumbwaiter', name: 'Dumbwaiter (redone)', w: 64, tries: 'abcdef', pick: 'e', v1: true, note: 'Redone: B (first pick) sat in a brick surround. C has a vignette, D a dark frame, F a receding ceiling. E (120, flat-wall wording plus "no border frame, no vignette").' },
+  { id: 'salvage-post', name: 'Salvage post', w: 64, tries: 'ab', pick: 'a', note: 'A (120) is flat and full; B is plainer.' },
+  { id: 'junction', name: 'Junction (redone)', w: 64, tries: 'abcd', pick: 'd', v1: true, note: 'Redone: B (first pick) was framed by a brick surround. C (135) and D (165) both flat; D chosen by you (hanging cables, round meters, cable reel).' },
+  { id: 'purifier', name: 'Purifier (redone)', w: 64, tries: 'abcd', pick: 'c', v1: true, note: 'Redone: B (first pick) read as an alcove. C (135) and D (165) both flat; C has the pipe run.' },
+  { id: 'cistern', name: 'Cistern (redone)', w: 64, tries: 'abcd', pick: 'c', v1: true, note: 'Redone: A (first pick) sat in a brick surround. D is framed too. C (135).' },
+];
+// Where each building's approved renders live.
+const HOME = {
+  '../../buildings': ['main-generator', 'dig-face', 'deep-pump', 'hydroponics-bay', 'simple-suite', 'council-chamber', 'grove', 'presidential-suite'],
+  '../v16': ['canteen', 'superior-suite', 'archive', 'clinic', 'workshop', 'scrubber-bank', 'oxygen-garden', 'reclamation-plant', 'battery-bank'],
+  '../v17': ['smelter', 'school', 'security-post'],
+};
+const LEVELS = [
+  { n: 4,  band: 'shallow', slots: ['presidential-suite', 'luxury-suite', 'council-chamber', 'security-post'] },
+  { n: 6,  band: 'shallow', slots: ['superior-suite', 'modest-suite', 'archive', 'holding-cells', 'common-hall', 'dumbwaiter'] },
+  { n: 12, band: 'shallow', slots: ['oxygen-garden', 'grove', 'scrubber-bank', 'duct-fan', 'seed-vault', 'junction'] },
+  { n: 22, band: 'mid',     slots: ['canteen', 'simple-suite', 'school', 'clinic', 'food-processing'] },
+  { n: 24, band: 'mid',     slots: ['hydroponics-bay', 'protein-vats', 'smelter', 'workshop', 'machine-shop'] },
+  { n: 34, band: 'deep',    slots: ['main-generator', 'battery-bank', 'recycler', 'reclamation-plant', 'purifier', 'cistern'] },
+  { n: 40, band: 'deep',    slots: ['deep-pump', 'dig-face', 'salvage-post', 'freight-elevator'] },
+];
+const STAIR = { src: '../../structure/stairwell.png', plate: [102, 58, 116, 67], ink: '#f3e6c8' };
+// 4×6 floor digits, same data as resources/assets/fonts/floor-digits-4x6.json.
+const FONT = {
+  0: ['0110', '1001', '1001', '1001', '1001', '0110'], 1: ['0010', '0110', '0010', '0010', '0010', '0111'],
+  2: ['0110', '1001', '0001', '0010', '0100', '1111'], 3: ['1110', '0001', '0110', '0001', '0001', '1110'],
+  4: ['0011', '0101', '1001', '1111', '0001', '0001'], 5: ['1111', '1000', '1110', '0001', '0001', '1110'],
+  6: ['0110', '1000', '1110', '1001', '1001', '0110'], 7: ['1111', '0001', '0010', '0010', '0100', '0100'],
+  8: ['0110', '1001', '0110', '1001', '1001', '0110'], 9: ['0110', '1001', '1001', '0111', '0001', '0110'],
+};
+function drawNumber(ctx, n, [x0, py0, x1, py1], ink, y0) {
+  const s = String(n); const w = s.length * 5 - 1;
+  const x = Math.floor((x0 + x1 + 1 - w) / 2), y = y0 + Math.floor((py0 + py1 + 1 - 6) / 2);
+  ctx.fillStyle = ink;
+  [...s].forEach((d, i) => FONT[d].forEach((row, r) => [...row].forEach((bit, c) => { if (bit === '1') ctx.fillRect(x + i * 5 + c, y + r, 1, 1); })));
+}
+const src = (id, s) => { for (const [dir, ids] of Object.entries(HOME)) if (ids.includes(id)) return `${dir}/${id}-${s}.png`; return `${id}-${s}.png`; };
+const IMG = {};
+const load = (u) => IMG[u] || (IMG[u] = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = u; }));
+let state = 'on', zoom = 2, META = {};
+
+async function buildShaft() {
+  const SW = 128, BUILD = 640, WIDE = SW + BUILD;
+  const cv = document.getElementById('shaftcv'); cv.width = WIDE; cv.height = LEVELS.length * 104;
+  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#010202'; ctx.fillRect(0, 0, WIDE, cv.height);
+  const stair = await load(STAIR.src);
+  for (const [i, lv] of LEVELS.entries()) {
+    const y = i * 104;
+    const rock = await load(`../v14/${lv.band}-rock.png`);
+    if (rock) for (let x = SW; x < WIDE; x += rock.width) ctx.drawImage(rock, 0, 0, Math.min(rock.width, WIDE - x), 96, x, y, Math.min(rock.width, WIDE - x), 96);
+    let x = SW;
+    for (const id of lv.slots) { const im = await load(src(id, state)); if (im) ctx.drawImage(im, x, y); x += im ? im.width : 64; }
+    ctx.fillStyle = '#4f4148'; ctx.fillRect(SW, y + 96, BUILD, 8); ctx.fillStyle = '#8e7870'; ctx.fillRect(SW, y + 96, BUILD, 1);
+    if (stair) { ctx.drawImage(stair, 0, y); drawNumber(ctx, lv.n, STAIR.plate, STAIR.ink, y); }
+  }
+  cv.style.width = `${WIDE * zoom}px`; cv.style.height = `${cv.height * zoom}px`;
+}
+
+const fig = (file, cap, w, cls = '') => `<figure class="${cls}"><img src="${file}" data-w="${w}" alt=""><figcaption>${cap}</figcaption></figure>`;
+function buildRooms() {
+  document.getElementById('rooms-list').innerHTML = NEW.map((r) => {
+    const m = META[r.id] || {};
+    return `<h3>${r.name}<small>${r.id} · ${r.w}×96 · ${m.colours ?? '?'} colours · contrast ${m.contrast ?? '?'}</small></h3>
+      <div class="pipe">${[...r.tries].map((t) => fig(`${r.id}-${t}.png`, `<span class="k">try ${t.toUpperCase()}</span>${t === r.pick ? ' · <b class="ok">pick = on</b>' : ''}`, r.w, t === r.pick ? '' : 'rej')).join('')}</div>
+      <div class="pipe">
+        ${fig(`${r.id}-on.png`, `<span class="k">on</span> · lum ${m.on_lum ?? ''}`, r.w)}
+        ${fig(`${r.id}-off.png`, `<span class="k">off</span> · lum ${m.off_lum ?? ''} · diff ${m.off_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-broken.png`, `<span class="k">broken</span> · lum ${m.broken_lum ?? ''} · diff ${m.broken_diff ?? ''}`, r.w)}
+      </div>
+      ${r.v1 ? `<div class="pipe">${['on', 'off', 'broken'].map((st) => fig(`${r.id}-v1-${st}.png`, `<span class="k">first version · ${st}</span>`, r.w, 'rej')).join('')}</div>` : ''}
+      <p class="note">${r.note}</p>`;
+  }).join('');
+  sizeFigures();
+}
+function sizeFigures() { document.querySelectorAll('figure img').forEach((img) => { img.style.width = `${Number(img.dataset.w) * zoom}px`; }); }
+function seg(id, key, fn) {
+  document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x === b)); fn(b.dataset[key]);
+  }));
+}
+seg('zoom', 'z', (z) => { zoom = Number(z); buildShaft(); sizeFigures(); });
+seg('state', 's', (s) => { state = s; buildShaft(); });
+fetch('meta.json').then((r) => r.json()).catch(() => ({})).then((m) => { META = m; buildRooms(); });
+buildShaft();
+</script>
+</body>
+</html>

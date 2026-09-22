@@ -1,0 +1,2 @@
+a01efa57-22c8-4533-8ed9-35abb4317fe7 dumbwaiter-off junction-off purifier-off cistern-off
+139101e1-70dc-4716-a9ce-487f39c4b2f0 dumbwaiter-broken junction-broken purifier-broken cistern-broken

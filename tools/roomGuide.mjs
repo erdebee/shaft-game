@@ -397,6 +397,318 @@ const LAYOUTS = {
     ['rect', 186, 60, 196, 64, P.cream],            // pillow
     ['rect', 186, 80, 236, 87, P.plum],             // bed frame
   ],
+  // v22: four fresh luxury-suite concepts (piano lounge, art deco, library, salon).
+  'luxury-suite-piano': [
+    ['rect', 60, 10, 60, 14, P.taupe],              // chandelier chain
+    ['circle', 60, 20, 5, P.amber],                 // chandelier
+    ['rect', 20, 24, 50, 38, P.sand],               // painting
+    ['rect', 14, 50, 62, 64, P.ink],                // grand piano body
+    ['rect', 16, 65, 19, 87, P.ink],                // piano legs
+    ['rect', 56, 65, 59, 87, P.ink],
+    ['rect', 66, 70, 80, 74, P.rust],               // piano bench
+    ['rect', 68, 75, 69, 87, P.rust], ['rect', 77, 75, 78, 87, P.rust],
+    ['rect', 86, 66, 104, 70, P.sand],              // bar cart
+    ['rect', 88, 58, 92, 65, P.mint], ['rect', 96, 58, 100, 65, P.terracotta],
+    ['rect', 88, 70, 89, 82, P.sand], ['rect', 102, 70, 103, 82, P.sand],
+    ['circle', 89, 84, 3, P.ink], ['circle', 102, 84, 3, P.ink],
+    ['rect', 110, 34, 124, 87, P.rust],             // folding screen
+    ['rect', 117, 34, 117, 87, P.plum],
+    ['rect', 128, 40, 129, 87, P.sand],             // standing lamp
+    ['circle', 128, 38, 4, P.amber],
+    ['circle', 152, 30, 2, P.amber],                // sconce
+    ['rect', 177, 48, 182, 87, P.rust],             // headboard
+    ['rect', 134, 68, 177, 80, P.terracotta],       // bed
+    ['rect', 168, 64, 177, 68, P.cream],            // pillow
+    ['rect', 134, 80, 177, 87, P.plum],             // bed frame
+  ],
+  'luxury-suite-deco': [
+    ['rect', 12, 62, 40, 66, P.rust],               // dressing table
+    ['rect', 14, 67, 16, 87, P.rust], ['rect', 36, 67, 38, 87, P.rust],
+    ['circle', 26, 44, 11, P.sand],                 // round mirror frame
+    ['circle', 26, 44, 8, P.tealLit],               // mirror glass
+    ['rect', 18, 56, 22, 61, P.terracotta],         // perfume bottles
+    ['rect', 50, 70, 90, 80, P.teal],               // chaise longue
+    ['rect', 50, 58, 57, 70, P.teal],
+    ['rect', 52, 81, 54, 87, P.ink], ['rect', 86, 81, 88, 87, P.ink],
+    ['rect', 96, 34, 97, 87, P.sand],               // floor lamp
+    ['circle', 96, 31, 4, P.amber],
+    ['circle', 108, 52, 10, P.tealLit],             // potted palm
+    ['rect', 104, 72, 112, 87, P.terracotta],
+    ['circle', 125, 44, 9, P.sand],                 // deco fan headboard
+    ['rect', 120, 44, 130, 87, P.sand],
+    ['rect', 130, 68, 182, 80, P.terracotta],       // bed
+    ['rect', 130, 64, 140, 68, P.cream],            // pillow
+    ['rect', 130, 80, 182, 87, P.plum],
+    ['rect', 142, 24, 172, 40, P.rust],             // deco artwork
+    ['rect', 146, 28, 168, 36, P.amber],
+  ],
+  'luxury-suite-library': [
+    ['rect', 10, 16, 44, 87, P.plum],               // bookcase
+    ['rect', 12, 22, 42, 28, P.terracotta], ['rect', 12, 36, 42, 42, P.mint],
+    ['rect', 12, 50, 42, 56, P.sand], ['rect', 12, 64, 42, 70, P.rust],
+    ['rect', 46, 20, 48, 87, P.sand],               // library ladder
+    ['circle', 62, 68, 7, P.teal],                  // globe
+    ['rect', 61, 75, 63, 87, P.sand],
+    ['circle', 92, 20, 4, P.amber],                 // chandelier
+    ['rect', 92, 10, 92, 15, P.taupe],
+    ['rect', 72, 64, 102, 68, P.rust],              // writing desk
+    ['rect', 74, 69, 76, 87, P.rust], ['rect', 98, 69, 100, 87, P.rust],
+    ['circle', 96, 58, 3, P.amber],                 // desk lamp
+    ['rect', 104, 62, 112, 87, P.teal],             // reading chair
+    ['rect', 115, 10, 118, 87, P.mauve],            // pilaster
+    ['rect', 122, 24, 184, 28, P.rust],             // four-poster canopy
+    ['rect', 122, 24, 125, 87, P.rust], ['rect', 181, 24, 184, 87, P.rust],
+    ['rect', 126, 66, 180, 80, P.terracotta],       // bed
+    ['rect', 126, 62, 136, 66, P.cream],
+    ['rect', 126, 80, 180, 87, P.plum],
+  ],
+  'luxury-suite-bath': [
+    ['circle', 40, 20, 4, P.amber],                 // chandelier
+    ['rect', 40, 10, 40, 15, P.taupe],
+    ['rect', 12, 66, 56, 80, P.cream],              // clawfoot bathtub
+    ['rect', 14, 62, 54, 66, P.sand],               // tub rim
+    ['rect', 16, 81, 19, 87, P.amber], ['rect', 49, 81, 52, 87, P.amber],
+    ['rect', 50, 44, 52, 62, P.amber],              // tap and shower pipe
+    ['rect', 60, 50, 72, 53, P.sand],               // towel rail
+    ['rect', 62, 54, 70, 72, P.terracotta],         // towel
+    ['rect', 78, 30, 94, 87, P.rust],               // wardrobe
+    ['rect', 86, 30, 86, 87, P.plum],
+    ['rect', 100, 26, 124, 44, P.sand],             // painting
+    ['rect', 100, 68, 122, 80, P.teal],             // velvet settee
+    ['rect', 100, 60, 104, 68, P.teal],
+    ['circle', 132, 34, 2, P.amber],                // sconce
+    ['rect', 176, 44, 182, 87, P.rust],             // tall headboard
+    ['rect', 136, 68, 176, 80, P.terracotta],       // bed
+    ['rect', 166, 64, 176, 68, P.cream],
+    ['rect', 136, 80, 176, 87, P.plum],
+  ],
+  // v19: the remaining sixteen buildings.
+  'holding-cells': [
+    ['circle', 32, 16, 2, P.amber],                 // caged lamp
+    ['rect', 10, 26, 18, 34, P.taupe],              // key rack
+    ['rect', 10, 74, 18, 77, P.rust],               // guard's stool
+    ['rect', 13, 78, 15, 87, P.rust],
+    ['rect', 28, 70, 54, 74, P.rust],               // cell bunk
+    ['rect', 44, 80, 50, 87, P.mauve],              // bucket
+    ['rect', 24, 20, 56, 22, P.ink],              // cell bars: top rail
+    ['rect', 24, 20, 25, 87, P.ink],
+    ['rect', 30, 20, 31, 87, P.ink],
+    ['rect', 36, 20, 37, 87, P.ink],
+    ['rect', 42, 20, 43, 87, P.ink],
+    ['rect', 48, 20, 49, 87, P.ink],
+    ['rect', 54, 20, 55, 87, P.ink],
+  ],
+  'duct-fan': [
+    ['circle', 12, 16, 2, P.amber],                 // lamp
+    ['rect', 22, 10, 42, 24, P.taupe],              // duct up
+    ['rect', 20, 24, 44, 26, P.mauve],              // flange
+    ['circle', 32, 48, 20, P.taupe],              // fan housing
+    ['circle', 32, 48, 16, P.ink],
+    ['circle', 32, 48, 4, P.mauve],                 // hub
+    ['rect', 20, 70, 44, 72, P.mauve],              // flange
+    ['rect', 24, 72, 40, 87, P.taupe],              // duct down
+    ['rect', 50, 60, 56, 72, P.rust],               // control box
+  ],
+  'protein-vats': [
+    ['rect', 8, 12, 119, 15, P.taupe],              // pipe run
+    ['rect', 23, 16, 25, 20, P.taupe],              // feed drops
+    ['rect', 55, 16, 57, 20, P.taupe],
+    ['rect', 87, 16, 89, 20, P.taupe],
+    ['rect', 10, 20, 38, 24, P.tealLit],            // vat lids
+    ['rect', 42, 20, 70, 24, P.tealLit],
+    ['rect', 74, 20, 102, 24, P.tealLit],
+    ['rect', 12, 24, 36, 87, P.teal],               // vats
+    ['rect', 44, 24, 68, 87, P.teal],
+    ['rect', 76, 24, 100, 87, P.teal],
+    ['circle', 24, 50, 4, P.mint],                  // sight glasses
+    ['circle', 56, 50, 4, P.mint],
+    ['circle', 88, 50, 4, P.mint],
+    ['rect', 106, 40, 118, 70, P.rust],             // control panel
+    ['circle', 112, 48, 2, P.cream],
+    ['circle', 112, 60, 2, P.cream],
+  ],
+  'food-processing': [
+    ['circle', 44, 16, 2, P.amber],                 // lamp
+    ['rect', 10, 26, 54, 28, P.mauve],              // shelf
+    ['rect', 12, 20, 50, 25, P.terracotta],         // tins
+    ['rect', 10, 34, 32, 40, P.taupe],              // hopper
+    ['rect', 12, 40, 30, 70, P.ink],              // grinder
+    ['rect', 12, 70, 30, 87, P.plum],
+    ['rect', 32, 62, 56, 66, P.sand],               // packing table
+    ['rect', 34, 67, 36, 87, P.sand],
+    ['rect', 52, 67, 54, 87, P.sand],
+    ['rect', 38, 76, 50, 87, P.rust],               // crate of packed rations
+  ],
+  'seed-vault': [
+    ['circle', 32, 13, 2, P.amber],                 // lamp
+    ['rect', 10, 18, 54, 34, P.rust],               // seed drawers
+    ['rect', 10, 23, 54, 23, P.plum],
+    ['rect', 10, 28, 54, 28, P.plum],
+    ['rect', 24, 18, 24, 34, P.plum],
+    ['rect', 40, 18, 40, 34, P.plum],
+    ['circle', 32, 62, 18, P.ink],                // vault door
+    ['circle', 32, 62, 14, P.taupe],
+    ['circle', 32, 62, 12, P.tealDeep],
+    ['circle', 32, 62, 4, P.rust],                  // wheel
+    ['rect', 48, 80, 56, 87, P.sand],               // seed crate
+  ],
+  'modest-suite': [
+    ['circle', 64, 16, 2, P.amber],                 // lamp
+    ['rect', 18, 10, 20, 60, P.plum],               // stove pipe
+    ['rect', 12, 60, 26, 87, P.ink],                // stove
+    ['rect', 30, 30, 56, 32, P.mauve],              // shelf
+    ['rect', 32, 24, 52, 29, P.terracotta],         // crockery and books
+    ['rect', 32, 68, 58, 71, P.rust],               // table
+    ['rect', 34, 72, 36, 87, P.rust],
+    ['rect', 54, 72, 56, 87, P.rust],
+    ['rect', 66, 28, 82, 42, P.sand],               // family picture
+    ['rect', 88, 56, 92, 87, P.rust],               // headboard
+    ['rect', 92, 70, 118, 80, P.terracotta],        // bed
+    ['rect', 92, 66, 100, 70, P.cream],             // pillow
+    ['rect', 92, 80, 118, 87, P.plum],              // bed frame
+  ],
+  'luxury-suite': [
+    ['rect', 12, 22, 40, 87, P.plum],               // bookcase
+    ['rect', 15, 30, 37, 34, P.terracotta],
+    ['rect', 15, 46, 37, 50, P.mint],
+    ['rect', 15, 62, 37, 66, P.sand],
+    ['rect', 50, 28, 86, 44, P.sand],               // painting
+    ['rect', 48, 62, 70, 87, P.teal],               // armchair
+    ['rect', 74, 70, 86, 87, P.rust],               // side table
+    ['circle', 80, 62, 6, P.sand],                  // gramophone horn
+    ['rect', 96, 10, 96, 14, P.taupe],              // chandelier chain
+    ['circle', 96, 20, 5, P.amber],                 // chandelier
+    ['rect', 100, 10, 104, 87, P.mauve],            // pilaster
+    ['rect', 108, 26, 128, 87, P.rust],             // wardrobe
+    ['rect', 132, 24, 184, 28, P.rust],             // bed canopy
+    ['rect', 134, 50, 138, 87, P.rust],             // headboard
+    ['rect', 138, 68, 182, 80, P.terracotta],       // bed
+    ['rect', 138, 64, 148, 68, P.cream],            // pillow
+    ['rect', 138, 80, 182, 87, P.plum],             // bed frame
+  ],
+  'common-hall': [
+    ['rect', 8, 16, 56, 17, P.terracotta],          // bunting
+    ['circle', 32, 22, 2, P.amber],                 // lamp
+    ['rect', 10, 24, 28, 42, P.sand],               // notice board
+    ['rect', 36, 36, 54, 38, P.mauve],              // shelf
+    ['rect', 38, 28, 52, 35, P.rust],               // radio
+    ['rect', 10, 66, 54, 69, P.rust],               // table
+    ['rect', 12, 70, 14, 87, P.rust],
+    ['rect', 50, 70, 52, 87, P.rust],
+    ['rect', 16, 62, 20, 65, P.cream],              // mugs
+    ['rect', 40, 62, 44, 65, P.cream],
+    ['rect', 8, 76, 56, 79, P.sand],                // bench
+    ['rect', 20, 80, 22, 87, P.sand],
+    ['rect', 42, 80, 44, 87, P.sand],
+  ],
+  'machine-shop': [
+    ['rect', 8, 14, 119, 16, P.taupe],              // line shaft
+    ['circle', 30, 15, 4, P.ink],                 // pulleys
+    ['circle', 80, 15, 4, P.ink],
+    ['rect', 29, 19, 31, 36, P.plum],               // belts
+    ['rect', 79, 19, 81, 34, P.plum],
+    ['circle', 50, 24, 2, P.amber],                 // lamp
+    ['rect', 18, 36, 40, 48, P.tealLit],            // drill press head
+    ['rect', 26, 48, 30, 87, P.teal],               // drill press column
+    ['rect', 18, 62, 38, 64, P.ink],              // drill table
+    ['rect', 60, 34, 100, 87, P.teal],              // milling machine
+    ['rect', 60, 34, 100, 38, P.tealLit],
+    ['rect', 54, 58, 106, 62, P.ink],             // mill table
+    ['circle', 94, 46, 2, P.cream],                 // gauge
+    ['rect', 106, 56, 120, 87, P.rust],             // tool chest
+    ['rect', 106, 64, 120, 64, P.plum],
+    ['rect', 106, 72, 120, 72, P.plum],
+  ],
+  recycler: [
+    ['rect', 8, 12, 119, 15, P.taupe],              // pipe run
+    ['circle', 70, 20, 2, P.amber],                 // lamp
+    ['rect', 12, 24, 44, 34, P.ink],              // hopper
+    ['rect', 18, 34, 38, 70, P.rust],               // shredder body
+    ['rect', 20, 70, 36, 74, P.ink],                // shredder teeth
+    ['rect', 14, 74, 42, 87, P.plum],               // base
+    ['rect', 44, 64, 92, 68, P.mauve],              // conveyor
+    ['rect', 52, 60, 58, 63, P.sand],               // scrap on the belt
+    ['rect', 70, 60, 76, 63, P.terracotta],
+    ['rect', 48, 76, 60, 87, P.teal],               // sorting bins
+    ['rect', 64, 76, 76, 87, P.terracotta],
+    ['rect', 80, 76, 92, 87, P.sand],
+    ['rect', 96, 30, 118, 87, P.ink],             // compactor
+    ['rect', 100, 34, 114, 40, P.taupe],            // compactor ram
+  ],
+  // spansLevels: the car and rails run through the ceiling and floor.
+  'freight-elevator': [
+    ['rect', 10, 10, 54, 87, P.ink],                // shaft
+    ['rect', 12, 10, 14, 87, P.taupe],              // guide rails
+    ['rect', 50, 10, 52, 87, P.taupe],
+    ['rect', 31, 10, 33, 24, P.ink],              // hoist cable
+    ['rect', 16, 24, 48, 87, P.rust],               // car frame
+    ['rect', 19, 28, 45, 87, P.plum],               // car interior
+    ['rect', 22, 72, 34, 87, P.sand],               // crates in the car
+    ['rect', 20, 30, 21, 87, P.taupe],            // scissor gate
+    ['rect', 27, 30, 28, 87, P.taupe],
+    ['rect', 36, 30, 37, 87, P.taupe],
+    ['rect', 43, 30, 44, 87, P.taupe],
+    ['circle', 56, 20, 2, P.amber],                 // warning lamp
+  ],
+  dumbwaiter: [
+    ['circle', 32, 16, 4, P.ink],                 // pulley
+    ['rect', 29, 20, 29, 38, P.taupe],              // ropes
+    ['rect', 35, 20, 35, 38, P.taupe],
+    ['rect', 16, 36, 48, 62, P.rust],               // hatch frame
+    ['rect', 19, 39, 45, 59, P.ink],                // hatch opening
+    ['rect', 22, 48, 42, 59, P.sand],               // tray of parcels
+    ['circle', 52, 40, 2, P.amber],                 // call bell
+    ['rect', 12, 62, 52, 65, P.sand],               // counter
+    ['rect', 14, 66, 50, 87, P.mauve],              // cabinet
+  ],
+  'salvage-post': [
+    ['circle', 32, 16, 2, P.amber],                 // lamp
+    ['rect', 10, 22, 40, 40, P.mauve],              // board of salvaged parts
+    ['rect', 12, 46, 18, 72, P.taupe],              // stripped panel, leaning
+    ['rect', 32, 74, 42, 87, P.sand],               // crate
+    ['rect', 44, 50, 48, 87, P.rust],               // gas bottles
+    ['rect', 50, 50, 54, 87, P.teal],
+    ['circle', 22, 86, 14, P.mauve],                // scrap heap
+    ['circle', 30, 82, 8, P.taupe],
+  ],
+  junction: [
+    ['rect', 16, 10, 18, 30, P.ink],                // cable conduits
+    ['rect', 28, 10, 30, 30, P.ink],
+    ['rect', 40, 10, 42, 30, P.ink],
+    ['rect', 10, 30, 48, 70, P.teal],               // breaker cabinet
+    ['rect', 29, 30, 29, 70, P.tealDeep],
+    ['circle', 20, 40, 3, P.cream],                 // meters
+    ['circle', 38, 40, 3, P.cream],
+    ['rect', 14, 52, 44, 60, P.tealDeep],           // breaker row
+    ['rect', 52, 34, 54, 40, P.rust],               // knife switch handle
+    ['rect', 50, 40, 56, 56, P.ink],              // knife switch
+    ['rect', 14, 74, 26, 82, P.terracotta],         // warning plate
+    ['circle', 42, 80, 7, P.rust],                  // cable drum
+  ],
+  purifier: [
+    ['rect', 14, 10, 18, 30, P.taupe],              // inlet pipe
+    ['rect', 18, 26, 50, 30, P.taupe],              // crossover pipe
+    ['circle', 48, 28, 3, P.rust],                  // valve wheel
+    ['rect', 10, 30, 30, 87, P.teal],               // carbon filter tank
+    ['rect', 10, 48, 30, 49, P.tealDeep],
+    ['rect', 18, 36, 22, 70, P.mint],               // sight glass
+    ['rect', 36, 36, 52, 72, P.ink],              // canister
+    ['circle', 44, 44, 3, P.cream],                 // gauge
+    ['rect', 34, 76, 54, 87, P.plum],               // carbon sacks
+  ],
+  cistern: [
+    ['rect', 8, 18, 52, 22, P.tealLit],             // tank rim
+    ['rect', 10, 22, 50, 87, P.teal],               // tank
+    ['rect', 10, 40, 50, 41, P.tealDeep],           // rivet bands
+    ['rect', 10, 62, 50, 63, P.tealDeep],
+    ['rect', 44, 26, 46, 80, P.mint],               // level gauge
+    ['circle', 20, 80, 3, P.rust],                  // outlet valve
+    ['rect', 53, 18, 54, 87, P.sand],               // ladder
+    ['rect', 55, 24, 56, 25, P.sand],
+    ['rect', 55, 40, 56, 41, P.sand],
+    ['rect', 55, 56, 56, 57, P.sand],
+    ['rect', 55, 72, 56, 73, P.sand],
+  ],
 };
 
 /**

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suites relit</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --amber: #f2b25a; --teal: #86b6a2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 40px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--teal); margin: 24px 0 6px; }
+  p { max-width: 90ch; color: var(--dim); } b { color: var(--ink); }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; max-width: 100%; }
+  img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .rej img { opacity: .55; }
+</style>
+<body>
+<main>
+<h1>Superior and luxury suite, relit</h1>
+<p>Both suites looked flat next to the other rooms. They were edited in place (same room, same layout) to add highlights, shadows and dithering, and their off and broken states were remade from the new renders.</p>
+<div class="summary">
+  <p><b>Superior suite:</b> the hanging lamp now throws a dithered cone of light on the wall and table, the corners fall off into dithered shadow, and the wood picks up highlights. Contrast 36.5 &rarr; 47.3.</p>
+  <p><b>Luxury suite:</b> the first try lit the room with a soft airbrushed glow, which does not match the pixel style (kept below, faded). The second asked for hard pixels only: a checkerboard-dithered light cone under the chandelier and cast shadows behind the furniture. Contrast 47.7 &rarr; 54.0.</p>
+  <p><b>Cost:</b> 7 edit calls, about 140 generations.</p>
+</div>
+
+<h2>Before and after</h2>
+<h3>Superior suite</h3>
+<div class="row">
+  <figure><img src="../v16/superior-suite-on.png" style="width:576px"><figcaption>before</figcaption></figure>
+  <figure><img src="superior-suite-on.png" style="width:576px"><figcaption>after</figcaption></figure>
+</div>
+<h3>Luxury suite</h3>
+<div class="row">
+  <figure><img src="../v19/luxury-suite-on.png" style="width:576px"><figcaption>before</figcaption></figure>
+  <figure class="rej"><img src="luxury-suite-shaded.png" style="width:576px"><figcaption>try 1: soft glow, not used</figcaption></figure>
+  <figure><img src="luxury-suite-on.png" style="width:576px"><figcaption>try 2: after</figcaption></figure>
+</div>
+
+<h2>States</h2>
+<div class="row"><figure><img src="states.png" style="width:1752px"><figcaption>on · off · broken</figcaption></figure></div>
+
+<h2>In the shaft</h2>
+<div class="row"><figure><img src="shaft-levels-4-6.png" style="width:1536px"><figcaption>levels 4 and 6 of the demo shaft with the relit suites</figcaption></figure></div>
+<p><a href="../v20/index.html">&larr; v20: room animation</a> · <a href="../v19/index.html">v19: the last sixteen rooms</a></p>
+</main>
+</body>
+</html>
