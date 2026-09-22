@@ -1,0 +1,162 @@
+{
+ "protein-vats": {
+  "width": 128,
+  "colours": 28,
+  "contrast": 30.3,
+  "on_lum": 75,
+  "off_lum": 38,
+  "off_diff": 37.6,
+  "broken_lum": 72,
+  "broken_diff": 18.1
+ },
+ "modest-suite": {
+  "width": 128,
+  "colours": 52,
+  "contrast": 34.2,
+  "on_lum": 70,
+  "off_lum": 35,
+  "off_diff": 35.5,
+  "broken_lum": 66,
+  "broken_diff": 18.0
+ },
+ "machine-shop": {
+  "width": 128,
+  "colours": 36,
+  "contrast": 37.5,
+  "on_lum": 74,
+  "off_lum": 37,
+  "off_diff": 37.5,
+  "broken_lum": 67,
+  "broken_diff": 17.2
+ },
+ "recycler": {
+  "width": 128,
+  "colours": 35,
+  "contrast": 38.2,
+  "on_lum": 71,
+  "off_lum": 34,
+  "off_diff": 37.0,
+  "broken_lum": 69,
+  "broken_diff": 20.1
+ },
+ "luxury-suite": {
+  "width": 192,
+  "colours": 25,
+  "contrast": 47.7,
+  "on_lum": 79,
+  "off_lum": 29,
+  "off_diff": 49.7,
+  "broken_lum": 70,
+  "broken_diff": 21.7
+ },
+ "holding-cells": {
+  "width": 64,
+  "colours": 12,
+  "contrast": 23.5,
+  "on_lum": 63,
+  "off_lum": 27,
+  "off_diff": 36.8,
+  "broken_lum": 63,
+  "broken_diff": 12.8
+ },
+ "duct-fan": {
+  "width": 64,
+  "colours": 28,
+  "contrast": 36.9,
+  "on_lum": 68,
+  "off_lum": 27,
+  "off_diff": 40.7,
+  "broken_lum": 62,
+  "broken_diff": 8.7
+ },
+ "food-processing": {
+  "width": 64,
+  "colours": 25,
+  "contrast": 38.7,
+  "on_lum": 71,
+  "off_lum": 29,
+  "off_diff": 42.5,
+  "broken_lum": 61,
+  "broken_diff": 16.5
+ },
+ "seed-vault": {
+  "width": 64,
+  "colours": 44,
+  "contrast": 33.7,
+  "on_lum": 65,
+  "off_lum": 25,
+  "off_diff": 39.9,
+  "broken_lum": 60,
+  "broken_diff": 12.6
+ },
+ "common-hall": {
+  "width": 64,
+  "colours": 21,
+  "contrast": 33.7,
+  "on_lum": 72,
+  "off_lum": 30,
+  "off_diff": 42.4,
+  "broken_lum": 70,
+  "broken_diff": 14.1
+ },
+ "freight-elevator": {
+  "width": 64,
+  "colours": 26,
+  "contrast": 35.7,
+  "on_lum": 65,
+  "off_lum": 27,
+  "off_diff": 38.3,
+  "broken_lum": 59,
+  "broken_diff": 10.8
+ },
+ "dumbwaiter": {
+  "width": 64,
+  "colours": 38,
+  "contrast": 32.6,
+  "on_lum": 75,
+  "off_lum": 33,
+  "off_diff": 41.6,
+  "broken_lum": 67,
+  "broken_diff": 16.7
+ },
+ "salvage-post": {
+  "width": 64,
+  "colours": 38,
+  "contrast": 31.3,
+  "on_lum": 70,
+  "off_lum": 28,
+  "off_diff": 42.2,
+  "broken_lum": 65,
+  "broken_diff": 11.7
+ },
+ "junction": {
+  "width": 64,
+  "colours": 42,
+  "contrast": 27.8,
+  "on_lum": 65,
+  "off_lum": 33,
+  "off_diff": 32.0,
+  "broken_lum": 62,
+  "broken_diff": 10.2
+ },
+ "purifier": {
+  "width": 64,
+  "colours": 21,
+  "contrast": 32.6,
+  "on_lum": 65,
+  "off_lum": 29,
+  "off_diff": 36.1,
+  "broken_lum": 63,
+  "broken_diff": 12.3
+ },
+ "cistern": {
+  "width": 64,
+  "colours": 37,
+  "contrast": 31.9,
+  "on_lum": 78,
+  "off_lum": 35,
+  "off_diff": 42.2,
+  "broken_lum": 71,
+  "broken_diff": 15.9
+ }
+}

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three new rooms</title>
+<style>
+  :root { --bg:#0e0b10; --panel:#17121a; --edge:#2c2430; --ink:#e6d8c0; --dim:#a8988e; --amber:#f2b25a; --teal:#86b6a2; --bad:#d9785f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 ui-monospace,"SF Mono",Menlo,monospace; }
+  main { max-width:1500px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:18px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  h2 { font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:44px 0 8px; padding-top:14px; border-top:1px solid var(--edge); }
+  h3 { font-size:12px; color:var(--teal); margin:22px 0 6px; }
+  p, li { max-width:100ch; color:var(--dim); } b { color:var(--ink); } code { color:var(--teal); } a { color:var(--teal); }
+  .summary { background:var(--panel); border:1px solid var(--edge); border-left:3px solid var(--amber); padding:14px 18px; margin:18px 0; max-width:1200px; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; gap:18px; flex-wrap:wrap; align-items:center;
+         background:var(--panel); border:1px solid var(--edge); padding:10px 14px; margin:18px 0 28px; }
+  .bar label { color:var(--dim); font-size:12px; }
+  button { font:inherit; font-size:12px; background:#221b26; color:var(--dim); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--amber); border-color:var(--amber); color:#1a1208; }
+  figure { margin:0 0 20px; }
+  figcaption { font-size:11px; color:var(--dim); margin-top:6px; }
+  figcaption b { color:var(--ink); }
+  img { image-rendering:pixelated; display:block; max-width:100%; }
+  .wrap { overflow-x:auto; padding-bottom:6px; }
+  table { border-collapse:collapse; font-size:12px; margin:8px 0; max-width:1200px; }
+  th,td { border-bottom:1px solid var(--edge); padding:5px 10px; text-align:left; vertical-align:top; color:var(--dim); }
+  th { color:var(--ink); font-weight:600; }
+  td.ok { color:var(--teal); } td.no { color:var(--bad); }
+</style>
+<body>
+<main>
+<h1>Three new rooms — chosen</h1>
+<p><b>Picked: judicial B, exit C, and a 6-slot auditorium.</b> All three now have their four
+state renders and are placed in the game — judicial on level 4, and the auditorium and the Exit on
+level 1, which was empty before. The rejected versions are kept below the finals, because what went
+wrong in them is what the blockouts were changed to avoid.</p>
+
+<div class="bar">
+  <label>Zoom</label><span id="zooms"></span>
+  <label>Show</label><span id="guides"></span>
+</div>
+
+<h2>Auditorium — the wide window</h2>
+<p>You asked for the window centred in the back wall and at least 70% of the width. Five tries, all at
+384&nbsp;px (6 slots) in one pass. <b>The trade-off that showed up:</b> at 70%+ the window crowds
+everything else out — the generator keeps the panel and drops the chairs, the lectern, or both. The two
+that kept a full room below the window did it by putting the seating in perspective, which is the one
+thing §2 will not have.</p>
+<p>The fix, if you like one of the windows but want its furniture back, is the same repair that worked on
+the last auditorium: keep the render and <code>inpaint_image</code> the chairs and lectern into the band
+below the ledge. Say which window and I will do that rather than keep rolling seeds.</p>
+<div id="wide"></div>
+<table>
+  <tr><th>Version</th><th>Window</th><th>The rest of the room</th><th>Colours</th></tr>
+  <tr><td>1 — seed 26071</td><td class="no">Centred but only about 55% wide</td><td class="no">Became a bank of lockers. No chairs, no lectern</td><td>33</td></tr>
+  <tr><td>2 — seed 26072</td><td class="ok">The widest of the five, about 80%, sunset over hills, tree dead centre</td><td class="no">Nothing below it — no chairs, no lectern</td><td>31</td></tr>
+  <tr><td>3 — seed 26073</td><td class="no">Centred, about 40% wide</td><td class="no">A one-point perspective box: receding floor and ceiling</td><td>36</td></tr>
+  <tr><td>4 — seed 26081</td><td class="ok">A wide letterbox, about 72%, tree left of centre, mist and mountains</td><td class="no">Banks of seating drawn in perspective; doors at both ends</td><td>53</td></tr>
+  <tr><td>5 — seed 26082</td><td class="ok">A wide letterbox, about 72%, tree dead centre, pale misty plain</td><td>Flat and correct, but a balustrade and stairs instead of chairs; no lectern</td><td>28</td></tr>
+</table>
+
+<h2>The three rooms, as they ship</h2>
+<p>Each row is <code>on</code>, <code>off</code>, <code>broken</code> and the <code>dim</code> frame the
+flicker dips to. <code>off</code> and <code>broken</code> are <code>edit_image</code> over the <code>on</code>
+render; <code>dim</code> is computed, not generated — every colour maps to one darker colour drawn from the
+room's own <code>off</code>, so the palette and dithering stay pixel-exact.</p>
+<div id="finals"></div>
+<table>
+  <tr><th>Room</th><th>Slots</th><th>floorY</th><th>Where</th><th>Colours</th></tr>
+  <tr><td>judicial</td><td>3</td><td>88</td><td>Placed by the player; shallow levels only</td><td>49</td></tr>
+  <tr><td>shaft-exit</td><td>3</td><td>88</td><td class="ok">Fixed — level 1, hard right</td><td>60</td></tr>
+  <tr><td>auditorium</td><td>6</td><td>93</td><td class="ok">Fixed — level 1, left</td><td>40</td></tr>
+</table>
+<p>The auditorium below is the <b>earlier</b> version, with the narrow window on the right — kept so
+there is something to compare the five wide ones against. <b>It took three passes.</b> At 6 slots it is 384 px, which pixflux will draw in one go,
+so there is no seam. Seed 26031 gave the hall but painted two people into it and turned the window into a
+literal porthole of blue glass; seed 26032 fixed the picture and lost the stage. Rather than keep rolling,
+26031 was repaired with two <code>inpaint_image</code> passes — one over the porthole, which produced the
+bleached plain and the dead tree, and one over a two-rectangle mask covering both figures. That is the
+repair use the workflow's step 3 was kept for.</p>
+<p><b>One thing to decide:</b> 6 + 3 = 9 of level 1's 10 slots, so there is a one-slot gap of bare rock
+between the hall and the Exit. A security post fits it exactly, if it should be filled at all.</p>
+
+<h2>The versions that were not picked</h2>
+<h2>Judicial chamber — 3 slots</h2>
+<p>Where the Accord is amended and where it is applied to a person. The blockout puts a raised bench
+on a dais in the centre, a dock in front of it, a law library on the left and a public bench on the right.</p>
+<div id="judicial"></div>
+<table>
+  <tr><th>Version</th><th>Colours</th><th>Reads as</th></tr>
+  <tr><td>A (seed 26001)</td><td>28</td><td class="no">Flatter and darker; the bench came out as a plain slab and the library as a door</td></tr>
+  <tr><td><b>B (seed 26002)</b></td><td>49</td><td class="ok">A courtroom: lamps with falloff, a bench with three high backs, framed portraits, chairs. The dock did not survive</td></tr>
+</table>
+
+<h2>The Exit — 3 slots, fixed, top level, far right</h2>
+<p>One slot of cell, where somebody who has asked to leave spends their last day, and two slots of door.
+A and B came from a blockout whose door filled the frame, and the model painted them as a close-up of a
+door rather than as a room — no wall above, no floor below. C is the reworked blockout: the door set into
+a frame with a lintel and a sign, wall above it and the floor band intact.</p>
+<div id="exit"></div>
+<table>
+  <tr><th>Version</th><th>Colours</th><th>Reads as</th></tr>
+  <tr><td>A (seed 26011)</td><td>30</td><td class="no">A vault door filling the whole frame. No room around it</td></tr>
+  <tr><td>B (seed 26012)</td><td>24</td><td class="no">Same problem, plus the cell is just bars on a wall</td></tr>
+  <tr><td><b>C (seed 26013, new blockout)</b></td><td>—</td><td class="ok">A room: cell with bars and a bench, framed door with a lintel, sign, hazard sill, two warning lamps. Brighter and more saturated than the rest of the Shaft</td></tr>
+</table>
+
+<h2>Auditorium — 7 slots, fixed, top level</h2>
+<p>448 px is wider than pixflux will draw (400 px per side), so the hall is generated as two 224-px halves
+off one 448-px guide and joined. <b>The join is not finished</b> — it needs an inpaint pass over the seam,
+and the two halves still disagree about floor height and chair size.</p>
+<p>The right half is the keeper either way: the framed panel showing a bare dead tree on a bleached plain,
+with a brass frame and a bench beneath it. It is a screen, but the room is built so you forget that — which
+is why the prompt calls it a <i>painted viewing panel</i> and never says screen, sky or window
+(those words are banned from room prompts, spec §5).</p>
+<div id="auditorium"></div>
+<table>
+  <tr><th>Version</th><th>Left half</th><th>Right half</th></tr>
+  <tr><td>A (seed 26021)</td><td class="no">Seating drawn in perspective — rows receding away, which §2 bans</td><td class="ok">The panel and the dead tree</td></tr>
+  <tr><td><b>B (left re-rolled, seed 26022)</b></td><td class="ok">Flat: one row of chairs all the same size, lectern and standard on a low stage, a ceiling run of lamps. Generated with the right half's palette forced, so the halves nearly match</td><td class="ok">Unchanged</td></tr>
+</table>
+
+<h2>What is still open</h2>
+<ul>
+  <li><b>The gap on level 1</b> — one slot of bare rock between the hall and the Exit.</li>
+  <li><b>What the rooms do.</b> The catalogue entries carry placeholder balance and three new capability
+      flags — <code>trials</code>, <code>departure</code> — that nothing reads yet. Somebody asking to leave
+      the Shaft is a mechanic, not a sprite.</li>
+  <li><b>Figures.</b> The judicial chamber puts a councillor in it, the Exit a constable and the auditorium
+      a resident, by the fallback table in <code>figures.js</code>; none of them has a job in
+      <code>jobs.json</code> that names these rooms yet.</li>
+  <li><b>Foreground cuts</b> (probe/v25) for the judicial dock rail and the Exit's cell bars, so people can
+      stand behind them the way they do in the holding cells.</li>
+</ul>
+
+<script type="module">
+const WIDE = [
+  ['wide-1.png', '1 — seed 26071'], ['wide-2.png', '2 — seed 26072'], ['wide-3.png', '3 — seed 26073'],
+  ['wide-4.png', '4 — seed 26081'], ['wide-5.png', '5 — seed 26082'],
+];
+const FINAL = ['judicial', 'shaft-exit', 'auditorium'];
+const STATES = ['on', 'off', 'broken', 'dim'];
+
+const V = {
+  judicial: [['judicial-a.png', 192, 'A — seed 26001'], ['judicial-b.png', 192, 'B — seed 26002']],
+  exit: [['exit-a.png', 192, 'A — seed 26011'], ['exit-b.png', 192, 'B — seed 26012'], ['exit-c.png', 192, 'C — seed 26013, reworked blockout']],
+  auditorium: [['auditorium-a.png', 448, 'A — both halves seed 26021'], ['auditorium-b.png', 448, 'B — left half re-rolled at seed 26022 with the right half’s palette']],
+};
+const GUIDES = { judicial: 'guide-judicial.png', exit: 'guide-shaft-exit.png', auditorium: 'guide-auditorium.png' };
+
+let zoom = 3;
+let showGuide = false;
+
+function draw() {
+  const wide = document.getElementById('wide');
+  wide.replaceChildren();
+  if (showGuide) wide.appendChild(shot('guide-auditorium.png', 384, 'the blockout they were generated from'));
+  for (const [file, label] of WIDE) wide.appendChild(shot(file, 384, label));
+
+  const host = document.getElementById('finals');
+  host.replaceChildren();
+  for (const room of FINAL) {
+    const w = room === 'auditorium' ? 384 : 192;
+    for (const state of STATES) {
+      host.appendChild(shot(`final-${room}-${state}.png`, w, `<b>${room}</b> — ${state}`));
+    }
+  }
+  for (const [id, versions] of Object.entries(V)) {
+    const host = document.getElementById(id);
+    host.replaceChildren();
+    if (showGuide) {
+      host.appendChild(shot(GUIDES[id], id === 'auditorium' ? 448 : 192, 'the lit blockout guide it was generated from'));
+    }
+    for (const [file, w, label] of versions) host.appendChild(shot(file, w, label));
+  }
+}
+
+function shot(file, w, label) {
+  const fig = document.createElement('figure');
+  const wrap = document.createElement('div');
+  wrap.className = 'wrap';
+  const img = document.createElement('img');
+  img.src = file;
+  img.width = w * zoom;
+  wrap.appendChild(img);
+  fig.appendChild(wrap);
+  const cap = document.createElement('figcaption');
+  cap.innerHTML = label;
+  fig.appendChild(cap);
+  return fig;
+}
+
+function toggles(host, values, current, pick, label = String) {
+  host.replaceChildren();
+  for (const v of values) {
+    const b = document.createElement('button');
+    b.textContent = label(v);
+    b.setAttribute('aria-pressed', String(v === current()));
+    b.onclick = () => { pick(v); refresh(); };
+    host.appendChild(b);
+  }
+}
+
+function refresh() {
+  toggles(document.getElementById('zooms'), [1, 2, 3, 4], () => zoom, (v) => { zoom = v; }, (v) => `${v}×`);
+  toggles(document.getElementById('guides'), [false, true], () => showGuide, (v) => { showGuide = v; },
+    (v) => (v ? 'renders + guide' : 'renders only'));
+  draw();
+}
+refresh();
+</script>
+</main>

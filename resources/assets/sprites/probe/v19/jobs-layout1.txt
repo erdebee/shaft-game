@@ -1,0 +1,8 @@
+protein-vats-a b9f78864-0f4c-4e97-ab94-ed5fc12a2e07
+protein-vats-b c79b7af7-5485-497c-82fe-712ae209daa7
+modest-suite-a c220f014-6b79-476f-aa8b-c4dd91a2a149
+modest-suite-b f6dbff9f-ae25-4bd8-bac0-493cc65114a3
+machine-shop-a 27c218fb-9d3e-4888-8715-8bd5326d5961
+machine-shop-b 0228a1ec-036f-4bcd-be9f-386be2ff6b3d
+recycler-a 94268eea-5028-4a92-8285-a6204af40657
+recycler-b a174fa02-fa6a-4eab-947f-f109826c967d

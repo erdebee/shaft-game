@@ -15,7 +15,7 @@ pixels.**
 ```
 Build slot         64 × 96 px          10 slots per level
 Level pitch       104 px               = 96 clear interior + 8 structural slab
-Shaft width       768 px               = 128 stairwell + 640 build area (10 slots); no lift column
+Shaft width       788 px               = 128 stairwell + 10 × (64 slot + 2 seam); no lift column
 
 Building sprites   64 × 96             1 slot
                   128 × 96             2 slots
@@ -23,10 +23,10 @@ Building sprites   64 × 96             1 slot
 
 Column strip      128 × 104            stairwell (continuous stair, §2.2), tiles vertically
 Rock / back wall   64 × 104            one per depth band, tiles both ways
-Rooms have no frame — they butt against each other and the slab (§2.1)
-Figures            32 × 32 canvas      adult exactly 22 px, child 14 px, soles on row 31 (§4.2)
+Seam               2 px                 dithered fade between neighbouring rooms, drawn by the renderer (§2.1)
+Figures            48 × 48 canvas      adult ≈ 36 px, child ≈ 24 px, soles on the floor line (§4.2)
 Floor line         row 88 of a room    top of the floor band; figures stand on it (§2.1)
-Animated parts     square, ≤ 32 px     4 frames, composited at a recorded anchor
+Animated rooms     full-room strip      frames side by side, played over the `on` state (§2.5)
 
 Zoom               integer only — 1× · 2× · 3×, nearest-neighbour
 ```
@@ -81,20 +81,21 @@ The view is authored in "shaft units" mapped to the screen by SVG `viewBox`
 | Constant | Now | Becomes |
 |---|---|---|
 | `LEVEL_HEIGHT` | 10 | **104** |
-| `SHAFT_WIDTH` | 100 | **768** |
+| `SHAFT_WIDTH` | 100 | **788** (768 + ten 2-px seams) |
 | `STAIR_X` | 7 | **64** (centre of the 128-px stairwell) |
 | `ELEVATOR_X` | 93 | **none**: no lift column (decided 2026-09-22) |
 | `BUILD_X` | 16 | **128** |
-| `BUILD_WIDTH` | 68 | **640** (10 slots) |
+| `BUILD_WIDTH` | 68 | **removed**: slots are `SLOT_WIDTH` 64, `BUILD_SLOTS` 10, `SEAM` 2 |
 
-`slotRect` then returns `x = 128 + slotIndex × 64`, `y = levelY(level)`,
-`width = 64 × slots`, `height = 96` — with the 8 px slab occupying
-`levelY(level) + 96` to `levelY(level) + 104`.
+`roomRect` returns `x = 128 + 2 × (rooms to its left + 1) + slotIndex × 64`,
+`y = levelY(level)`, `width = 64 × slots`, `height = 96` — with the 8 px slab
+occupying `levelY(level) + 96` to `levelY(level) + 104`. Counting the rooms to the
+left, rather than the slots, keeps every pair of neighbours exactly one seam apart
+however many slots each spans.
 
-Figure constants become `FIGURE_W 32`, `FIGURE_H 32`.
-
-*Recorded here as the contract. Changing the constants is a renderer task, not an
-asset task.*
+**Implemented 2026-09-22** in `src/ui/view/interpolate.js`, `viewport.js`,
+`shaftView.js` and `roomArt.js`. The placeholder figures are drawn at 11×22 until
+the figure sprites (§4.2) replace them at 32×32.
 
 ---
 
@@ -102,8 +103,12 @@ asset task.*
 
 A building ships as a **finished room with no frame**: its own painted back wall, a
 ceiling with beams and pipe runs, a plated floor, and machinery packed wall to
-wall. Every pixel of its rectangle is filled. Rooms butt against each other along a
-level and against the structural slab below.
+wall. Every pixel of its rectangle is filled. Rooms sit on the structural slab and
+2 px apart along a level. The renderer fills that seam (and the one between the
+stairwell and the first room) with a dithered fade: each seam pixel takes the
+neighbouring room's edge colour, darkened towards a shadow core between the two,
+with checkerboard dither on the outer column. Chosen in `probe/v23` (dissolve,
+2 px); it is computed from the rooms' edges at runtime, so no seam art is drawn.
 
 ```
 no frame, no border      rooms sit directly against their neighbours
@@ -213,11 +218,23 @@ continuous stair that tiles vertically with no floor or ceiling bands. Each tile
 exit landing on the right at the rooms' floor line and a blank sign plate
 (`signPlate` in the manifest: x 102–116, y 58–67) on which the game prints the level
 number in the 4×6 floor-digit font (`fonts/floor-digits-4x6.json`). Made from `probe/v18`
-(Steel A, hand-fixed so the joins line up). The shaft is 768 px: the 128-px stairwell plus
-10 build slots, with no lift column (decided 2026-09-22).
+(Steel A, hand-fixed so the joins line up). The shaft is 788 px: the 128-px stairwell plus
+10 build slots and their 2-px seams, with no lift column (decided 2026-09-22).
 
 The stairwell is a structure strip, not a placed building, but it follows
 the same rule: it slants only where it meets something that is not stairwell.
+
+**Its treads are a contract.** Porters walk the stair the tile draws — a flight
+down to the landing on the left, a turn, a flight back down to the right, and the
+level's floor at row 88 — and the control points of that walk are measured off
+the tread highlights, in `STAIR_PATH` in
+[`src/ui/view/interpolate.js`](../src/ui/view/interpolate.js). Both flights are
+drawn at 45°, one pixel across per pixel down, which is what lets straight lines
+between a handful of points land on every step. **Redrawing this tile means
+re-measuring that table**, or people will walk beside the stairs instead of on
+them. `tests/ui/shaftGeometry.test.js` checks that the path repeats with the tile,
+stays inside the column and never jumps sideways — it cannot check that it is
+aimed at the treads, which is what `probe/v25` is for.
 
 **Every room spans a single level** and is exactly 96 px of clear interior tall.
 The only sprites that run vertically across levels are the stairwell and mine
@@ -245,6 +262,23 @@ Image-to-image with `init_image` was tried and rejected in v13. Then check that 
 the activity and the damage. A state that shifted the room is regenerated, because
 the renderer crossfades between states and any drift shows as the room jumping.
 
+## 2.5 Animation strips and light flicker
+
+Every room that is lit and running has some life in it, one of two ways:
+
+- **Animated rooms** ship `<id>-on-anim.png`: the whole room, frames side by side,
+  shown in place of the still `on` render while the room is on. Made with
+  `animate_image_pixminimax` and composited through a hand-placed mask onto the
+  untouched `on` render, so only the named parts move; the loop is closed by pinning
+  the last frame to the first (`probe/v20`). The manifest entry carries
+  `animation: { frames, frameMs }`. Seven rooms: presidential suite, main generator,
+  canteen, protein vats, smelter, duct fan, purifier.
+- **Every other room** ships `<id>-dim.png`: its `on` render with the lamps about 17%
+  dimmer. Every colour of `on` maps to exactly one darker colour, weighted by how
+  much it darkens in `off`, so the palette, dither and edges stay pixel-exact
+  (`probe/v23/dim.py 0.3`). The renderer dips a room to it for 40–120 ms, one to
+  three times, after a quiet 15–60 s, on its own schedule per room.
+
 ## 2.4 How a room is made — the adopted workflow
 
 **Adopted 2026-09-21**, after probes v9–v12 (see `probe/v12/index.html`). Prompting
@@ -254,7 +288,7 @@ from row 81 to 90. So every room goes through four steps, cheap ones first:
 | Step | What | Tool | Cost |
 |---|---|---|---|
 | 1. Blockout | Add the building's main masses to `LAYOUTS` in `tools/roomGuide.mjs` (about 15 flat shapes), then run `node tools/roomGuide.mjs <width> room <building-id> --lit` for the lit, dithered guide | local | 0 |
-| 2. Layout | `create_image_pixflux` with `init_image` = the **lit** guide at strength **75** for 128 px and wider; **120–160 for 64-px rooms**, which the model otherwise reads as a box seen from the front (v17; 200 loses the props), `shading: "detailed shading"`, `detail: "highly detailed"`, and the detail lead in the prompt (§4). Two seeds per room, then pick | pixflux | 1 per try |
+| 2. Layout | `create_image_pixflux` with `init_image` = the **lit** guide at strength **75** for 128 px and wider; **135 and 165 for 64-px rooms** with the flat-wall wording below, which the model otherwise reads as a box seen from the front (v17, v19; 200 loses the props), `shading: "detailed shading"`, `detail: "highly detailed"`, and the detail lead in the prompt (§4). Two seeds per room, then pick | pixflux | 1 per try |
 | 3. Master *(optional)* | Only when the layout render is not good enough to ship. `inpaint_image` over the approved layout, masking only the interior: `mask_x 7, mask_y 10, mask_width width − 14, mask_height 78` (open areas: `mask_x 0`, full width). The ceiling, side walls and floor line cannot move. **It redraws the room from the description; it does not keep the layout** (v13) | inpaint | ~20 |
 | 4. States | `off`, `broken` (and `damaged`) with **`edit_image`** on the `on` render: a text instruction that changes only light or damage, ending in "keep all the detail, texture and dithering". Pass the `on` render by its PixelLab URL in `image_urls`, not as base64. Up to **four rooms of ≤128 px per call** for the same price; 192 and 256 px rooms go one per call | edit | ~20 per call |
 
@@ -287,6 +321,13 @@ v13 measured **~46 generations per building** with every step, including one inp
   interiors; at 75 they hold.
 - **Broken states of 64-px rooms** ask for "one single short strip" of warning tape;
   the generic wording criss-crosses the whole room with tape (v16).
+- **64-px rooms turn into alcoves.** A tall, narrow frame reads as a doorway or a box
+  seen from the front. Describe the back wall as "one flat plane filling the whole room
+  edge to edge, no alcove, no inset box" and use strength 135 and 165 as the two tries;
+  in v19 that fixed every room that failed at 120/150. Two 1-slot rooms on one 128-px
+  canvas does not work: the model ignores the centre line.
+- **Never paint a blockout shape in the wall colour.** `P.slate` equals the guide's
+  back wall, so shapes drawn in it vanish (the v19 cell bars did).
 - **Pale blocks high on the back wall become windows.** Name that object in the
   prompt and add "windowless, no window frame, no glass pane" (the v16 clinic).
 - **Passing images.** Pasted base64 sometimes arrives garbled ("Could not decode
@@ -295,6 +336,122 @@ v13 measured **~46 generations per building** with every step, including one inp
 
 **No palette forcing for now** (§6). No step passes `color_image_base64`, and
 inpaint or edit output is not snapped to a palette.
+
+---
+
+## 2.6 Foreground cuts
+
+A room render is one flat image, so a figure drawn on it stands in front of
+everything in the room — including the rail it is holding and the bars it is
+locked behind. Rooms with something a person belongs *behind* ship a second
+sprite, `<id>-<state>-fg.png`: the same render, transparent except for those
+parts, drawn by the renderer **after** the figure layer.
+
+**The cut is a copy, never a subtraction.** The pixels stay in the base render
+too, so an empty room looks identical with the cut and without it, and a cut can
+be re-aimed later without repainting anything. Removing the rail from the base
+instead would leave a hole: the wall behind it was never drawn, and nothing here
+inpaints.
+
+Cut by [`tools/cutForeground.mjs`](../tools/cutForeground.mjs), which holds one
+recipe per room — rectangles where the object is regular, a colour pick where it
+is not:
+
+| Render | What is lifted | How |
+|---|---|---|
+| `stairwell` | Both flights of guardrail and the landing | Every teal pixel except the wall panels by the lamp, grown once into the shaded half of its dither |
+| `holding-cells` | Six bars, head rail, waist rail | Rectangles — the bars are 2 px wide on a 6 px pitch |
+| `shaft-exit` | The cell's eight bars, head rail, waist rail and the notice posted on them | Rectangles — the bars are 3 px wide on an uneven 7–9 px pitch |
+| `canteen` | The long table on the right | Rectangles — top plank and two legs |
+| `school` | Three student desks | Rectangles — slab, legs, cross rails |
+| `auditorium` | Eight stools and the lectern | Stencils — the prop sprites' own alpha (§2.7) |
+
+Two things make this cheap. A room's state renders are pixel-aligned with each
+other, so one set of shapes cuts `on`, `off`, `broken` and `dim`, each from its
+own image so it carries that state's colours. And an animated room's moving
+parts are elsewhere in the frame — the canteen table is identical in all eight
+frames — so one static cut serves the strip as well as the still.
+
+A colour pick grows into the object's own shading (a thin diagonal is drawn as a
+dithered band, and lifting only the lit half leaves a dotted line a figure shows
+through) and then drops islands under six pixels, because a two-pixel speck
+floating over somebody's chest reads as dirt on the screen.
+
+`tests/ui/foregroundArt.test.js` holds the invariant: same size as its render,
+every visible pixel identical to the pixel underneath it, and the same shape
+across a room's states.
+
+---
+
+## 2.7 Stamped props
+
+Furniture small enough that the generator cannot draw it is authored by hand
+instead, as a free-standing sprite in `sprites/props/`, and stamped into the
+room render by [`tools/placeProps.mjs`](../tools/placeProps.mjs).
+
+**When to reach for this.** `create_image_pixflux` needs a canvas of at least
+32x32, and `inpaint_image` needs a mask of about that size before it has enough
+room to put a silhouette in — which is taller than a stool or a lectern in a
+96 px room is allowed to be. Asked for a lectern in a 32 px mask, the generator
+returns a good lectern that is 32 px tall, whose board then sits above the chest
+of the 38 px figure meant to stand behind it. At 15x11 and 19x22 there is no
+generation to do: the silhouette *is* the sprite.
+
+Four rules keep a stamped prop indistinguishable from a generated one:
+
+- **Paint it from the room's own colours.** Sample the render. The auditorium's
+  stool and lectern use six colours, all of which the render already contains,
+  so stamping widens its palette by nothing.
+- **Stamp onto `<id>-<state>-clean.png`**, the render as it came back from the
+  generator, and write `<id>-<state>.png`. Re-running after moving a prop
+  cannot then pile one stamp on top of another.
+- **Map the prop into each state's own light.** A prop is drawn once, lit. The
+  `off` and `broken` renders are separate generations with their own palettes,
+  so the prop is put through what that render does to every colour of the lit
+  one — the median brightness ratio §2.5 already measures — and snapped to that
+  state's palette, so no state gains a colour.
+- **Cut it back out with a stencil, not a rectangle.** The gap between a
+  stool's legs is wall, and lifting that into the foreground hangs a rectangle
+  of wall in front of whoever is sitting there. `cutForeground` takes the
+  placement table straight from `placeProps.mjs`, so moving a prop moves its
+  foreground with it.
+
+A room whose furniture is at fixed columns also names them: `seats` on the lit
+manifest entry is a list of x offsets, and `workerSlot` stands that room's
+people on them instead of spreading them evenly across the width. A speaker two
+pixels off the lectern reads as a mistake; everywhere else there is nothing to
+line up with, so the even spread stands.
+
+**Still open:** the figure sprites have no seated pose, so somebody on a seat
+reads as standing behind a stool rather than sitting on it. A `sit` clip per
+role is the fix.
+
+---
+
+## 2.8 Computed damage
+
+A broken room that contains a screen needs the *picture* to fail, not just the
+glass. [`tools/glitchScreen.mjs`](../tools/glitchScreen.mjs) tears the
+rectangle inside a screen's frame into horizontal bands and damages each one:
+most stay intact, about a quarter slip sideways, and the rest drop out, come
+back in the wrong colours, or repeat a band from elsewhere, with two blown
+scanlines across the whole width.
+
+Computed rather than generated, for the reason the dim frames are (§2.5): every
+colour it writes is already inside that rectangle, so the render's palette and
+dithering survive exactly, and a seed makes it repeatable. Asking a generator
+for "a distorted image" gets a redrawn room.
+
+It reads the screen out of the untouched `-clean` render and writes only the
+screen rectangle back into `<id>-<state>.png`, so it is idempotent and leaves
+anything `placeProps.mjs` stamped into that file alone. Order is
+`placeProps` then `glitchScreen`, though only because the second one is the one
+that reads from `-clean` twice; neither depends on the other's output.
+
+**The proportions are the whole job.** A first pass that corrupted about half
+the rows made the panel read as noise, which says "off", not "broken". Pulled
+back to a quarter, the dead tree and the horizon still read underneath the
+damage, and the screen reads as *this* picture coming apart.
 
 ---
 
@@ -312,7 +469,12 @@ resources/assets/sprites/
   buildings/<building-id>-damaged.png  optional — degraded condition (§2.3)
   buildings/<building-id>-<state>-<ends>.png
                                        open areas only; ends ∈ both | left | right | none (§2.2)
-  parts/<building-id>-<part>-<n>.png   animated part frames, n = 0..3
+  buildings/<building-id>-on-anim.png  animated rooms: frame strip (§2.5)
+  buildings/<building-id>-dim.png      still rooms: dimmed `on` for the flicker (§2.5)
+  buildings/<building-id>-<state>-fg.png
+                                       optional — the part of that render people stand behind (§2.6)
+  structure/stairwell.png              the stair spine, one level tall, tiled
+  structure/stairwell-fg.png           its guardrails, drawn over the figures (§2.6)
   structure/<band>-rock.png            \
   structure/<band>-wall.png             |  band ∈ shallow | mid | deep
   structure/<band>-slab.png             |
@@ -328,7 +490,8 @@ resources/assets/sprites/
 [`resources/assets/manifest.json`](../resources/assets/manifest.json)** using the
 `{ id, path, preloadGroup, chapter }` shape its `_plannedGroups` block already
 reserves. Building sprites add one field, `floorY`: the row their figures stand on
-(§2.1). There is no build step and no directory listing over `fetch()`, so the
+(§2.1). A foreground cut adds `foregroundOf`, the id of the render it was taken
+from (§2.6). There is no build step and no directory listing over `fetch()`, so the
 manifest is the entry point, not a convenience — the same hard constraint that
 governs the data manifest.
 
@@ -349,7 +512,7 @@ anything gated; `lazy` for the rest.
 | Floor slab, edges | `create_sidescroller_tileset` | 32 px tiles; platform set, so it gives the slab its top surface and end caps |
 | Stairwell column | `create_image_pixflux` + hand fix | 128×104, vertically tileable (§2.2) |
 | Figures | **`tools/figureTemplate.mjs`** → `create_image_pixflux` | 32×32, `init_image` = the role's mannequin template at strength 150, `no_background: true`, facing east. See §4.2 |
-| Animated parts | `animate_object` over the approved `on` render | 4-frame loops |
+| Animated rooms | `animate_image_pixminimax` over the approved `on` render + mask | Full-room strip, loop closed on frame 1 (§2.5) |
 | UI panels, gauges | `create_ui_asset` | `style_image_base64` = an approved building, binding UI to the world |
 | Display font | `create_font` | headings and numerals only |
 | Palette repair | `reduce_colors` | not in use while palette forcing is suspended (§6) |
@@ -438,124 +601,110 @@ top surface and end caps, and nothing else.
 
 ### 4.2 Figures
 
-**One body, one scale, every role.** The numbers below are exact, not approximate.
-They are enforced by generating every figure from the same pixel mannequin, not
-by asking for a size in the prompt.
-
-#### Canvas and anchor
-
-```
-canvas        32 × 32 px, transparent
-facing        right (east) only — the renderer mirrors for left-facing
-anchor        soles on row 31 (the bottom row), body centred on column 16
-placement     row 31 of the figure sits on row floorY − 1 of the room (§2.1)
-```
-
-#### The adult body — 22 px
-
-Rows are canvas rows, top to bottom. Heights include the one-pixel outline.
-
-| Rows | Part | Height | Width (incl. outline) | Notes |
-|---|---|---|---|---|
-| 10 | outline | 1 | — | top of the head |
-| 11–15 | head | 5 | 7 | hair on the back half, face on the front half; eye on row 14 |
-| 16 | neck / collar | 1 | 4 | |
-| 17–23 | torso | 7 | 8 | front arm drawn over it, hand on row 23 at the hip |
-| 24–28 | legs | 5 | 6 | legs together, standing |
-| 29–30 | boots | 2 | 8 | toes point forward, one pixel past the shin |
-| 31 | sole outline | 1 | — | the anchor row |
-| | **total** | **22** | **8–10** | head = 6 of 22 ≈ 3.7 heads tall |
-
-- **Headgear** (cap, hard hat, brimmed hat, headscarf) may rise up to **2 px** above
-  row 10 and overhang the face by 2 px. Nothing else changes the height.
-- **Carried things** (a crate on a back frame, a tool, a bag) may widen the
-  silhouette to **14 px**. They never rise above the head and never hang below
-  row 31.
-- **Child: 14 px** (rows 18–31): outline 1, head 4, torso 4, legs 3, boots 1, sole 1.
-  Head = 5 of 14 ≈ 2.8 heads, so children read younger by proportion, not only by
-  size.
-- **Elder: 21 px**: the adult body with the head and shoulders pushed forward one
-  pixel. Grey or white hair, optional cane.
-
-#### Look
-
-- **Profile, facing right.** One eye visible. Never facing the viewer (principles §2).
-- **Face:** a single 1-px eye in the outline colour on row 14, one pixel in from the
-  front of the face. No mouth, no drawn nose.
-- **Outline:** one pixel of the palette's darkest colour all round the silhouette,
-  including under the soles. Figures are the only sprites with a *full* outline.
-  Rooms use a selective one. The full outline is what keeps a 22-px person readable
-  against a busy machine room.
-- **Shading:** two tones per material, base plus a shadow on the back (left) side.
-  At most one highlight pixel, on headgear or a tool. No dithering, no gradients.
-- **Colours:** at most six plus the outline. Skin comes from the neutral ramp in one
-  of three tones: light (`#dcc6a4` / shadow `#b69c86`), medium (`#b69c86` / `#8e7870`)
-  or dark (`#8e7870` / `#6c5a5c`). **Amber appears on a figure only as a lamp** (the
-  miner's helmet lamp). It is reserved for light (principles §6).
-- **Pose:** standing, arms at the sides, the front hand free or holding the role's
-  tool. Walk and work cycles are animated later from the approved standing sprite.
-
-#### Roles
-
-Ids follow `resources/data/catalog/population/jobs.json`. At 1× a role is read from
-its **headgear or tool silhouette** plus its **main garment colour**, so no two roles
-share both. The hex values are the colours the mannequin template is drawn in (palette v6/03). Generation is not palette-forced (§6), so they guide the costume rather than bind it.
-
-| Figure id | Main garment | Headgear / tool silhouette | Probe |
-|---|---|---|---|
-| `engineer` | teal overalls `#33585a` over a cream shirt | flat cap · wrench | v10 ✓ |
-| `miner` | dark brown jacket `#6c5a5c` | hard hat with a 1-px amber lamp · pickaxe | v10 ✓ |
-| `porter` | cream shirt `#dcc6a4`, brown trousers | crate on a back frame | v10 — crate missing |
-| `grower` | mint apron `#86b6a2` over cream | wide brimmed hat · watering can | v10 ✓ |
-| `pump-tech` | dark teal overalls `#1f3638` | rubber boots · valve key | — |
-| `air-tech` | cream coveralls | filter mask at the neck · clipboard | — |
-| `kitchen-hand` | cream apron over terracotta | headscarf | — |
-| `medic` | cream coat to the knees | mint armband · small case | — |
-| `teacher` | brown cardigan `#8e7870` | books under the arm | — |
-| `constable` | near-black coat `#241c26` | peaked cap · pale 1-px badge | — |
-| `archivist` | long grey-brown coat `#6c5a5c` | 1-px spectacles · paper bundle | — |
-| `investigator` | long dark coat | brimmed hat · notebook | — |
-| `councillor` | long dark terracotta coat `#8e3f30` to the knees | grey hair · hands behind the back | v10 — hair came out mint |
-| `resident` | everyday jumper in terracotta, mint or brown | bare-headed · optional bag | v10 ✓ |
-| `child` | shirt and short trousers | scarf · 14 px | v10 ✓ |
+**Settled 2026-09-22 in `probe/v24`.** Sixteen roles, one recipe, reviewed in the
+shaft itself (`probe/v24/shaft/index.html`: the real rooms, zoom 1×/2×/4×, a
+version picker per role and keep/drop verdicts).
 
 #### Recipe
 
-1. `node tools/figureTemplate.mjs adult <figure-id>` (or `child child`) writes the
-   mannequin in the role's colours to `resources/assets/figure-template-*.png`.
-2. `create_image_pixflux` at 32×32 with:
-   - `init_image` = that template, `init_image_strength: 150`
-   - `no_background: true`, `view: "side"`, `direction: "east"`
-   - `shading: "flat shading"`, `outline: "single color black outline"`,
-     `detail: "medium detail"`, `text_guidance_scale: 8`
-   - a prompt that names the costume from the table and ends with *"keep exactly the
-     size, proportions and pose of the input figure: 22 pixels tall, head 6 pixels
-     tall, one pixel dark outline, one pixel eye, no mouth"*.
-3. Measure the opaque bounding box. **Accept** a body of 22 px ±1 (child 14 ±1),
-   plus up to 2 px of headgear. Shift the sprite so the soles sit on row 31.
-   Regenerate anything else.
+PixelLab `create_character`, one call per role:
 
-Why strength 150. At 250 every figure came back exactly 22 px but kept the
-mannequin's mint shirt: the costume was ignored (`probe/v10/pass1-strength250/`).
-At 150 with a template already in the role's colours, the costumes came through
-and heights stayed within 21–23 px (`probe/v10/`).
+```
+mode        "v3"                       2 generations, 8 directions
+size        40                         adults land at 35-39 px; child: size 32 -> 30 px
+view        "side"
+outline     "single color black outline"
+detail      "high detail"
+description "side view, <costume>"     plain wording; style words add nothing
+```
 
-**Tested in rooms (`probe/v11/test-rooms-with-figures.png`).** All seven figures
-held one scale across five very different rooms: the resident against a stove and
-table, councillors against chair backs, engineers against the engine. Two
-problems remain:
+Only the **east** rotation is used; the renderer mirrors it for west. The earlier
+mannequin route (`tools/figureTemplate.mjs` + pixflux at 22 px) is withdrawn: every
+standard-mode figure was rejected for having no outline and reading too thin, and
+size 48 or `create_character_pro_flash` came out too big for the rooms.
 
-- **Roles with a large carried object do not survive.** The porter's crate
-  failed twice. The next attempt is to draw the crate into the porter's template
-  instead of asking for it in the prompt.
-- **Figures in a room's own colours disappear into it.** A teal engineer against
-  a teal engine is hard to find at 1×. The full outline helps but is not enough on
-  its own, so costume colours should be checked against the rooms each role
-  works in.
+Two failures are worth knowing:
 
-The councillor's coat also came out near-black rather than terracotta.
+- **The generator crops the canvas.** A figure drawn at the full 40 px loses its
+  feet or the top of its head. The teacher failed this way twice. Check the opaque
+  box against the canvas edge and re-roll — `probe/v24/shaft/build.py` records a
+  `clipped` flag for exactly this.
+- **Wording moves the body, not just the costume.** "Of adult height … standing
+  upright" lifted a 32-px constable to 36; "stocky", "broad-shouldered" or the
+  `proportions` block fixes a figure that reads too thin.
 
-`"no people"` in the room prompt worked on all 17 v11 renders.
+#### Motion
+
+Template animations on the finished figure, east only, **1 generation each**:
+`walking-8-frames` (walk) and `breathing-idle` (idle). Both hold the costume and
+the height within ±1 px. Custom v3 actions are less reliable and are used only
+where a role needs a task loop: the miner's pickaxe swing took four attempts
+before one closed its loop.
+
+A v3 animation redraws every frame, so colours drift slightly between them (the
+miner's trousers went green mid-swing). `probe/v24/shaft/fixpalette.py` snaps
+every off-palette pixel to the nearest colour in the reference frame, which
+repairs the drift without touching the drawing.
+
+#### In the manifest
+
+`resources/assets/manifest.json` holds a `figures` block: one entry per role, with
+a `still` and any of `walk`, `idle`, `work`. Each clip is a horizontal strip of
+square cells and carries its own measurements, so the renderer never inspects the
+image:
+
+```
+w, h        one cell
+frames      cells in the strip           frameMs: time per cell
+feet        lowest opaque row            stands the figure on the room's floorY
+cx          centre column of the body    mirrored for a west-facing figure
+height      opaque height, for the scale check in tests/ui/figureArt.test.js
+```
+
+Sprites live in `sprites/figures/<role>-<clip>.png`.
+
+#### Roles
+
+Ids follow `resources/data/catalog/population/jobs.json`, plus `councillor`,
+`resident`, `elder` and `child`, who are not jobs. A room's roles come from
+`jobs.worksIn`; the four staffed rooms no job names are listed in `figures.js`
+(`council-chamber` → councillor, `common-hall` → resident, `battery-bank` →
+engineer, `seed-vault` → grower). A room with two jobs alternates them by figure
+index, so the archive shows an archivist beside an investigator.
+
+At 1× a role is read from its **headgear or tool silhouette** plus its **main
+garment colour**, so no two roles share both.
+
+| Figure id | Costume in the accepted render | Height |
+|---|---|---|
+| `engineer` | teal overalls over a cream shirt, flat cap, wrench | 38 |
+| `miner` | dark brown jacket, yellow hard hat with a lamp, pickaxe | 36 |
+| `porter` | cream shirt, brown trousers, small crate strapped high on the back | 35 |
+| `grower` | mint apron over cream, wide brimmed hat, watering can | 38 |
+| `kitchen-hand` | cream apron over terracotta, headscarf | 38 |
+| `pump-tech` | dark teal overalls, heavyset, beard, rubber boots, wrench | 39 |
+| `air-tech` | cream coveralls, filter mask, clipboard | 36 |
+| `medic` | long cream coat, mint armband, medical bag | 38 |
+| `teacher` | brown cardigan, cream shirt, skirt, books under the arm | 36 |
+| `constable` | near-black long coat, peaked cap, pale badge | 36 |
+| `archivist` | long grey-brown coat, round spectacles, paper bundle | 39 |
+| `investigator` | charcoal coat, brimmed hat, notebook | 38 |
+| `councillor` | long terracotta coat to the knees, grey hair, hands behind the back | 38 |
+| `resident` | terracotta knitted jumper, brown trousers, cloth bag | 36 |
+| `elder` | olive-brown shawl, white hair, walking cane, stooped | 38 |
+| `child` | mint shirt, short brown trousers, small scarf | 30 |
+
+Amber appears on a figure only as a lamp (the miner's helmet): it is reserved for
+light (principles §6).
+
+#### Still open
+
+- **Work loops** beyond the miner's swing: carry, tend, read, repair.
+- **Directions.** Only east is generated; a figure that should face the viewer
+  (a portrait, a cutscene) needs its other rotations fetched, which cost nothing
+  extra — they are already generated.
+- **Costume against the room.** A figure in its room's own colours is hard to
+  find at 1×; the outline helps but the pairing is worth a pass.
 
 ---
 

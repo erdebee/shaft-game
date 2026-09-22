@@ -128,29 +128,56 @@ body {
 }
 .shaft:active { cursor: grabbing; }
 
-.level-rock  { fill: var(--rock-cut); stroke: var(--floor); stroke-width: 0.15; }
-.level-floor { fill: var(--concrete); }
-.level-label { fill: var(--ink-faint); font-size: 2.4px; font-family: var(--font-mono); }
+/* Pixel art: never smooth it. The viewport keeps the zoom a whole number
+   (viewport.js), so nearest-neighbour lands every sprite pixel on screen
+   pixels. */
+.shaft image { image-rendering: optimizeSpeed; image-rendering: pixelated; }
+.shaft rect, .shaft .level-number { shape-rendering: crispEdges; }
 
-/* Every other level tinted, so forty floors read as forty rather than as one
-   dark column. Cheap banding, and it survives any palette change. */
-.level:nth-child(even) .level-rock { fill: color-mix(in srgb, var(--rock-cut) 88%, var(--concrete)); }
+.level-rock       { fill: var(--rock-cut); }
+.level-floor      { fill: var(--slab); }
+.level-floor-edge { fill: var(--slab-lit); }
+.level-number     { fill: var(--sign-ink); }
+.stairwell        { fill: var(--concrete); }
 
-.level[data-air="poor"] .level-rock     { fill: color-mix(in srgb, var(--rock-cut) 84%, var(--warn)); }
-.level[data-air="critical"] .level-rock { fill: color-mix(in srgb, var(--rock-cut) 70%, var(--critical)); }
-.level.sealed .level-floor { fill: var(--critical); }
+.level.sealed .level-floor,
+.level.sealed .level-floor-edge { fill: var(--critical); }
 
-.stairwell      { fill: var(--concrete); }
-.liftshaft-bore { fill: var(--concrete); }
+/* Air quality washes over the level, rooms included; good air shows nothing. */
+.level-air                    { fill: transparent; pointer-events: none; }
+.level-air[data-air="poor"]     { fill: var(--warn); opacity: 0.12; }
+.level-air[data-air="critical"] { fill: var(--critical); opacity: 0.22; }
+.seam { pointer-events: none; }
 
-/* Sprite part classes. The sheet carries no colour of its own. */
+/* One render per state; the building's classes pick which one shows. Broken
+   outranks unpowered, and the flicker only dims a room that is on. The
+   animated strip replaces the still "on" render while it plays. */
+.room-off, .room-broken, .room-dim { display: none; }
+.building.unpowered .room-on,
+.building.unpowered .room-anim { display: none; }
+.building.unpowered .room-off  { display: inline; }
+.building.broken .room-on,
+.building.broken .room-off,
+.building.broken .room-anim    { display: none; }
+.building.broken .room-broken  { display: inline; }
+.building.flicker:not(.unpowered):not(.broken) .room-dim { display: inline; }
+
+/* The foreground layer draws after the figures, so a person can stand behind
+   a stair rail, cell bars, a canteen table or a school desk. It is a copy of
+   pixels the room render already contains, and it is never a hit target — a
+   click on the bars is a click on the room behind them. */
+.layer-foreground { pointer-events: none; }
+/* Pattern-filled by JS. Without this an unfilled rect would default to black
+   and bury the stairwell. */
+.stairwell-fg { fill: none; }
+
+/* Vector fallback, for a building with no render yet. The sheet carries no
+   colour of its own. */
 .b-shell  { fill: var(--concrete-lit); }
 .b-detail { fill: var(--concrete); stroke: var(--concrete); }
 .b-hot    { fill: var(--sodium-lamp); }
 .b-cool   { fill: var(--cool); stroke: var(--cool); }
-
-.building { transition: opacity 200ms ease; }
-.building.unpowered { opacity: 0.35; }
+.building.unpowered use { opacity: 0.35; }
 .building.unpowered .b-hot { fill: var(--dead); }
 .building.broken .b-shell  { fill: var(--rust); }
 
@@ -163,8 +190,9 @@ body {
 .f-cargo      { fill: var(--cargo); }
 .figure-worker .f-body { fill: var(--figure-dim); stroke: var(--figure-dim); }
 
-/* Porters face the way they are walking. Safe on the inner node. */
-.figure-porter[data-descending="false"] .figure-sprite {
+/* Porters face the way they are walking — which reverses at every switchback
+   landing, not at the top and bottom of the trip. Safe on the inner node. */
+.figure-porter[data-facing="west"] .figure-sprite {
   transform: scaleX(-1);
   transform-origin: center;
 }
@@ -180,15 +208,23 @@ body {
 
 @keyframes spin   { to { transform: rotate(360deg); } }
 @keyframes glow   { 50% { opacity: 0.45; } }
-@keyframes bob    { 50% { transform: translateY(-0.5px); } }
+@keyframes bob    { 50% { transform: translateY(-1px); } }
+@keyframes strip  { to { transform: translateX(calc(var(--strip-width) * -1px)); } }
 
 [data-part="fan"]     { animation: spin 2.4s linear infinite; }
+/* A room's animation strip: one frame per step under a room-sized window. */
+[data-part="strip"]   { animation: strip var(--strip-duration) steps(var(--frames)) infinite; }
 [data-part="glow"],
 [data-part="lamps"],
 [data-part="lamp"],
 [data-part="charge"],
 [data-part="piston"],
 [data-part="waterline"] { animation: glow 3.2s ease-in-out infinite; }
+
+/* A pixel figure is a window the size of one frame over a strip of frames,
+   stepped by the same keyframe a room's animation uses. The delay spreads a
+   room's workers out of lockstep; JS hashes it from the figure's placement. */
+.figure-window [data-part="strip"] { animation-delay: var(--phase, 0s); }
 
 /* On the inner sprite, not the wrapper — the wrapper's transform is JS-owned
    position and a keyframe here would overwrite it. */
@@ -210,5 +246,5 @@ body {
    ambient animation rather than leaving it stuttering at 0.01ms. */
 @media (prefers-reduced-motion: reduce) {
   [data-part], .figure-sprite { animation: none; }
-  .building, [data-part="door"] { transition: none; }
+  [data-part="door"] { transition: none; }
 }

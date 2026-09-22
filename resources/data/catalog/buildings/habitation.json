@@ -180,6 +180,28 @@
         { "op": "risk.add", "target": "assembly", "value": 4 }
       ],
       "_note": "The clearest sim-to-politics hook in the game. People are happier because they can gather, and they can gather because they are together. Sealing it during unrest costs exactly the morale that was holding things steady."
+    },
+    {
+      "id": "auditorium",
+      "name": "Auditorium",
+      "zone": "habitation",
+      "slots": 6,
+      "levelConstraint": "shallow",
+      "fixed": { "level": 1, "align": "left" },
+      "priorityClass": "amenity",
+      "powerDraw": 45,
+      "staffing": 2,
+      "wearPerTick": 0.0009,
+      "consumes": [{ "id": "wood", "qty": 0.4 }],
+      "produces": [],
+      "repairCost": [{ "id": "basic-parts", "qty": 3 }, { "id": "wood", "qty": 4 }],
+      "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
+      "effects": [
+        { "op": "meter.add", "target": "morale", "value": 8 },
+        { "op": "meter.add", "target": "legitimacy", "value": 3 },
+        { "op": "risk.add", "target": "assembly", "value": 6 }
+      ],
+      "_note": "Six slots and unmovable: the hall was built before the player and takes most of the top level. Six and not seven because 384 px is the widest room the generator will draw in one pass (probe/v26). It is the only room that can hold the whole Shaft at once, which is what makes it worth its slots and what makes it dangerous — the assembly risk here is the highest of any building. Its back window shows a dead plain, and it is a screen; the room is where a departure through the Exit on this level is watched."
     }
   ]
 }

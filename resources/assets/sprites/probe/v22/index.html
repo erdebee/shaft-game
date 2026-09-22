@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxury suite options</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --amber: #f2b25a; --teal: #86b6a2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1500px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); margin: 44px 0 6px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  p { max-width: 95ch; color: var(--dim); } b { color: var(--ink); }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; max-width: 100%; }
+  img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .rej img { opacity: .5; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+</style>
+<body>
+<main>
+<h1>Luxury suite: four new versions</h1>
+<p>Started from scratch: four new layouts, each with its own theme, rendered with the detail recipe and crisp dithered lighting. Two seeds per version; the better one is shown large, the other faded beside it. Pick one and it gets its off and broken states.</p>
+<div class="summary"><p><b>Cost:</b> 8 generations. Off and broken for the chosen version will cost about 40 more.</p></div>
+<h2>Chosen: option C, library suite</h2>
+<p>Final files: <code>luxury-suite-on.png</code>, <code>luxury-suite-off.png</code>, <code>luxury-suite-broken.png</code> (in this folder). They replace the v19 and v21 luxury suites.</p>
+<figure><img src="states.png" style="width:1752px"><figcaption>on · off · broken</figcaption></figure>
+<div id="opts"></div>
+<p><a href="../v21/index.html">&larr; v21: the relit suites</a></p>
+</main>
+<script>
+const OPTS = [
+  ['A', 'piano', 'b', 'a', 'Piano lounge', 'A glossy black grand piano and bench, a brass drinks trolley with decanters, a fringed standing lamp, a crystal chandelier and a velvet-headboard bed. Richest of the four in props. The right-hand wall has a panelled door and the floorboards recede very slightly.', 'The other seed drew an upright piano and is much plainer (17 colours).'],
+  ['B', 'deco', 'a', 'b', 'Art deco', 'A dressing table with a round gilt mirror, a teal velvet armchair, a brass floor lamp throwing a dithered light cone, a potted palm, a brass bed and a sunburst deco panel. Flat and clean against a dark stone wall.', 'The other seed has a chaise longue and a fan headboard but frames the room like an alcove.'],
+  ['C', 'library', 'b', 'a', 'Library suite', 'Two tall bookcases packed with books, a writing desk with a lamp and a globe, potted plants, a brass chandelier and a carved bed. Warm and scholarly.', 'The other seed drew a window, a rug and angled walls.'],
+  ['D', 'bath', 'b', 'a', 'Bath suite', 'A white clawfoot bathtub on gold feet with a brass tap and towel rail, a tall carved wardrobe, a gilt-framed painting, a teal armchair, wall sconces and a carved bed under a red curtain. The most colours (57).', 'The other seed has timber ceiling beams that recede.'],
+];
+document.getElementById('opts').innerHTML = OPTS.map(([k, id, pick, alt, name, note, altnote]) => `
+  <h2>Option ${k}: ${name}</h2>
+  <div class="row">
+    <figure><img src="${id}-${pick}.png" style="width:768px"><figcaption>option ${k} · 4&times;</figcaption></figure>
+    <figure class="rej"><img src="${id}-${alt}.png" style="width:384px"><figcaption>other seed · ${altnote}</figcaption></figure>
+  </div>
+  <p>${note}</p>
+  <figure><img src="option-${k}-shaft.png" style="width:1536px"><figcaption>in the shaft on level 4, between the presidential suite and the council chamber</figcaption></figure>`).join('');
+</script>
+</body>
+</html>

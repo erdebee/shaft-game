@@ -64,6 +64,21 @@ const P = {
   rust: '#8e3f30', terracotta: '#cf6a40', amber: '#f2b25a',
 };
 
+/**
+ * A row of chairs in side elevation: back, seat and legs, repeated. Written as
+ * a function because the auditorium seats fourteen and listing them by hand
+ * would bury the rest of its blockout.
+ */
+const chairRow = (x0, count, step, seatY, colour) => Array.from({ length: count }, (_, i) => {
+  const x = x0 + i * step;
+  return [
+    ['rect', x, seatY - 14, x + 2, seatY, colour],        // back
+    ['rect', x, seatY, x + 9, seatY + 2, colour],         // seat
+    ['rect', x + 1, seatY + 3, x + 2, seatY + 10, colour], // legs
+    ['rect', x + 7, seatY + 3, x + 8, seatY + 10, colour],
+  ];
+}).flat();
+
 const LAYOUTS = {
   'main-generator': [
     ['rect', 8, 12, 183, 15, P.taupe],              // ceiling pipe run
@@ -397,6 +412,467 @@ const LAYOUTS = {
     ['rect', 186, 60, 196, 64, P.cream],            // pillow
     ['rect', 186, 80, 236, 87, P.plum],             // bed frame
   ],
+  // v22: four fresh luxury-suite concepts (piano lounge, art deco, library, salon).
+  'luxury-suite-piano': [
+    ['rect', 60, 10, 60, 14, P.taupe],              // chandelier chain
+    ['circle', 60, 20, 5, P.amber],                 // chandelier
+    ['rect', 20, 24, 50, 38, P.sand],               // painting
+    ['rect', 14, 50, 62, 64, P.ink],                // grand piano body
+    ['rect', 16, 65, 19, 87, P.ink],                // piano legs
+    ['rect', 56, 65, 59, 87, P.ink],
+    ['rect', 66, 70, 80, 74, P.rust],               // piano bench
+    ['rect', 68, 75, 69, 87, P.rust], ['rect', 77, 75, 78, 87, P.rust],
+    ['rect', 86, 66, 104, 70, P.sand],              // bar cart
+    ['rect', 88, 58, 92, 65, P.mint], ['rect', 96, 58, 100, 65, P.terracotta],
+    ['rect', 88, 70, 89, 82, P.sand], ['rect', 102, 70, 103, 82, P.sand],
+    ['circle', 89, 84, 3, P.ink], ['circle', 102, 84, 3, P.ink],
+    ['rect', 110, 34, 124, 87, P.rust],             // folding screen
+    ['rect', 117, 34, 117, 87, P.plum],
+    ['rect', 128, 40, 129, 87, P.sand],             // standing lamp
+    ['circle', 128, 38, 4, P.amber],
+    ['circle', 152, 30, 2, P.amber],                // sconce
+    ['rect', 177, 48, 182, 87, P.rust],             // headboard
+    ['rect', 134, 68, 177, 80, P.terracotta],       // bed
+    ['rect', 168, 64, 177, 68, P.cream],            // pillow
+    ['rect', 134, 80, 177, 87, P.plum],             // bed frame
+  ],
+  'luxury-suite-deco': [
+    ['rect', 12, 62, 40, 66, P.rust],               // dressing table
+    ['rect', 14, 67, 16, 87, P.rust], ['rect', 36, 67, 38, 87, P.rust],
+    ['circle', 26, 44, 11, P.sand],                 // round mirror frame
+    ['circle', 26, 44, 8, P.tealLit],               // mirror glass
+    ['rect', 18, 56, 22, 61, P.terracotta],         // perfume bottles
+    ['rect', 50, 70, 90, 80, P.teal],               // chaise longue
+    ['rect', 50, 58, 57, 70, P.teal],
+    ['rect', 52, 81, 54, 87, P.ink], ['rect', 86, 81, 88, 87, P.ink],
+    ['rect', 96, 34, 97, 87, P.sand],               // floor lamp
+    ['circle', 96, 31, 4, P.amber],
+    ['circle', 108, 52, 10, P.tealLit],             // potted palm
+    ['rect', 104, 72, 112, 87, P.terracotta],
+    ['circle', 125, 44, 9, P.sand],                 // deco fan headboard
+    ['rect', 120, 44, 130, 87, P.sand],
+    ['rect', 130, 68, 182, 80, P.terracotta],       // bed
+    ['rect', 130, 64, 140, 68, P.cream],            // pillow
+    ['rect', 130, 80, 182, 87, P.plum],
+    ['rect', 142, 24, 172, 40, P.rust],             // deco artwork
+    ['rect', 146, 28, 168, 36, P.amber],
+  ],
+  'luxury-suite-library': [
+    ['rect', 10, 16, 44, 87, P.plum],               // bookcase
+    ['rect', 12, 22, 42, 28, P.terracotta], ['rect', 12, 36, 42, 42, P.mint],
+    ['rect', 12, 50, 42, 56, P.sand], ['rect', 12, 64, 42, 70, P.rust],
+    ['rect', 46, 20, 48, 87, P.sand],               // library ladder
+    ['circle', 62, 68, 7, P.teal],                  // globe
+    ['rect', 61, 75, 63, 87, P.sand],
+    ['circle', 92, 20, 4, P.amber],                 // chandelier
+    ['rect', 92, 10, 92, 15, P.taupe],
+    ['rect', 72, 64, 102, 68, P.rust],              // writing desk
+    ['rect', 74, 69, 76, 87, P.rust], ['rect', 98, 69, 100, 87, P.rust],
+    ['circle', 96, 58, 3, P.amber],                 // desk lamp
+    ['rect', 104, 62, 112, 87, P.teal],             // reading chair
+    ['rect', 115, 10, 118, 87, P.mauve],            // pilaster
+    ['rect', 122, 24, 184, 28, P.rust],             // four-poster canopy
+    ['rect', 122, 24, 125, 87, P.rust], ['rect', 181, 24, 184, 87, P.rust],
+    ['rect', 126, 66, 180, 80, P.terracotta],       // bed
+    ['rect', 126, 62, 136, 66, P.cream],
+    ['rect', 126, 80, 180, 87, P.plum],
+  ],
+  'luxury-suite-bath': [
+    ['circle', 40, 20, 4, P.amber],                 // chandelier
+    ['rect', 40, 10, 40, 15, P.taupe],
+    ['rect', 12, 66, 56, 80, P.cream],              // clawfoot bathtub
+    ['rect', 14, 62, 54, 66, P.sand],               // tub rim
+    ['rect', 16, 81, 19, 87, P.amber], ['rect', 49, 81, 52, 87, P.amber],
+    ['rect', 50, 44, 52, 62, P.amber],              // tap and shower pipe
+    ['rect', 60, 50, 72, 53, P.sand],               // towel rail
+    ['rect', 62, 54, 70, 72, P.terracotta],         // towel
+    ['rect', 78, 30, 94, 87, P.rust],               // wardrobe
+    ['rect', 86, 30, 86, 87, P.plum],
+    ['rect', 100, 26, 124, 44, P.sand],             // painting
+    ['rect', 100, 68, 122, 80, P.teal],             // velvet settee
+    ['rect', 100, 60, 104, 68, P.teal],
+    ['circle', 132, 34, 2, P.amber],                // sconce
+    ['rect', 176, 44, 182, 87, P.rust],             // tall headboard
+    ['rect', 136, 68, 176, 80, P.terracotta],       // bed
+    ['rect', 166, 64, 176, 68, P.cream],
+    ['rect', 136, 80, 176, 87, P.plum],
+  ],
+  // v19: the remaining sixteen buildings.
+  'holding-cells': [
+    ['circle', 32, 16, 2, P.amber],                 // caged lamp
+    ['rect', 10, 26, 18, 34, P.taupe],              // key rack
+    ['rect', 10, 74, 18, 77, P.rust],               // guard's stool
+    ['rect', 13, 78, 15, 87, P.rust],
+    ['rect', 28, 70, 54, 74, P.rust],               // cell bunk
+    ['rect', 44, 80, 50, 87, P.mauve],              // bucket
+    ['rect', 24, 20, 56, 22, P.ink],              // cell bars: top rail
+    ['rect', 24, 20, 25, 87, P.ink],
+    ['rect', 30, 20, 31, 87, P.ink],
+    ['rect', 36, 20, 37, 87, P.ink],
+    ['rect', 42, 20, 43, 87, P.ink],
+    ['rect', 48, 20, 49, 87, P.ink],
+    ['rect', 54, 20, 55, 87, P.ink],
+  ],
+  'duct-fan': [
+    ['circle', 12, 16, 2, P.amber],                 // lamp
+    ['rect', 22, 10, 42, 24, P.taupe],              // duct up
+    ['rect', 20, 24, 44, 26, P.mauve],              // flange
+    ['circle', 32, 48, 20, P.taupe],              // fan housing
+    ['circle', 32, 48, 16, P.ink],
+    ['circle', 32, 48, 4, P.mauve],                 // hub
+    ['rect', 20, 70, 44, 72, P.mauve],              // flange
+    ['rect', 24, 72, 40, 87, P.taupe],              // duct down
+    ['rect', 50, 60, 56, 72, P.rust],               // control box
+  ],
+  'protein-vats': [
+    ['rect', 8, 12, 119, 15, P.taupe],              // pipe run
+    ['rect', 23, 16, 25, 20, P.taupe],              // feed drops
+    ['rect', 55, 16, 57, 20, P.taupe],
+    ['rect', 87, 16, 89, 20, P.taupe],
+    ['rect', 10, 20, 38, 24, P.tealLit],            // vat lids
+    ['rect', 42, 20, 70, 24, P.tealLit],
+    ['rect', 74, 20, 102, 24, P.tealLit],
+    ['rect', 12, 24, 36, 87, P.teal],               // vats
+    ['rect', 44, 24, 68, 87, P.teal],
+    ['rect', 76, 24, 100, 87, P.teal],
+    ['circle', 24, 50, 4, P.mint],                  // sight glasses
+    ['circle', 56, 50, 4, P.mint],
+    ['circle', 88, 50, 4, P.mint],
+    ['rect', 106, 40, 118, 70, P.rust],             // control panel
+    ['circle', 112, 48, 2, P.cream],
+    ['circle', 112, 60, 2, P.cream],
+  ],
+  'food-processing': [
+    ['circle', 44, 16, 2, P.amber],                 // lamp
+    ['rect', 10, 26, 54, 28, P.mauve],              // shelf
+    ['rect', 12, 20, 50, 25, P.terracotta],         // tins
+    ['rect', 10, 34, 32, 40, P.taupe],              // hopper
+    ['rect', 12, 40, 30, 70, P.ink],              // grinder
+    ['rect', 12, 70, 30, 87, P.plum],
+    ['rect', 32, 62, 56, 66, P.sand],               // packing table
+    ['rect', 34, 67, 36, 87, P.sand],
+    ['rect', 52, 67, 54, 87, P.sand],
+    ['rect', 38, 76, 50, 87, P.rust],               // crate of packed rations
+  ],
+  'seed-vault': [
+    ['circle', 32, 13, 2, P.amber],                 // lamp
+    ['rect', 10, 18, 54, 34, P.rust],               // seed drawers
+    ['rect', 10, 23, 54, 23, P.plum],
+    ['rect', 10, 28, 54, 28, P.plum],
+    ['rect', 24, 18, 24, 34, P.plum],
+    ['rect', 40, 18, 40, 34, P.plum],
+    ['circle', 32, 62, 18, P.ink],                // vault door
+    ['circle', 32, 62, 14, P.taupe],
+    ['circle', 32, 62, 12, P.tealDeep],
+    ['circle', 32, 62, 4, P.rust],                  // wheel
+    ['rect', 48, 80, 56, 87, P.sand],               // seed crate
+  ],
+  'modest-suite': [
+    ['circle', 64, 16, 2, P.amber],                 // lamp
+    ['rect', 18, 10, 20, 60, P.plum],               // stove pipe
+    ['rect', 12, 60, 26, 87, P.ink],                // stove
+    ['rect', 30, 30, 56, 32, P.mauve],              // shelf
+    ['rect', 32, 24, 52, 29, P.terracotta],         // crockery and books
+    ['rect', 32, 68, 58, 71, P.rust],               // table
+    ['rect', 34, 72, 36, 87, P.rust],
+    ['rect', 54, 72, 56, 87, P.rust],
+    ['rect', 66, 28, 82, 42, P.sand],               // family picture
+    ['rect', 88, 56, 92, 87, P.rust],               // headboard
+    ['rect', 92, 70, 118, 80, P.terracotta],        // bed
+    ['rect', 92, 66, 100, 70, P.cream],             // pillow
+    ['rect', 92, 80, 118, 87, P.plum],              // bed frame
+  ],
+  'luxury-suite': [
+    ['rect', 12, 22, 40, 87, P.plum],               // bookcase
+    ['rect', 15, 30, 37, 34, P.terracotta],
+    ['rect', 15, 46, 37, 50, P.mint],
+    ['rect', 15, 62, 37, 66, P.sand],
+    ['rect', 50, 28, 86, 44, P.sand],               // painting
+    ['rect', 48, 62, 70, 87, P.teal],               // armchair
+    ['rect', 74, 70, 86, 87, P.rust],               // side table
+    ['circle', 80, 62, 6, P.sand],                  // gramophone horn
+    ['rect', 96, 10, 96, 14, P.taupe],              // chandelier chain
+    ['circle', 96, 20, 5, P.amber],                 // chandelier
+    ['rect', 100, 10, 104, 87, P.mauve],            // pilaster
+    ['rect', 108, 26, 128, 87, P.rust],             // wardrobe
+    ['rect', 132, 24, 184, 28, P.rust],             // bed canopy
+    ['rect', 134, 50, 138, 87, P.rust],             // headboard
+    ['rect', 138, 68, 182, 80, P.terracotta],       // bed
+    ['rect', 138, 64, 148, 68, P.cream],            // pillow
+    ['rect', 138, 80, 182, 87, P.plum],             // bed frame
+  ],
+  'common-hall': [
+    ['rect', 8, 16, 56, 17, P.terracotta],          // bunting
+    ['circle', 32, 22, 2, P.amber],                 // lamp
+    ['rect', 10, 24, 28, 42, P.sand],               // notice board
+    ['rect', 36, 36, 54, 38, P.mauve],              // shelf
+    ['rect', 38, 28, 52, 35, P.rust],               // radio
+    ['rect', 10, 66, 54, 69, P.rust],               // table
+    ['rect', 12, 70, 14, 87, P.rust],
+    ['rect', 50, 70, 52, 87, P.rust],
+    ['rect', 16, 62, 20, 65, P.cream],              // mugs
+    ['rect', 40, 62, 44, 65, P.cream],
+    ['rect', 8, 76, 56, 79, P.sand],                // bench
+    ['rect', 20, 80, 22, 87, P.sand],
+    ['rect', 42, 80, 44, 87, P.sand],
+  ],
+  'machine-shop': [
+    ['rect', 8, 14, 119, 16, P.taupe],              // line shaft
+    ['circle', 30, 15, 4, P.ink],                 // pulleys
+    ['circle', 80, 15, 4, P.ink],
+    ['rect', 29, 19, 31, 36, P.plum],               // belts
+    ['rect', 79, 19, 81, 34, P.plum],
+    ['circle', 50, 24, 2, P.amber],                 // lamp
+    ['rect', 18, 36, 40, 48, P.tealLit],            // drill press head
+    ['rect', 26, 48, 30, 87, P.teal],               // drill press column
+    ['rect', 18, 62, 38, 64, P.ink],              // drill table
+    ['rect', 60, 34, 100, 87, P.teal],              // milling machine
+    ['rect', 60, 34, 100, 38, P.tealLit],
+    ['rect', 54, 58, 106, 62, P.ink],             // mill table
+    ['circle', 94, 46, 2, P.cream],                 // gauge
+    ['rect', 106, 56, 120, 87, P.rust],             // tool chest
+    ['rect', 106, 64, 120, 64, P.plum],
+    ['rect', 106, 72, 120, 72, P.plum],
+  ],
+  recycler: [
+    ['rect', 8, 12, 119, 15, P.taupe],              // pipe run
+    ['circle', 70, 20, 2, P.amber],                 // lamp
+    ['rect', 12, 24, 44, 34, P.ink],              // hopper
+    ['rect', 18, 34, 38, 70, P.rust],               // shredder body
+    ['rect', 20, 70, 36, 74, P.ink],                // shredder teeth
+    ['rect', 14, 74, 42, 87, P.plum],               // base
+    ['rect', 44, 64, 92, 68, P.mauve],              // conveyor
+    ['rect', 52, 60, 58, 63, P.sand],               // scrap on the belt
+    ['rect', 70, 60, 76, 63, P.terracotta],
+    ['rect', 48, 76, 60, 87, P.teal],               // sorting bins
+    ['rect', 64, 76, 76, 87, P.terracotta],
+    ['rect', 80, 76, 92, 87, P.sand],
+    ['rect', 96, 30, 118, 87, P.ink],             // compactor
+    ['rect', 100, 34, 114, 40, P.taupe],            // compactor ram
+  ],
+  // spansLevels: the car and rails run through the ceiling and floor.
+  'freight-elevator': [
+    ['rect', 10, 10, 54, 87, P.ink],                // shaft
+    ['rect', 12, 10, 14, 87, P.taupe],              // guide rails
+    ['rect', 50, 10, 52, 87, P.taupe],
+    ['rect', 31, 10, 33, 24, P.ink],              // hoist cable
+    ['rect', 16, 24, 48, 87, P.rust],               // car frame
+    ['rect', 19, 28, 45, 87, P.plum],               // car interior
+    ['rect', 22, 72, 34, 87, P.sand],               // crates in the car
+    ['rect', 20, 30, 21, 87, P.taupe],            // scissor gate
+    ['rect', 27, 30, 28, 87, P.taupe],
+    ['rect', 36, 30, 37, 87, P.taupe],
+    ['rect', 43, 30, 44, 87, P.taupe],
+    ['circle', 56, 20, 2, P.amber],                 // warning lamp
+  ],
+  dumbwaiter: [
+    ['circle', 32, 16, 4, P.ink],                 // pulley
+    ['rect', 29, 20, 29, 38, P.taupe],              // ropes
+    ['rect', 35, 20, 35, 38, P.taupe],
+    ['rect', 16, 36, 48, 62, P.rust],               // hatch frame
+    ['rect', 19, 39, 45, 59, P.ink],                // hatch opening
+    ['rect', 22, 48, 42, 59, P.sand],               // tray of parcels
+    ['circle', 52, 40, 2, P.amber],                 // call bell
+    ['rect', 12, 62, 52, 65, P.sand],               // counter
+    ['rect', 14, 66, 50, 87, P.mauve],              // cabinet
+  ],
+  'salvage-post': [
+    ['circle', 32, 16, 2, P.amber],                 // lamp
+    ['rect', 10, 22, 40, 40, P.mauve],              // board of salvaged parts
+    ['rect', 12, 46, 18, 72, P.taupe],              // stripped panel, leaning
+    ['rect', 32, 74, 42, 87, P.sand],               // crate
+    ['rect', 44, 50, 48, 87, P.rust],               // gas bottles
+    ['rect', 50, 50, 54, 87, P.teal],
+    ['circle', 22, 86, 14, P.mauve],                // scrap heap
+    ['circle', 30, 82, 8, P.taupe],
+  ],
+  junction: [
+    ['rect', 16, 10, 18, 30, P.ink],                // cable conduits
+    ['rect', 28, 10, 30, 30, P.ink],
+    ['rect', 40, 10, 42, 30, P.ink],
+    ['rect', 10, 30, 48, 70, P.teal],               // breaker cabinet
+    ['rect', 29, 30, 29, 70, P.tealDeep],
+    ['circle', 20, 40, 3, P.cream],                 // meters
+    ['circle', 38, 40, 3, P.cream],
+    ['rect', 14, 52, 44, 60, P.tealDeep],           // breaker row
+    ['rect', 52, 34, 54, 40, P.rust],               // knife switch handle
+    ['rect', 50, 40, 56, 56, P.ink],              // knife switch
+    ['rect', 14, 74, 26, 82, P.terracotta],         // warning plate
+    ['circle', 42, 80, 7, P.rust],                  // cable drum
+  ],
+  purifier: [
+    ['rect', 14, 10, 18, 30, P.taupe],              // inlet pipe
+    ['rect', 18, 26, 50, 30, P.taupe],              // crossover pipe
+    ['circle', 48, 28, 3, P.rust],                  // valve wheel
+    ['rect', 10, 30, 30, 87, P.teal],               // carbon filter tank
+    ['rect', 10, 48, 30, 49, P.tealDeep],
+    ['rect', 18, 36, 22, 70, P.mint],               // sight glass
+    ['rect', 36, 36, 52, 72, P.ink],              // canister
+    ['circle', 44, 44, 3, P.cream],                 // gauge
+    ['rect', 34, 76, 54, 87, P.plum],               // carbon sacks
+  ],
+  cistern: [
+    ['rect', 8, 18, 52, 22, P.tealLit],             // tank rim
+    ['rect', 10, 22, 50, 87, P.teal],               // tank
+    ['rect', 10, 40, 50, 41, P.tealDeep],           // rivet bands
+    ['rect', 10, 62, 50, 63, P.tealDeep],
+    ['rect', 44, 26, 46, 80, P.mint],               // level gauge
+    ['circle', 20, 80, 3, P.rust],                  // outlet valve
+    ['rect', 53, 18, 54, 87, P.sand],               // ladder
+    ['rect', 55, 24, 56, 25, P.sand],
+    ['rect', 55, 40, 56, 41, P.sand],
+    ['rect', 55, 56, 56, 57, P.sand],
+    ['rect', 55, 72, 56, 73, P.sand],
+  ],
+  /**
+   * Where the Accord is amended and where it is applied to a person. The bench
+   * is raised and central, the dock is in front of it and the public bench is
+   * off to one side: the room states the hierarchy before anyone speaks.
+   */
+  judicial: [
+    ['rect', 10, 20, 30, 87, P.rust],               // law library
+    ['rect', 12, 32, 28, 33, P.plum],
+    ['rect', 12, 48, 28, 49, P.plum],
+    ['rect', 12, 64, 28, 65, P.plum],
+    ['circle', 52, 16, 2, P.amber],                 // lamps
+    ['circle', 140, 16, 2, P.amber],
+    ['circle', 62, 30, 9, P.sand],                  // scales seal
+    ['circle', 62, 30, 5, P.rust],
+    ['rect', 88, 18, 128, 46, P.tealDeep],          // the Accord, engraved
+    ['rect', 94, 24, 122, 25, P.cream],
+    ['rect', 94, 30, 116, 31, P.cream],
+    ['rect', 94, 36, 120, 37, P.cream],
+    ['rect', 150, 20, 172, 48, P.terracotta],       // hanging banner
+    ['rect', 96, 40, 102, 54, P.ink],               // judges' chair backs
+    ['rect', 108, 36, 116, 54, P.ink],
+    ['rect', 122, 40, 128, 54, P.ink],
+    ['rect', 82, 52, 142, 56, P.mauve],             // bench top
+    ['rect', 82, 57, 142, 79, P.plum],              // bench front
+    ['rect', 78, 80, 146, 87, P.ink],               // dais
+    ['rect', 38, 60, 64, 64, P.rust],               // the dock rail
+    ['rect', 38, 64, 40, 87, P.rust],
+    ['rect', 62, 64, 64, 87, P.rust],
+    ['rect', 150, 66, 182, 69, P.sand],             // public bench
+    ['rect', 152, 70, 154, 87, P.sand],
+    ['rect', 178, 70, 180, 87, P.sand],
+  ],
+
+  /**
+   * The way out, four slots so it and the auditorium fill level 1 exactly. One
+   * slot of cell, where someone leaving spends their last day on a bench; one
+   * slot of suit-up bay, full-body suits hanging on a rack above a bench and
+   * boots; and two slots of door — the only thing in the Shaft that opens onto
+   * the outside, so it is built like a vault and banded in hazard paint.
+   */
+  'shaft-exit': [
+    // The cell: bars across the front, the bench behind them.
+    ['circle', 30, 16, 2, P.amber],                 // caged lamp over the cell
+    ['rect', 18, 28, 42, 42, P.tealDeep],           // the notice, posted
+    ['rect', 21, 32, 38, 33, P.cream],
+    ['rect', 21, 37, 33, 38, P.cream],
+    ['rect', 10, 68, 50, 72, P.rust],               // the bench
+    ['rect', 12, 73, 14, 87, P.rust],
+    ['rect', 46, 73, 48, 87, P.rust],
+    ['rect', 8, 18, 56, 20, P.ink],                 // cell bars
+    ['rect', 8, 18, 9, 87, P.ink],
+    ['rect', 16, 18, 17, 87, P.ink],
+    ['rect', 24, 18, 25, 87, P.ink],
+    ['rect', 32, 18, 33, 87, P.ink],
+    ['rect', 40, 18, 41, 87, P.ink],
+    ['rect', 48, 18, 49, 87, P.ink],
+    ['rect', 55, 18, 56, 87, P.ink],
+    ['rect', 60, 12, 65, 87, P.taupe],              // divider: cell | suit bay
+    // The suit-up bay: three full-body suits on a rail, helmets on the shelf.
+    ['circle', 98, 16, 2, P.amber],                 // lamp
+    ['rect', 70, 22, 126, 23, P.ink],               // hanging rail
+    ['rect', 70, 24, 126, 26, P.mauve],             // helmet shelf
+    ['circle', 78, 20, 4, P.sand],                  // helmets, visors teal
+    ['circle', 98, 20, 4, P.sand],
+    ['circle', 118, 20, 4, P.sand],
+    ['rect', 72, 28, 84, 62, P.terracotta],         // suit: torso and arms
+    ['rect', 73, 62, 76, 74, P.terracotta],         // legs
+    ['rect', 80, 62, 83, 74, P.terracotta],
+    ['rect', 92, 28, 104, 62, P.sand],              // suit
+    ['rect', 93, 62, 96, 74, P.sand],
+    ['rect', 100, 62, 103, 74, P.sand],
+    ['rect', 112, 28, 124, 62, P.terracotta],       // suit
+    ['rect', 113, 62, 116, 74, P.terracotta],
+    ['rect', 120, 62, 123, 74, P.terracotta],
+    ['rect', 74, 34, 82, 36, P.tealLit],            // visor straps / chest plates
+    ['rect', 94, 34, 102, 36, P.tealLit],
+    ['rect', 114, 34, 122, 36, P.tealLit],
+    ['rect', 70, 78, 126, 80, P.rust],              // changing bench
+    ['rect', 72, 81, 74, 87, P.rust],
+    ['rect', 122, 81, 124, 87, P.rust],
+    ['rect', 84, 83, 90, 87, P.ink],                // boots under the bench
+    ['rect', 104, 83, 110, 87, P.ink],
+    ['rect', 128, 12, 133, 87, P.taupe],            // divider: suit bay | door
+    // The door, two slots.
+    ['rect', 140, 14, 148, 87, P.plum],             // door jamb, left
+    ['rect', 228, 14, 236, 87, P.plum],             // door jamb, right
+    ['rect', 142, 26, 234, 32, P.taupe],            // lintel over the door
+    ['rect', 150, 34, 226, 87, P.mauve],            // the door leaf, set in its frame
+    ['rect', 150, 34, 226, 37, P.amber],            // hazard band, head
+    ['rect', 150, 82, 226, 85, P.amber],            // hazard band, sill
+    ['circle', 188, 60, 17, P.taupe],               // the wheel
+    ['circle', 188, 60, 5, P.plum],
+    ['rect', 186, 46, 190, 74, P.plum],             // spokes
+    ['rect', 174, 58, 202, 62, P.plum],
+    ['rect', 206, 42, 222, 56, P.tealDeep],         // release panel
+    ['circle', 211, 48, 2, P.terracotta],
+    ['circle', 217, 48, 2, P.mint],
+    ['circle', 158, 18, 3, P.rust],                 // warning lamp, above the frame
+    ['rect', 168, 14, 212, 22, P.tealDeep],         // stencilled sign over the door
+    ['rect', 172, 17, 208, 18, P.cream],
+  ],
+
+  /**
+   * Six slots: the only room wide enough to hold the Shaft at once. A lectern
+   * and a low stage on the left, raked seating through the middle, and at the
+   * back a window onto a dead landscape — which is a screen, though the room is
+   * built so you forget that. A departure through the exit on this level is
+   * watched from these chairs. Six slots and not seven because 384 px is the
+   * widest canvas pixflux will draw in one pass (probe/v26: a 448-px hall
+   * generated as two halves never agreed about its floor or its chairs).
+   */
+  auditorium: [
+    ['rect', 8, 12, 376, 14, P.taupe],              // ceiling beam run
+    ['circle', 30, 19, 2, P.amber],                 // lamps
+    ['circle', 120, 17, 2, P.amber],
+    ['circle', 264, 17, 2, P.amber],
+    ['circle', 354, 19, 2, P.amber],
+    // The window is the room: centred and 72% of the wall wide. Kept SHORT so
+    // the seating has a band of its own — at full height the generator drops
+    // the chairs and the lectern entirely (probe/v26, seed 26072).
+    ['rect', 54, 16, 330, 54, P.ink],               // the frame
+    ['rect', 59, 20, 325, 50, P.taupe],             // a bleached sky
+    ['rect', 59, 38, 325, 50, P.mauve],             // and the dust under it
+    ['rect', 59, 38, 325, 39, P.plum],              // the horizon
+    ['rect', 190, 22, 193, 44, P.ink],              // dead tree: trunk
+    ['rect', 188, 42, 195, 46, P.ink],              // its root flare
+    ['rect', 186, 27, 189, 28, P.ink],              // bare branches, forking up
+    ['rect', 182, 25, 186, 26, P.ink],
+    ['rect', 178, 23, 182, 24, P.ink],
+    ['rect', 194, 29, 198, 30, P.ink],
+    ['rect', 198, 26, 202, 27, P.ink],
+    ['rect', 202, 24, 205, 25, P.ink],
+    ['rect', 194, 21, 196, 22, P.ink],
+    ['rect', 184, 34, 189, 35, P.ink],
+    ['rect', 50, 54, 334, 58, P.mauve],             // the sill under it
+    // A lectern on a low dais at one end, standing in front of the window.
+    ['rect', 8, 76, 60, 79, P.mauve],
+    ['rect', 8, 79, 60, 87, P.plum],
+    ['rect', 28, 58, 36, 76, P.rust],               // lectern column
+    ['rect', 20, 52, 44, 58, P.sand],               // lectern desk
+    ['rect', 14, 18, 17, 76, P.taupe],              // standard
+    ['rect', 17, 22, 30, 44, P.terracotta],         // banner
+    // One flat row of chairs, all the same size, in the band below the window.
+    ...chairRow(72, 11, 27, 78, P.rust),
+    ['rect', 66, 86, 376, 87, P.ink],               // the aisle floor line
+    ['rect', 348, 66, 372, 70, P.sand],             // a small bench at the far end
+    ['rect', 350, 71, 352, 87, P.sand],
+    ['rect', 368, 71, 370, 87, P.sand],
+  ],
 };
 
 /**
@@ -459,7 +935,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const width = Number(args[0]);
   const kind = args[1] ?? 'room';
   const layout = args[2] ?? null;
-  if (![64, 128, 192, 256].includes(width)) throw new Error("width must be 64, 128, 192 or 256");
+  // One slot to the full width of a level; the guide itself has no limit, but
+  // pixflux stops at 400 px, so anything wider is generated in pieces (§2.4).
+  if (!Number.isInteger(width / 64) || width < 64 || width > 640) {
+    throw new Error('width must be a whole number of 64-px slots, 64 to 640');
+  }
   if (!['room', 'open'].includes(kind)) throw new Error('kind must be room or open');
   const name = (layout ? `${width}-${kind}-${layout}` : `${width}-${kind}`) + (lit ? '-lit' : '');
   const out = resolve(ROOT, `resources/assets/room-guide-${name}.png`);

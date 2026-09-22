@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditorium furniture</title>
+<style>
+  :root { --bg:#0e0b10; --panel:#17121a; --edge:#2c2430; --ink:#e6d8c0; --dim:#a8988e; --amber:#f2b25a; --teal:#86b6a2; --bad:#d9785f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 ui-monospace,"SF Mono",Menlo,monospace; }
+  main { max-width:1500px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:18px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  h2 { font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:44px 0 8px; padding-top:14px; border-top:1px solid var(--edge); }
+  h3 { font-size:12px; color:var(--teal); margin:22px 0 6px; }
+  p, li { max-width:100ch; color:var(--dim); } b { color:var(--ink); } code { color:var(--teal); } a { color:var(--teal); }
+  .summary { background:var(--panel); border:1px solid var(--edge); border-left:3px solid var(--amber); padding:14px 18px; margin:18px 0; max-width:1200px; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; gap:18px; flex-wrap:wrap; align-items:center;
+         background:var(--panel); border:1px solid var(--edge); padding:10px 14px; margin:18px 0 28px; }
+  .bar label { color:var(--dim); font-size:12px; }
+  button { font:inherit; font-size:12px; background:#221b26; color:var(--dim); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--amber); border-color:var(--amber); color:#1a1208; }
+  figure { margin:0 0 20px; }
+  figcaption { font-size:11px; color:var(--dim); margin-top:6px; }
+  figcaption b { color:var(--ink); }
+  img { image-rendering:pixelated; display:block; max-width:100%; }
+  .wrap { overflow-x:auto; padding-bottom:6px; }
+  table { border-collapse:collapse; font-size:12px; margin:8px 0; max-width:1200px; }
+  th,td { border-bottom:1px solid var(--edge); padding:5px 10px; text-align:left; vertical-align:top; color:var(--dim); }
+  th { color:var(--ink); font-weight:600; }
+  td.ok { color:var(--teal); } td.no { color:var(--bad); }
+  .room { position:relative; image-rendering:pixelated; }
+  .room img { position:absolute; left:0; top:0; }
+  .room .fig { position:absolute; }
+  .props { display:flex; gap:36px; align-items:flex-end; background:#1b1520; border:1px solid var(--edge); padding:20px 24px; }
+</style>
+<body>
+<main>
+<h1>Auditorium furniture — stool and lectern</h1>
+<p><b>Window #2 kept.</b> The room is that render, untouched; the furniture is two free-standing
+sprites stamped into it. The stools face the window, so the audience is seen from behind; the lectern
+stands to the right of the window with the speaker behind it, facing us. Both are in the
+<b>foreground layer</b>, so a figure at a seat is drawn <em>behind</em> its stool.</p>
+<p><b>Fourteen seats</b> on a 23&nbsp;px pitch, running from the left wall to the lectern's elbow at
+x&nbsp;340 &mdash; the stool is 15 wide, so the row is nearly shoulder to shoulder. And the
+<b>broken screen is distorted</b>, not merely cracked: see the last two sections.</p>
+
+<div class="bar">
+  <label>Zoom</label><span id="zooms"></span>
+  <label>Figures</label><span id="figs"></span>
+</div>
+
+<h2>The two sprites</h2>
+<p>Drawn by hand (<code>tools/props.mjs</code>), not generated — see the last section for why. Both sit on
+their own bottom row, so placing one is "put its last row on the floor line" and nothing needs an anchor.
+Their six colours are all colours the room render already contains, so stamping them does not widen its
+palette by a single entry.</p>
+<div class="props" id="props"></div>
+<table>
+  <tr><th>Sprite</th><th>Size</th><th>Why that shape</th></tr>
+  <tr><td><b>auditorium-stool</b></td><td>15&times;11</td>
+      <td><b>Backless on purpose.</b> The audience sits with its back to us looking at the window. A chair
+      with a back would cover each person from the waist up and the room would read as a rack of empty
+      chairs; a stool crosses the shins only, which is the amount of overlap that says "sitting".</td></tr>
+  <tr><td><b>auditorium-lectern</b></td><td>19&times;22</td>
+      <td>Board at row 72, which is chest height on a 38&nbsp;px figure standing on row 93 — the speaker
+      is visible from the chest up. The brass lip is what makes the slant read at this size.</td></tr>
+</table>
+
+<h2>In the room, with people behind them</h2>
+<p>The render, the figure layer, and the foreground cut, in that order — exactly the three layers the game
+draws. Toggle the figures to see the cut doing its job: the stool legs and the lectern board stay in front.</p>
+<div class="wrap" id="rooms"></div>
+
+<h2>All four states</h2>
+<p>The props are drawn once, in the lit room's colours, and mapped into each other state by what that
+state's own render does to every colour of the lit one — the same measurement <code>dim.py</code> makes,
+then snapped to that state's palette. So the unpowered stools are unpowered-dark rather than a lit sticker,
+and no state gained a colour.</p>
+<div class="wrap" id="states"></div>
+<table>
+  <tr><th>State</th><th>Colours before props</th><th>After</th></tr>
+  <tr><td>on</td><td>31</td><td class="ok">31</td></tr>
+  <tr><td>off</td><td>37</td><td class="ok">37</td></tr>
+  <tr><td>broken</td><td>38</td><td class="ok">38</td></tr>
+  <tr><td>dim</td><td>&mdash; computed from on+off</td><td class="ok">31</td></tr>
+</table>
+
+<h2>The broken screen</h2>
+<p>The back wall is a screen, so a broken one should not be cracked glass over a perfect picture &mdash;
+the picture itself should be coming apart. <code>tools/glitchScreen.mjs</code> tears the 274&times;58
+rectangle inside the frame into horizontal bands and damages each one: most stay intact, a quarter slip
+sideways, and the rest drop out, come back in the wrong colours, or repeat a band from elsewhere, with two
+blown scanlines across it.</p>
+<p>Computed rather than generated, for the reason the dim frames are: every colour it writes is a colour
+already inside that rectangle, so the render keeps its palette exactly &mdash; <b>38 colours before the
+tear and 38 after</b>. It reads the screen out of the untouched <code>-clean</code> render and writes only
+that rectangle back, so it is idempotent and leaves the stamped props alone.</p>
+<p><b>The proportions were the whole job.</b> The first pass corrupted about half the rows and the
+landscape stopped being recognisable &mdash; the panel read as noise, which says "off", not "broken".
+Pulled back to a quarter, the dead tree and the horizon still read underneath the damage.</p>
+<div class="wrap" id="screens"></div>
+
+<h2>Why the props are hand-drawn</h2>
+<p>Three inpaint attempts went in first, straight into the render so they would come back at the room's own
+scale and palette. They are kept here because what is wrong with them is the reason for the change of method.</p>
+<div class="wrap" id="rejects"></div>
+<table>
+  <tr><th>Attempt</th><th>What came back</th><th>Verdict</th></tr>
+  <tr><td>lectern, 30&times;29 mask</td><td>A plain narrow table, flat top, no slant.</td><td class="no">Wrong object</td></tr>
+  <tr><td>stool, 22&times;14 mask</td><td>Nothing legible — too few pixels to put a silhouette in.</td><td class="no">Unusable</td></tr>
+  <tr><td>lectern, 32&times;33 mask</td><td><b>Genuinely good</b> — slanted board, brass lip, correct palette and light.
+      But it is 32&nbsp;px tall, so its board sits at row 58 and swallows the speaker to the chin: a 38&nbsp;px
+      figure standing at row 93 has its head top at row 55, leaving 7&nbsp;px of head above the lectern.</td>
+      <td class="no">Right object, wrong scale</td></tr>
+</table>
+<p>That last one is the whole argument. The generator draws to fill the mask it is given, and the mask has a
+floor of about 32&nbsp;px before it has enough room to draw furniture at all — which is taller than the
+furniture in this room is allowed to be. At 15&times;11 and 19&times;22 there is no generation to do: the
+silhouette <em>is</em> the sprite.</p>
+
+<h2>What is still open</h2>
+<ul>
+  <li><b>The figures stand, they do not sit.</b> There is no seated pose, so a person on a seat reads as
+  standing behind a stool. Fixing it properly means a <code>sit</code> clip per role; say the word and I will
+  generate one for <code>resident</code> first and see how it reads.</li>
+  <li>The auditorium is staffed 2, so only two of the nine seats are ever filled — the speaker at the lectern
+  and one person in the audience. Whether an audience should gather here is a simulation question, not an art one.</li>
+  <li><code>&lt;room&gt;-&lt;state&gt;-clean.png</code> now sits beside each render: the generator's output before
+  stamping. It is what makes <code>placeProps</code> idempotent, but it does mean four more files in the tree.</li>
+</ul>
+
+<script>
+const ROOM = { w: 384, h: 96 };
+const SEATS = [355, ...Array.from({ length: 14 }, (_, n) => 33 + n * 23)];
+const FEET = 38, CX = 20; // resident-still.png, from the manifest
+const FLOOR = 93;
+let zoom = 2, figures = true;
+
+const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
+
+/** One room: render, then figures, then the foreground cut — the game's order. */
+function room(state, withFigures) {
+  const box = el('div', 'room');
+  box.style.width = ROOM.w * zoom + 'px';
+  box.style.height = ROOM.h * zoom + 'px';
+
+  const base = el('img');
+  base.src = `../../buildings/auditorium-${state}.png`;
+  base.style.width = ROOM.w * zoom + 'px';
+  box.append(base);
+
+  if (withFigures) {
+    // One at the lectern and four in the audience, on the seat table itself.
+    for (const seat of [SEATS[0], SEATS[1], SEATS[4], SEATS[7], SEATS[9], SEATS[13]]) {
+      const fig = el('img', 'fig');
+      fig.src = '../../figures/resident-still.png';
+      fig.style.width = 40 * zoom + 'px';
+      fig.style.left = (seat - CX) * zoom + 'px';
+      fig.style.top = (FLOOR - FEET) * zoom + 'px';
+      box.append(fig);
+    }
+  }
+
+  const fg = el('img');
+  fg.src = `../../buildings/auditorium-${state}-fg.png`;
+  fg.style.width = ROOM.w * zoom + 'px';
+  box.append(fg);
+  return box;
+}
+
+function draw() {
+  const rooms = document.getElementById('rooms');
+  rooms.textContent = '';
+  const f = el('figure');
+  f.append(room('on', figures));
+  const cap = el('figcaption');
+  cap.innerHTML = figures
+    ? '<b>Six residents on the seat table.</b> Legs behind the stools, the speaker behind the lectern board.'
+    : '<b>Nobody home.</b> The furniture is in the render itself, so an empty room is complete.';
+  f.append(cap);
+  rooms.append(f);
+
+  const states = document.getElementById('states');
+  states.textContent = '';
+  for (const state of ['on', 'dim', 'off', 'broken']) {
+    const fig = el('figure');
+    fig.append(room(state, figures));
+    const c = el('figcaption');
+    c.innerHTML = `<b>${state}</b>`;
+    fig.append(c);
+    states.append(fig);
+  }
+
+  const props = document.getElementById('props');
+  props.textContent = '';
+  for (const [name, label] of [['auditorium-stool', '15&times;11'], ['auditorium-lectern', '19&times;22']]) {
+    const fig = el('figure');
+    const img = el('img');
+    img.src = `../../props/${name}.png`;
+    img.style.width = `calc(var(--w) * ${zoom * 4}px)`;
+    img.style.imageRendering = 'pixelated';
+    img.onload = () => { img.style.width = img.naturalWidth * zoom * 4 + 'px'; };
+    fig.append(img);
+    const c = el('figcaption');
+    c.innerHTML = `<b>${name}</b> ${label}, at ${zoom * 4}&times;`;
+    fig.append(c);
+    props.append(fig);
+  }
+
+  const screens = document.getElementById('screens');
+  screens.textContent = '';
+  for (const [state, label] of [['on', 'the screen working'], ['broken', 'the same screen, torn']]) {
+    const fig = el('figure');
+    fig.append(room(state, false));
+    const c = el('figcaption');
+    c.innerHTML = `<b>${label}</b>`;
+    fig.append(c);
+    screens.append(fig);
+  }
+
+  const rejects = document.getElementById('rejects');
+  rejects.textContent = '';
+  for (const [file, label] of [['rejected-lectern', 'inpainted lectern — right object, too tall'],
+                               ['rejected-stool', 'inpainted stool — nothing legible']]) {
+    const fig = el('figure');
+    const img = el('img');
+    img.src = `${file}.png`;
+    img.style.width = ROOM.w * zoom + 'px';
+    fig.append(img);
+    const c = el('figcaption');
+    c.innerHTML = `<b>${label}</b>`;
+    fig.append(c);
+    rejects.append(fig);
+  }
+}
+
+function toggles(host, values, current, onPick, fmt) {
+  host.textContent = '';
+  for (const v of values) {
+    const b = el('button');
+    b.textContent = fmt ? fmt(v) : v;
+    b.setAttribute('aria-pressed', String(v === current()));
+    b.onclick = () => { onPick(v); [...host.children].forEach((c, i) => c.setAttribute('aria-pressed', String(values[i] === current()))); draw(); };
+    host.append(b);
+  }
+}
+
+toggles(document.getElementById('zooms'), [1, 2, 3, 4], () => zoom, (v) => { zoom = v; }, (v) => v + '×');
+toggles(document.getElementById('figs'), [true, false], () => figures, (v) => { figures = v; }, (v) => (v ? 'with' : 'without'));
+draw();
+</script>
+</main>
+</body>
+</html>

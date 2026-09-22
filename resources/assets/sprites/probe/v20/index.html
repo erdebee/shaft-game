@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room animation test</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 40px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  p, li { max-width: 90ch; color: var(--dim); }
+  b { color: var(--ink); font-weight: 600; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; max-width: 100%; }
+  figure img, canvas { display: block; image-rendering: pixelated; max-width: 100%; height: auto; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; max-width: 48ch; }
+  .wrap { overflow-x: auto; }
+  .ctl { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--dim); margin: 8px 0; }
+  .ctl button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; }
+</style>
+<body>
+<main>
+<h1>Room animation test: seven rooms</h1>
+<p>Animated "on" states for seven rooms, made from the approved renders. Off and broken rooms keep their static renders.</p>
+
+<div class="summary">
+  <p><b>How:</b> PixelLab <code>animate_image_pixminimax</code>, 8 frames per part (1 generation each). Rooms whose PixelLab links had expired were sent as a
+     64&times;64 or 128&times;64 crop around the moving part. Each part has a <b>hand-placed mask</b> (the red areas below); only pixels inside it come from the
+     animation and everything else is the original render, so nothing else in the room can move.</p>
+  <p><b>Protein vats (redone):</b> the mask is now just the three green glass portholes. The motion is swirling culture and rising bubbles; it plays forward and back.</p>
+  <p><b>Presidential suite:</b> the fire flickers inside the fireplace opening, and the chandelier's candle flames flicker. The model would not sway the chandelier; the flames alone read well.</p>
+  <p><b>Main generator:</b> the flywheel spins and the gauge needles on the control cabinet twitch. <b>Smelter:</b> the furnace fire roars. <b>Canteen:</b> the pot simmers and steam rises into the hood.
+     <b>Purifier:</b> green liquid bubbles up the sight tube and the pressure gauge twitches. <b>Duct fan:</b> unchanged from the first test.</p>
+  <p><b>Cost:</b> 7 animations this round, 7 generations.</p>
+</div>
+
+<h2>In the shaft</h2>
+<div class="ctl"><span>Zoom</span><button data-z="1">1&times;</button><button data-z="2">2&times;</button><button data-z="3">3&times;</button>
+  <label><input type="checkbox" id="play" checked> play</label></div>
+<div class="wrap"><canvas id="cv"></canvas></div>
+
+<h2>Close up</h2>
+<div class="row" id="gifs"></div>
+
+<h2>Masks</h2>
+<p>Red = the only pixels allowed to change.</p>
+<div class="row" id="masks"></div>
+<p><a href="../v19/index.html">&larr; v19: the last sixteen rooms</a></p>
+</main>
+<script>
+// The v19 demo shaft, with the animated rooms playing in place. [room, strip, x, row, width, frames, ms, base render]
+const ANIM = [
+  ['presidential-suite', 256, 128, 0, 8, 120, '../../buildings/presidential-suite-on.png'],
+  ['duct-fan', 64, 576, 2, 8, 100, '../v19/duct-fan-on.png'],
+  ['canteen', 192, 128, 3, 8, 140, '../v16/canteen-on.png'],
+  ['protein-vats', 128, 256, 4, 16, 140, '../v19/protein-vats-on.png'],
+  ['smelter', 128, 384, 4, 8, 100, '../v17/smelter-on.png'],
+  ['main-generator', 192, 128, 5, 8, 90, '../../buildings/main-generator-on.png'],
+  ['purifier', 64, 640, 5, 9, 140, '../v19/purifier-on.png'],
+].map(([id, w, x, row, frames, ms, base]) => ({ id, w, x, row, frames, ms, base, strip: `${id}-on-anim-strip.png` }));
+const load = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = s; });
+let zoom = 2, playing = true;
+document.getElementById('gifs').innerHTML = ANIM.map((a) => `<figure><img src="${a.id}-on-anim.gif" width="${a.w * 3}" alt=""><figcaption>${a.id}, 3&times; · ${a.frames} frames &times; ${a.ms} ms</figcaption></figure>`).join('');
+(async () => {
+  const masks = document.getElementById('masks');
+  for (const a of ANIM) {
+    const [b, m] = await Promise.all([load(a.base), load(`${a.id}-on-anim-mask.png`)]);
+    const c = document.createElement('canvas'); c.width = b.width; c.height = b.height; c.style.width = `${b.width * 2}px`;
+    const x = c.getContext('2d'); x.drawImage(b, 0, 0);
+    const t = document.createElement('canvas'); t.width = b.width; t.height = b.height; const tx = t.getContext('2d');
+    tx.drawImage(m, 0, 0); const d = tx.getImageData(0, 0, b.width, b.height);
+    for (let i = 0; i < d.data.length; i += 4) { const on = d.data[i] > 0; d.data[i] = 255; d.data[i + 1] = 0; d.data[i + 2] = 0; d.data[i + 3] = on ? 150 : 0; }
+    tx.putImageData(d, 0, 0); x.drawImage(t, 0, 0);
+    const f = document.createElement('figure'); f.appendChild(c); const cap = document.createElement('figcaption'); cap.textContent = a.id; f.appendChild(cap); masks.appendChild(f);
+  }
+  const shaft = await load('../v19/shaft-on.png');
+  for (const a of ANIM) a.img = await load(a.strip);
+  const cv = document.getElementById('cv'); cv.width = shaft.width; cv.height = shaft.height;
+  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  const size = () => { cv.style.width = `${cv.width * zoom}px`; cv.style.height = `${cv.height * zoom}px`; };
+  size();
+  const draw = (t) => {
+    ctx.drawImage(shaft, 0, 0);
+    for (const a of ANIM) { const f = playing ? Math.floor(t / a.ms) % a.frames : 0; ctx.drawImage(a.img, f * a.w, 0, a.w, 96, a.x, a.row * 104, a.w, 96); }
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
+  document.querySelectorAll('.ctl button').forEach((b) => b.addEventListener('click', () => { zoom = Number(b.dataset.z); size(); }));
+  document.getElementById('play').addEventListener('change', (e) => { playing = e.target.checked; });
+})();
+</script>
+</body>
+</html>

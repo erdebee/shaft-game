@@ -123,15 +123,18 @@ central stairwell and mine shafts / mine elevators.
 ### Figures — one scale for everyone
 
 **Every person in the game is drawn to one body at one scale.** An adult is
-**22 px tall** from the top of the head to the sole, with a head 6 px tall (about
-3.7 heads in total). A child is **14 px**. Headgear may add up to 2 px above the
-head. That size holds in every room, at every depth, in every state. It is the
-yardstick the player uses to judge how big everything else is. If it varies, the
-generator hall and the family house stop being the same world.
+**35–39 px tall** from the top of the head to the sole; a child is about 30 px.
+That size holds in every room, at every depth, in every state. It is the yardstick
+the player uses to judge how big everything else is. If it varies, the generator
+hall and the family house stop being the same world.
 
-At 22 px a figure is under a quarter of a room's 96 px height. A diesel engine
-stands about three people tall and a doorway about one and a half. The machinery
-is monumental, and people are small inside it — which is the point.
+At 36 px a figure is a bit over a third of a room's 96 px height: chest-high to a
+counter, a head shorter than a doorway. The machinery still stands two to three
+people tall. *(Changed 2026-09-22 from 22 px after `probe/v24`: the rooms' furniture
+was drawn for a person this size, and at 22 px every adult read as a child. The
+accepted set lands in a 4-px band rather than on one exact number — a generated
+figure cannot be held to the pixel, and 4 px reads as ordinary variation in
+height; asset-production-spec §4.2.)*
 
 **Rooms are drawn empty of people.** Figures are their own layer (§3), placed
 from staffing and haulage, so a room render never contains a person. Figures
@@ -387,7 +390,7 @@ holds, and the art is produced to fit it:
 
 | Kind | What it is | Made of |
 |---|---|---|
-| **Ambient loop** | Fans, pistons, flywheels, glow pulses | 4-frame part strips over the building's `on` render |
+| **Ambient loop** | Fans, flywheels, fire, bubbling vats; flickering lamps | A full-room frame strip over the `on` render, or a dimmed `on` the lights dip to (spec §2.5) |
 | **State transition** | Doors, shutters, a room powering up or going dark | Two state renders plus a short crossfade |
 | **Sim-time motion** | Lift cars, porters on the stairs | Driven by trip interpolation, never by keyframes |
 

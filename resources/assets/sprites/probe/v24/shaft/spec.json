@@ -1,0 +1,823 @@
+{
+ "roles": [
+  {
+   "role": "engineer",
+   "label": "Engineer",
+   "rooms": [
+    "main-generator",
+    "workshop",
+    "machine-shop",
+    "battery-bank"
+   ],
+   "versions": [
+    {
+     "id": "engineer-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "create_character v3, size 40, plain wording",
+     "gens": 2,
+     "still": "char:f32f7c52-8941-4174-8079-f2674b7e0f9c",
+     "anims": {
+      "walk": {
+       "src": {
+        "char": "f32f7c52-8941-4174-8079-f2674b7e0f9c",
+        "anim": "69d8c7f1-1b4d-4b6c-9547-e11c4b8b18a7",
+        "frames": 8
+       },
+       "ms": 110,
+       "note": "template walking-8-frames"
+      },
+      "idle": {
+       "src": {
+        "char": "f32f7c52-8941-4174-8079-f2674b7e0f9c",
+        "anim": "09ad65d8-8621-4c00-b6b7-c23ff633a291",
+        "frames": 4
+       },
+       "ms": 260,
+       "note": "template breathing-idle"
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "engineer-std32",
+     "label": "standard \u00b7 size 32",
+     "route": "create_character standard, size 32",
+     "gens": 1,
+     "still": "r1/engineer-e-s32-east.png",
+     "anims": {
+      "walk": {
+       "src": "r1/engineer-e-s32-walk-strip.png",
+       "ms": 110,
+       "note": "template walking-8-frames"
+      },
+      "idle": {
+       "src": "r1/engineer-e-s32-idle-strip.png",
+       "ms": 260,
+       "note": "template breathing-idle"
+      }
+     },
+     "status": "drop",
+     "feedback": "lacks outline"
+    },
+    {
+     "id": "engineer-v3s48",
+     "label": "v3 \u00b7 size 48 (44 px)",
+     "route": "create_character v3, size 48",
+     "gens": 2,
+     "still": "r2/engineer-v3.png",
+     "status": "drop",
+     "feedback": "very nice detail, shading, and outline, but too big"
+    },
+    {
+     "id": "engineer-proflash",
+     "label": "pro flash + room style",
+     "route": "create_character_pro_flash with a room patch as style",
+     "gens": 6,
+     "still": "r2b/engineer-proflash.png",
+     "status": "drop",
+     "feedback": "too big, and we do not see its eyes (as if facing away)"
+    }
+   ]
+  },
+  {
+   "role": "porter",
+   "label": "Porter",
+   "rooms": [
+    "freight-elevator",
+    "salvage-post",
+    "dumbwaiter"
+   ],
+   "versions": [
+    {
+     "id": "porter-v3-smallcrate",
+     "label": "v3 \u00b7 small crate",
+     "route": "v3 size 40, 'small wooden crate strapped high on his back'",
+     "gens": 2,
+     "still": "char:6bccba23-7772-4d37-9a6d-b951facb187f",
+     "anims": {
+      "walk": {
+       "src": {
+        "char": "6bccba23-7772-4d37-9a6d-b951facb187f",
+        "anim": "4d1b0bdf-9482-4781-a5d3-c0871d95baf1",
+        "frames": 8
+       },
+       "ms": 110,
+       "note": "template walking-8-frames"
+      },
+      "idle": {
+       "src": {
+        "char": "6bccba23-7772-4d37-9a6d-b951facb187f",
+        "anim": "4ccb01b3-cafc-40a3-a4f0-fad232023122",
+        "frames": 4
+       },
+       "ms": 260,
+       "note": "template breathing-idle"
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "porter-v3s40",
+     "label": "v3 \u00b7 big crate",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": "char:5c0ae9b2-165f-4806-8af0-733158334171",
+     "anims": {
+      "walk": {
+       "src": {
+        "char": "5c0ae9b2-165f-4806-8af0-733158334171",
+        "anim": "e2c975f3-ed5f-441d-acb3-588e9009ac7d",
+        "frames": 8
+       },
+       "ms": 110,
+       "note": "template walking-8-frames"
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "porter-w1",
+     "label": "standard \u00b7 w1",
+     "route": "create_character standard, size 32, plain wording",
+     "gens": 1,
+     "still": "r2/porter-w1.png",
+     "anims": {
+      "walk": {
+       "src": "r3/porter-walk-template.png",
+       "ms": 110,
+       "note": "template walking-8-frames"
+      },
+      "work": {
+       "src": "r3/porter-walk-loaded-v3.png",
+       "ms": 120,
+       "note": "v3 'leaning under a heavy load' (walks)"
+      }
+     },
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline"
+    },
+    {
+     "id": "porter-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": "r2/porter-w2.png",
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline, too little detail"
+    },
+    {
+     "id": "porter-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": "r2/porter-w3.png",
+     "status": "drop",
+     "feedback": "too small and thin, no shading and outline, too little detail"
+    }
+   ]
+  },
+  {
+   "role": "councillor",
+   "label": "Councillor",
+   "rooms": [
+    "council-chamber",
+    "presidential-suite"
+   ],
+   "versions": [
+    {
+     "id": "councillor-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": "char:43e588dd-2149-4fce-9290-30f6924211dd",
+     "anims": {
+      "idle": {
+       "src": {
+        "char": "43e588dd-2149-4fce-9290-30f6924211dd",
+        "anim": "cbcdde67-f1e6-46e2-9ac1-e16e91857055",
+        "frames": 4
+       },
+       "ms": 260,
+       "note": "template breathing-idle"
+      },
+      "work": {
+       "src": {
+        "char": "43e588dd-2149-4fce-9290-30f6924211dd",
+        "anim": "5790cee4-30a7-4dbc-975e-443957b2c559",
+        "frames": 9
+       },
+       "ms": 180,
+       "note": "v3 'standing still, breathing, head tilting'"
+      },
+      "walk": {
+       "src": {
+        "char": "43e588dd-2149-4fce-9290-30f6924211dd",
+        "anim": "deab1e3f-8c6e-4304-bd72-476df69c7a2c",
+        "frames": 8
+       },
+       "ms": 110,
+       "note": "template walking-8-frames"
+      }
+     },
+     "status": "keep",
+     "feedback": "good outline, shading and proportions"
+    },
+    {
+     "id": "councillor-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, plain wording",
+     "gens": 1,
+     "still": "r2/councillor-w1.png",
+     "anims": {
+      "work": {
+       "src": "r3/councillor-idle-v3.png",
+       "ms": 180,
+       "note": "v3 'shifting weight, nodding' (turns into a stride)"
+      }
+     },
+     "status": "drop",
+     "feedback": "lacks outline"
+    },
+    {
+     "id": "councillor-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": "r2/councillor-w2.png",
+     "status": "drop",
+     "feedback": "lacks detail and outline"
+    },
+    {
+     "id": "councillor-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": "r2/councillor-w3.png",
+     "status": "drop",
+     "feedback": "okayish, little outline, a bit too thin"
+    }
+   ]
+  },
+  {
+   "role": "miner",
+   "label": "Miner",
+   "rooms": [
+    "dig-face",
+    "smelter",
+    "salvage-post"
+   ],
+   "versions": [
+    {
+     "id": "miner-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40, plain wording",
+     "gens": 2,
+     "still": "char:53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+     "anims": {
+      "walk": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "4022955a-8090-46fa-ac2b-79d0037269a4",
+        "frames": 8
+       },
+       "ms": 110,
+       "note": "template walking-8-frames"
+      },
+      "idle": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "e3c1a2ff-9024-4b1b-8187-f8b43d34302a",
+        "frames": 4
+       },
+       "ms": 260,
+       "note": "template breathing-idle"
+      },
+      "work": {
+       "src": "r6/miner-swing-cycle-fixed.png",
+       "ms": 95,
+       "note": "take 2, chosen: same loop with every frame held to the first frame's palette (fixpalette.py)"
+      },
+      "work-cycle": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "ba2d74aa-c7fc-4598-926a-1694b1803006",
+        "frames": 13
+       },
+       "ms": 95,
+       "note": "take 2 raw: v3 12f full cycle \u2014 trousers drift green mid-swing"
+      },
+      "work-interp": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "ccf470c3-d311-41d3-8eb4-67a4adaa1a0b",
+        "frames": 7
+       },
+       "ms": 110,
+       "note": "v3 interpolation raised \u2192 strike (play ping-pong)",
+       "pp": true
+      },
+      "work-chop": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "f588d5ba-0ccd-49f7-8647-50379df7b5cf",
+        "frames": 9
+       },
+       "ms": 110,
+       "note": "v3 'chopping repeatedly at a rock wall'"
+      },
+      "work-raise": {
+       "src": {
+        "char": "53d91e8d-eaf9-40f8-b3c6-0c21d959323e",
+        "anim": "7228af23-21be-492c-ac18-b338315c3ecf",
+        "frames": 9
+       },
+       "ms": 110,
+       "note": "take 1: v3 'raise overhead and strike down' \u2014 ends low, open loop"
+      }
+     },
+     "status": "keep",
+     "feedback": "best sprite of all; pickaxe animation not good, redo"
+    },
+    {
+     "id": "miner-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, plain wording",
+     "gens": 1,
+     "still": "r2/miner-w1.png",
+     "anims": {
+      "work": {
+       "src": "r3/miner-swing-v3.png",
+       "ms": 110,
+       "note": "v3 'swinging a pickaxe' (small chop)"
+      }
+     },
+     "status": "drop",
+     "feedback": "too thin, no outline"
+    },
+    {
+     "id": "miner-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": "r2/miner-w2.png",
+     "status": "drop",
+     "feedback": "too thin, no outline"
+    },
+    {
+     "id": "miner-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": "r2/miner-w3.png",
+     "status": "drop",
+     "feedback": "too thin, no outline, too little detail"
+    }
+   ]
+  },
+  {
+   "role": "grower",
+   "label": "Grower",
+   "rooms": [
+    "hydroponics-bay",
+    "grove",
+    "oxygen-garden"
+   ],
+   "versions": [
+    {
+     "id": "grower-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: mint apron, brimmed straw hat, watering can",
+     "gens": 2,
+     "char": "5a4b77fe-ade8-47e6-839e-737d5a8cc8c6",
+     "still": "char:5a4b77fe-ade8-47e6-839e-737d5a8cc8c6",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "kitchen-hand",
+   "label": "Kitchen hand",
+   "rooms": [
+    "canteen",
+    "food-processing",
+    "protein-vats"
+   ],
+   "versions": [
+    {
+     "id": "kitchen-hand-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream apron over terracotta, headscarf",
+     "gens": 2,
+     "char": "1a75fc44-ef95-4c04-9da1-311407c1cb31",
+     "still": "char:1a75fc44-ef95-4c04-9da1-311407c1cb31",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "pump-tech",
+   "label": "Pump tech",
+   "rooms": [
+    "deep-pump",
+    "cistern",
+    "purifier"
+   ],
+   "versions": [
+    {
+     "id": "pump-tech-r6c",
+     "label": "r6c",
+     "route": "r6: 'heavyset, short beard, wide build'",
+     "gens": 2,
+     "char": "883e9a8b-5209-40a7-947c-f752553ff1e5",
+     "still": "char:883e9a8b-5209-40a7-947c-f752553ff1e5",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "pump-tech-r6d",
+     "label": "r6d",
+     "route": "r6: padded jacket, proportions shoulders 1.3 / hips 1.2",
+     "gens": 2,
+     "char": "224c20e4-4722-48e0-a26f-cd7b1556e333",
+     "still": "char:224c20e4-4722-48e0-a26f-cd7b1556e333",
+     "anims": {},
+     "status": "drop",
+     "feedback": "no face"
+    },
+    {
+     "id": "pump-tech-r6a",
+     "label": "r6a",
+     "route": "r6: 'stocky', grey shirt, large valve wrench",
+     "gens": 2,
+     "char": "7dae23c6-2b14-4ebe-8d9a-ff28c91fcfa2",
+     "still": "char:7dae23c6-2b14-4ebe-8d9a-ff28c91fcfa2",
+     "anims": {},
+     "status": "drop",
+     "feedback": "auto: head cropped at the canvas top"
+    },
+    {
+     "id": "pump-tech-r6b",
+     "label": "r6b",
+     "route": "r6: 'broad-shouldered', knitted cap, valve key on shoulder",
+     "gens": 2,
+     "char": "47e992ed-817a-4dbd-99af-ac6618c49f0f",
+     "still": "char:47e992ed-817a-4dbd-99af-ac6618c49f0f",
+     "anims": {},
+     "status": "drop",
+     "feedback": "weird white thing on his shoulder"
+    },
+    {
+     "id": "pump-tech-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: dark teal overalls, rubber boots, valve key",
+     "gens": 2,
+     "char": "58c01199-093e-4c34-be24-65a79f70b774",
+     "still": "char:58c01199-093e-4c34-be24-65a79f70b774",
+     "anims": {},
+     "status": "drop",
+     "feedback": "too thin, inconsistent style"
+    }
+   ]
+  },
+  {
+   "role": "air-tech",
+   "label": "Air tech",
+   "rooms": [
+    "scrubber-bank",
+    "duct-fan",
+    "reclamation-plant"
+   ],
+   "versions": [
+    {
+     "id": "air-tech-v3s40c",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: plain cream coveralls, cloth mask at the neck, no helmet",
+     "gens": 2,
+     "char": "519f6b3e-de35-44af-ae47-643bfe796f52",
+     "still": "char:519f6b3e-de35-44af-ae47-643bfe796f52",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "air-tech-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream coveralls, filter mask at the neck, clipboard \u2014 first try: hazmat astronaut, off-brief",
+     "gens": 2,
+     "char": "82205cdc-789f-4930-ac3e-2d138632d6f8",
+     "still": "char:82205cdc-789f-4930-ac3e-2d138632d6f8",
+     "anims": {},
+     "status": "drop",
+     "feedback": "colors are off"
+    }
+   ]
+  },
+  {
+   "role": "medic",
+   "label": "Medic",
+   "rooms": [
+    "clinic",
+    "common-hall"
+   ],
+   "versions": [
+    {
+     "id": "medic-v3s40b",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: long white-cream doctor's coat, armband, medical bag",
+     "gens": 2,
+     "char": "bfb633d6-bbe1-48a6-a765-4e6771041f03",
+     "still": "char:bfb633d6-bbe1-48a6-a765-4e6771041f03",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "medic-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: cream knee coat, mint armband, small case \u2014 first try: plain, coat reads as a shirt",
+     "gens": 2,
+     "char": "c5295512-94f2-43b5-aab1-60e282e07c27",
+     "still": "char:c5295512-94f2-43b5-aab1-60e282e07c27",
+     "anims": {},
+     "status": "drop",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "teacher",
+   "label": "Teacher",
+   "rooms": [
+    "school",
+    "archive"
+   ],
+   "versions": [
+    {
+     "id": "teacher-r6a",
+     "label": "r6a",
+     "route": "r6: 'full body with shoes visible, petite', skirt",
+     "gens": 2,
+     "char": "48ce42f3-4783-4f72-9605-45ae26043ad8",
+     "still": "char:48ce42f3-4783-4f72-9605-45ae26043ad8",
+     "anims": {},
+     "status": "keep",
+     "feedback": "great"
+    },
+    {
+     "id": "teacher-r6b",
+     "label": "r6b",
+     "route": "r6: 'full body from head to shoes', trousers, glasses",
+     "gens": 2,
+     "char": "186a3d4b-48c6-4dfd-9783-b1ba5c0404f6",
+     "still": "char:186a3d4b-48c6-4dfd-9783-b1ba5c0404f6",
+     "anims": {},
+     "status": "keep",
+     "feedback": "great"
+    },
+    {
+     "id": "teacher-r6c",
+     "label": "r6c",
+     "route": "r6: 'feet on the ground', long skirt, bun",
+     "gens": 2,
+     "char": "c5d5d43b-3f3b-4d69-ad14-b725d5a62d6a",
+     "still": "char:c5d5d43b-3f3b-4d69-ad14-b725d5a62d6a",
+     "anims": {},
+     "status": "drop",
+     "feedback": "auto: hair bun cropped at the canvas top"
+    },
+    {
+     "id": "teacher-v3s40b",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: 'of average height', hair tied back",
+     "gens": 2,
+     "char": "2037a9b5-6a08-4351-88c1-2cbc04d1c531",
+     "still": "char:2037a9b5-6a08-4351-88c1-2cbc04d1c531",
+     "anims": {},
+     "status": "drop",
+     "feedback": "legs cut off"
+    },
+    {
+     "id": "teacher-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: brown cardigan, books under the arm \u2014 first try: 40 px, a bit tall",
+     "gens": 2,
+     "char": "1d4fe44f-00b9-4268-8240-5319b26c897c",
+     "still": "char:1d4fe44f-00b9-4268-8240-5319b26c897c",
+     "anims": {},
+     "status": "drop",
+     "feedback": "legs cut off"
+    }
+   ]
+  },
+  {
+   "role": "constable",
+   "label": "Constable",
+   "rooms": [
+    "security-post",
+    "holding-cells",
+    "junction"
+   ],
+   "versions": [
+    {
+     "id": "constable-v3s40c",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: 'of adult height \u2026 standing upright'",
+     "gens": 2,
+     "char": "f1592493-1747-4072-baed-893f9933be77",
+     "still": "char:f1592493-1747-4072-baed-893f9933be77",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "constable-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: near-black coat, peaked cap, pale badge \u2014 first try: 32 px, too short",
+     "gens": 2,
+     "char": "35fa5498-aa7d-456d-a224-5d08bea3bc13",
+     "still": "char:35fa5498-aa7d-456d-a224-5d08bea3bc13",
+     "anims": {},
+     "status": "drop",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "archivist",
+   "label": "Archivist",
+   "rooms": [
+    "archive",
+    "seed-vault"
+   ],
+   "versions": [
+    {
+     "id": "archivist-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: grey-brown coat, round spectacles, paper bundle",
+     "gens": 2,
+     "char": "fb725cae-bfd6-47b2-9dd1-70fac32df473",
+     "still": "char:fb725cae-bfd6-47b2-9dd1-70fac32df473",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "investigator",
+   "label": "Investigator",
+   "rooms": [
+    "junction",
+    "holding-cells",
+    "recycler"
+   ],
+   "versions": [
+    {
+     "id": "investigator-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: charcoal coat, fedora, notebook",
+     "gens": 2,
+     "char": "be798bf4-3c5c-4347-8eaa-47767d6b2564",
+     "still": "char:be798bf4-3c5c-4347-8eaa-47767d6b2564",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "resident",
+   "label": "Resident",
+   "rooms": [
+    "simple-suite",
+    "common-hall",
+    "modest-suite"
+   ],
+   "versions": [
+    {
+     "id": "resident-v3s40d",
+     "label": "v3 \u00b7 re-roll",
+     "route": "re-roll: bright terracotta jumper, short brown hair",
+     "gens": 2,
+     "char": "47fec6e0-7ea6-4a07-bb6d-2d80baf2ecda",
+     "still": "char:47fec6e0-7ea6-4a07-bb6d-2d80baf2ecda",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "resident-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: terracotta jumper, bare-headed, cloth bag \u2014 first try: 'bare-headed' came out bald",
+     "gens": 2,
+     "char": "7e56a44f-3a70-4a9d-9ea7-1a409a3d147a",
+     "still": "char:7e56a44f-3a70-4a9d-9ea7-1a409a3d147a",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "resident-v3s40c",
+     "label": "v3 \u00b7 re-roll (dark)",
+     "route": "re-roll: 'with short dark hair' \u2014 jumper came out near-black",
+     "gens": 2,
+     "char": "0752ac24-bafb-4b2d-adb7-a016afff1697",
+     "still": "char:0752ac24-bafb-4b2d-adb7-a016afff1697",
+     "anims": {},
+     "status": "drop",
+     "feedback": "inconsistent proportions and color"
+    }
+   ]
+  },
+  {
+   "role": "elder",
+   "label": "Elder",
+   "rooms": [
+    "common-hall",
+    "superior-suite",
+    "council-chamber"
+   ],
+   "versions": [
+    {
+     "id": "elder-v3s40",
+     "label": "v3 \u00b7 size 40",
+     "route": "v3 size 40: white hair, olive shawl, walking cane, stooped",
+     "gens": 2,
+     "char": "991b42bd-2d05-406e-bde6-196e93f19a49",
+     "still": "char:991b42bd-2d05-406e-bde6-196e93f19a49",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    }
+   ]
+  },
+  {
+   "role": "child",
+   "label": "Child",
+   "rooms": [
+    "school",
+    "common-hall",
+    "simple-suite"
+   ],
+   "versions": [
+    {
+     "id": "child-v3s32",
+     "label": "v3 \u00b7 size 32",
+     "route": "v3 size 32: same wording",
+     "gens": 2,
+     "char": "28e7571f-9cb0-49de-9c29-7938c09c8fac",
+     "still": "char:28e7571f-9cb0-49de-9c29-7938c09c8fac",
+     "anims": {},
+     "status": "keep",
+     "feedback": ""
+    },
+    {
+     "id": "child-v3s28",
+     "label": "v3 \u00b7 size 28",
+     "route": "v3 size 28: mint shirt, short trousers, scarf, big head",
+     "gens": 2,
+     "char": "b0de7025-0d8e-4034-b1f5-409eac4a4527",
+     "still": "char:b0de7025-0d8e-4034-b1f5-409eac4a4527",
+     "anims": {},
+     "status": "drop",
+     "feedback": "too little outline"
+    },
+    {
+     "id": "child-w1",
+     "label": "standard \u00b7 w1",
+     "route": "standard, size 24, plain wording",
+     "gens": 1,
+     "still": "r2/child-w1.png",
+     "status": "drop",
+     "feedback": "no outline visible, inconsistent with the keepers"
+    },
+    {
+     "id": "child-w2",
+     "label": "standard \u00b7 w2",
+     "route": "standard, styled wording",
+     "gens": 1,
+     "still": "r2/child-w2.png",
+     "status": "drop",
+     "feedback": "poor facial details"
+    },
+    {
+     "id": "child-w3",
+     "label": "standard \u00b7 w3",
+     "route": "standard, Eastward wording",
+     "gens": 1,
+     "still": "r2/child-w3.png",
+     "status": "drop",
+     "feedback": "lacks face detail, outline should be more pronounced"
+    }
+   ]
+  }
+ ]
+}

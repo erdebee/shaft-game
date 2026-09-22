@@ -1,0 +1,8 @@
+holding-cells-c 8434e1a7-47e1-420a-9d35-e469c60b9b16
+holding-cells-d 310aaf2e-48a5-40fc-a0f2-eaaa12db20dd
+duct-fan-c 4d5a78cb-8880-4084-8a63-b7617e800787
+duct-fan-d e78909bc-1e3c-4ff1-b5f1-5361c4e365b5
+food-processing-c 172c2ffe-7f1d-48bc-8bed-021aec8e02ae
+food-processing-d cf31ef79-ea9a-4dde-ad41-3b1641221472
+common-hall-c 175d6d43-8084-434f-a62e-cdb7eedb54e1
+common-hall-d c3532ebd-6e2d-48fa-931d-7eb36282c6d3

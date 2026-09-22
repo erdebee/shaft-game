@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foreground cuts and the stair</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --amber: #f2b25a; --teal: #86b6a2; --bad: #d9785f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 40px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  p, li { max-width: 100ch; color: var(--dim); } b { color: var(--ink); } code { color: var(--teal); }
+  a { color: var(--teal); }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1100px; }
+
+  .bar { position: sticky; top: 0; z-index: 5; display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+         background: var(--panel); border: 1px solid var(--edge); padding: 10px 14px; margin: 18px 0 28px; }
+  .bar label { color: var(--dim); font-size: 12px; }
+  button { font: inherit; font-size: 12px; background: #221b26; color: var(--dim); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; }
+  button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #1a1208; }
+
+  .scenes { display: flex; flex-direction: column; gap: 34px; }
+  .scene h3 { font-size: 12px; color: var(--teal); margin: 0 0 8px; }
+  .pair { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .stage { position: relative; image-rendering: pixelated; overflow: hidden; outline: 1px solid var(--edge); }
+  .stage > * { position: absolute; image-rendering: pixelated; }
+  .stage .room, .stage .fg { left: 0; top: 0; }
+  .fig { background-repeat: no-repeat; animation: strip var(--dur) steps(var(--n)) infinite; animation-delay: var(--phase); }
+  @keyframes strip { to { background-position-x: var(--end); } }
+  .still .fig { animation: none; }
+  .nofg .fg { display: none; }
+  table { border-collapse: collapse; font-size: 12px; margin: 8px 0; max-width: 1100px; }
+  th, td { border-bottom: 1px solid var(--edge); padding: 5px 10px; text-align: left; vertical-align: top; color: var(--dim); }
+  th { color: var(--ink); font-weight: 600; }
+  td.ok { color: var(--teal); }
+</style>
+<body>
+<main>
+<h1>Foreground cuts, and the stair</h1>
+<p>Four things people should be able to stand <b>behind</b>: the stair rail, the cell bars, the canteen table
+and the school desks. Each is cut out of the room render into a second, mostly transparent sprite that the
+renderer draws <i>after</i> the figure layer.</p>
+
+<div class="summary">
+  <p><b>Nothing is removed from the room render.</b> The cut is a copy of pixels that stay exactly where they
+  are, so an empty room looks identical and the cut can be re-aimed later without repainting anything. It also
+  means no inpainting: lifting a rail out of the base would leave a hole, because the wall behind it was never drawn.</p>
+  <p>Made by <code>tools/cutForeground.mjs</code>, which measures each object off the <code>-on</code> render and
+  applies the same shapes to <code>-off</code>, <code>-broken</code> and <code>-dim</code>, so each state's
+  foreground carries that state's own colours. Listed in the manifest as <code>&lt;id&gt;-fg</code> with a
+  <code>foregroundOf</code> pointing back at its render.</p>
+  <p><a href="../v24/index.html">← Figure probes</a> · <a href="../v24/shaft/index.html">Figures in the shaft</a></p>
+</div>
+
+<div class="bar">
+  <label>Zoom</label>
+  <span id="zooms"></span>
+  <label>Foreground</label>
+  <span id="fgs"></span>
+  <label>Motion</label>
+  <span id="motions"></span>
+</div>
+
+<div class="scenes" id="scenes"></div>
+
+<h2>The stair path</h2>
+<p>Porters used to follow a triangle wave centred on the column: the right shape, the wrong phase and
+the wrong amplitude, so they crossed the stairs rather than walking them. The path below is measured off
+the tile's own tread highlights — a flight down to the landing on the left, a turn, a flight back down to
+the right, and the level's floor. Both flights are drawn at 45°, so straight lines between a handful of
+control points land on every step.</p>
+<p>These figures are placed by <code>stairWalk()</code> from
+<code>src/ui/view/interpolate.js</code> — the function the game itself calls — so this cannot drift
+from what the shaft draws. Facing comes from the direction of the <b>walk</b>, which reverses at each
+landing, not from the direction of the journey.</p>
+<div class="bar">
+  <label>Walking</label><span id="dirs"></span>
+  <label>Every</label><span id="steps"></span>
+  <label>Foreground</label><span id="railToggle"></span>
+</div>
+<div id="stair"></div>
+
+<h2>What each cut is</h2>
+<table>
+  <tr><th>Render</th><th>Cut</th><th>How it is picked</th><th>Pixels</th></tr>
+  <tr><td>stairwell</td><td>The guardrails, both flights and the landing</td><td>Every teal pixel except the two wall panels by the lamp, grown once into the shaded half of its dither so the rail crosses a figure solid rather than dotted</td><td class="ok">1040</td></tr>
+  <tr><td>holding-cells</td><td>Six bars, the head rail and the waist rail</td><td>Rectangles: the bars are on an exact 6&nbsp;px pitch, 2&nbsp;px wide, from the head rail to the floor</td><td class="ok">894</td></tr>
+  <tr><td>canteen</td><td>The long table on the right</td><td>Rectangles: the top plank and its two legs. Identical in all eight frames of the cooking animation, so one cut serves both</td><td class="ok">367</td></tr>
+  <tr><td>school</td><td>Three student desks</td><td>Rectangles per desk: slab, two legs, two cross rails</td><td class="ok">873</td></tr>
+</table>
+
+<script type="module">
+import { stairWalk, LEVEL_HEIGHT } from '../../../../../src/ui/view/interpolate.js';
+
+const ASSETS = '../../../';
+const manifest = await (await fetch(ASSETS + 'manifest.json', { cache: 'no-cache' })).json();
+const sprite = (id) => manifest.sprites.find((s) => s.id === id);
+const clips = new Map(manifest.figures.roles.map((r) => [r.role, r.clips]));
+
+/** Where feet land: the render's own floorY, or an explicit row for the stairwell. */
+const floorOf = (id) => sprite(id).floorY;
+const SCENES = [
+  {
+    id: 'stairwell', title: 'Stairwell — the guardrails',
+    room: 'stairwell', w: 128, h: 104, repeatY: true,
+    note: 'Porters climbing past the rail. In the game the rail is one pattern down the whole spine, so it lines up with the stairs by construction.',
+    cast: [
+      { role: 'porter', x: 34, feet: 86, face: 1 },
+      { role: 'porter', x: 64, feet: 40, face: 1 },
+      { role: 'porter', x: 92, feet: 99, face: -1 },
+    ],
+  },
+  {
+    id: 'holding-cells', title: 'Holding cells — the bars',
+    room: 'holding-cells-on', w: 64, h: 96,
+    note: 'The constable stands outside the cage, the detainee inside it.',
+    cast: [
+      { role: 'constable', x: 14, face: 1 },
+      { role: 'resident', x: 40, face: -1 },
+    ],
+  },
+  {
+    id: 'canteen', title: 'Canteen — the table on the right',
+    room: 'canteen-on', w: 192, h: 96,
+    note: 'Two people at the long table: the near one is cut off at the hip by the plank, the far one stands clear of it.',
+    cast: [
+      { role: 'kitchen-hand', x: 150, face: 1 },
+      { role: 'resident', x: 176, face: -1 },
+      { role: 'kitchen-hand', x: 60, face: 1 },
+    ],
+  },
+  {
+    id: 'school', title: 'School — the student desks',
+    room: 'school-on', w: 128, h: 96,
+    note: 'Children at their desks, the teacher clear of them on the right.',
+    cast: [
+      { role: 'child', x: 38, face: 1 },
+      { role: 'child', x: 63, face: 1 },
+      { role: 'child', x: 89, face: -1 },
+      { role: 'teacher', x: 112, face: -1 },
+    ],
+  },
+];
+
+let zoom = 4;
+let motion = 'idle';
+let withFg = true;
+
+function stage(scene, showFg) {
+  const el = document.createElement('div');
+  el.className = 'stage' + (showFg ? '' : ' nofg') + (motion === 'still' ? ' still' : '');
+  el.style.width = `${scene.w * zoom}px`;
+  el.style.height = `${scene.h * zoom}px`;
+
+  const room = document.createElement('img');
+  room.className = 'room';
+  room.src = ASSETS + sprite(scene.room).path;
+  room.style.width = `${scene.w * zoom}px`;
+  el.appendChild(room);
+
+  const floor = scene.room.endsWith('-on') ? floorOf(scene.room) : null;
+  for (const who of scene.cast) {
+    const feet = who.feet ?? floor;
+    const clip = clips.get(who.role)[motion === 'still' ? 'still' : 'idle'] ?? clips.get(who.role).still;
+    const fig = document.createElement('div');
+    fig.className = 'fig';
+    fig.style.width = `${clip.w * zoom}px`;
+    fig.style.height = `${clip.h * zoom}px`;
+    fig.style.backgroundImage = `url(${ASSETS + clip.path})`;
+    fig.style.backgroundSize = `${clip.w * clip.frames * zoom}px ${clip.h * zoom}px`;
+    fig.style.setProperty('--n', clip.frames);
+    fig.style.setProperty('--end', `${-clip.w * clip.frames * zoom}px`);
+    fig.style.setProperty('--dur', `${clip.frames * (clip.frameMs ?? 200)}ms`);
+    fig.style.setProperty('--phase', `${-(who.x * 37 % 900)}ms`);
+    // The anchor is the centre column, mirrored with the figure when it faces west.
+    const anchor = who.face < 0 ? clip.w - clip.cx : clip.cx;
+    fig.style.left = `${(who.x - anchor) * zoom}px`;
+    fig.style.top = `${(feet - clip.feet) * zoom}px`;
+    if (who.face < 0) fig.style.transform = 'scaleX(-1)';
+    el.appendChild(fig);
+  }
+
+  const fgId = `${scene.room}-fg`;
+  const fg = sprite(fgId);
+  if (fg) {
+    const img = document.createElement('img');
+    img.className = 'fg';
+    img.src = ASSETS + fg.path;
+    img.style.width = `${scene.w * zoom}px`;
+    el.appendChild(img);
+  }
+  return el;
+}
+
+function draw() {
+  const host = document.getElementById('scenes');
+  host.replaceChildren();
+  for (const scene of SCENES) {
+    const section = document.createElement('section');
+    section.className = 'scene';
+    section.innerHTML = `<h3>${scene.title}</h3><p>${scene.note}</p>`;
+    const pair = document.createElement('div');
+    pair.className = 'pair';
+    for (const showFg of withFg ? [false, true] : [false]) {
+      const figure = document.createElement('figure');
+      figure.appendChild(stage(scene, showFg));
+      const cap = document.createElement('figcaption');
+      cap.textContent = showFg ? 'with the foreground — people stand behind it' : 'as it renders today — everyone in front';
+      figure.appendChild(cap);
+      pair.appendChild(figure);
+    }
+    section.appendChild(pair);
+    host.appendChild(section);
+  }
+}
+
+/* ---- The stair path, drawn with the game's own stairWalk() ---- */
+
+let descending = true;
+let every = 16;
+let rail = true;
+
+function drawStair() {
+  const host = document.getElementById('stair');
+  const tile = sprite('stairwell');
+  const clips = clips_('porter');
+  const clip = clips.walk ?? clips.still;
+  const z = zoom;
+
+  const el = document.createElement('div');
+  el.className = 'stage' + (motion === 'still' ? ' still' : '');
+  el.style.width = `${tile.tile.width * z}px`;
+  el.style.height = `${tile.tile.height * 2 * z}px`;
+
+  const layer = (cls, id) => [0, 1].map((row) => {
+    const img = document.createElement('img');
+    img.className = cls;
+    img.src = ASSETS + sprite(id).path;
+    img.style.width = `${tile.tile.width * z}px`;
+    img.style.top = `${row * tile.tile.height * z}px`;
+    return img;
+  });
+
+  for (const img of layer('room', 'stairwell')) el.appendChild(img);
+
+  const figs = [];
+  for (let y = 6; y < LEVEL_HEIGHT * 2; y += every) {
+    const step = stairWalk(y, descending);
+    const fig = document.createElement('div');
+    fig.className = 'fig';
+    fig.style.width = `${clip.w * z}px`;
+    fig.style.height = `${clip.h * z}px`;
+    fig.style.backgroundImage = `url(${ASSETS + clip.path})`;
+    fig.style.backgroundSize = `${clip.w * clip.frames * z}px ${clip.h * z}px`;
+    fig.style.setProperty('--n', clip.frames);
+    fig.style.setProperty('--end', `${-clip.w * clip.frames * z}px`);
+    fig.style.setProperty('--dur', `${clip.frames * (clip.frameMs ?? 200)}ms`);
+    fig.style.setProperty('--phase', `${-(y * 41 % 800)}ms`);
+    const anchor = step.facing < 0 ? clip.w - clip.cx : clip.cx;
+    fig.style.left = `${(step.x - anchor) * z}px`;
+    fig.style.top = `${(step.y - clip.feet) * z}px`;
+    if (step.facing < 0) fig.style.transform = 'scaleX(-1)';
+    figs.push(fig);
+  }
+  for (const fig of figs) el.appendChild(fig);
+  // The rail goes over them, exactly as the shaft's foreground layer does.
+  if (rail) for (const img of layer('fg', 'stairwell-fg')) el.appendChild(img);
+
+  const figure = document.createElement('figure');
+  figure.appendChild(el);
+  const cap = document.createElement('figcaption');
+  cap.textContent = `one porter every ${every} rows, ${descending ? 'on the way down' : 'on the way up'} — two levels of tile`;
+  figure.appendChild(cap);
+  host.replaceChildren(figure);
+}
+
+const clips_ = (role) => clips.get(role);
+
+function toggles(host, values, current, onPick, label = String) {
+  host.replaceChildren();
+  for (const value of values) {
+    const b = document.createElement('button');
+    b.textContent = label(value);
+    b.setAttribute('aria-pressed', String(value === current()));
+    b.onclick = () => { onPick(value); refresh(); };
+    host.appendChild(b);
+  }
+}
+
+function refresh() {
+  toggles(document.getElementById('zooms'), [1, 2, 4], () => zoom, (v) => { zoom = v; }, (v) => `${v}×`);
+  toggles(document.getElementById('fgs'), [true, false], () => withFg, (v) => { withFg = v; },
+    (v) => (v ? 'before / after' : 'before only'));
+  toggles(document.getElementById('motions'), ['idle', 'still'], () => motion, (v) => { motion = v; });
+  toggles(document.getElementById('dirs'), [true, false], () => descending, (v) => { descending = v; },
+    (v) => (v ? 'down' : 'up'));
+  toggles(document.getElementById('steps'), [8, 16, 26], () => every, (v) => { every = v; }, (v) => `${v} rows`);
+  toggles(document.getElementById('railToggle'), [true, false], () => rail, (v) => { rail = v; },
+    (v) => (v ? 'rail on' : 'rail off'));
+  draw();
+  drawStair();
+}
+
+refresh();
+</script>
+</main>

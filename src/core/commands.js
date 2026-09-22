@@ -82,13 +82,19 @@ const HANDLERS = {
 };
 
 /**
- * The leftmost run of free slots wide enough for this building, or null if it
- * cannot be placed. Returning a slot index rather than a boolean is what lets
- * the view lay buildings out side by side instead of stacking them.
+ * A run of free slots wide enough for this building, or null if it cannot be
+ * placed. Returning a slot index rather than a boolean is what lets the view
+ * lay buildings out side by side instead of stacking them.
+ *
+ * Leftmost by default. A building with a `fixed` block is part of the Shaft as
+ * built rather than something the player fits in: it goes on the level its
+ * catalogue entry names and nowhere else, and `align: "right"` puts it at that
+ * level's far end — which is where the Exit has always been.
  */
 function firstFreeSlot(state, ctx, def, level) {
   const band = depthBandOf(ctx, level.index);
   if (def.levelConstraint && def.levelConstraint !== band) return null;
+  if (def.fixed && def.fixed.level !== level.index) return null;
 
   const placed = state.buildings.filter((b) => b.level === level.index);
   const width = def.slots ?? 1;
@@ -107,7 +113,10 @@ function firstFreeSlot(state, ctx, def, level) {
     for (let i = 0; i < (b.slots ?? 1); i++) occupied.add((b.slot ?? 0) + i);
   }
 
-  for (let start = 0; start + width <= level.buildSlots; start++) {
+  const last = level.buildSlots - width;
+  const fromRight = def.fixed?.align === 'right';
+  for (let n = 0; n <= last; n++) {
+    const start = fromRight ? last - n : n;
     let free = true;
     for (let i = 0; i < width; i++) if (occupied.has(start + i)) { free = false; break; }
     if (free) return start;

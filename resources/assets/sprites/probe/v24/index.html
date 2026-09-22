@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Figure probes</title>
+<style>
+  :root { --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e; --amber: #f2b25a; --teal: #86b6a2; --bad: #d9785f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 40px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; color: var(--teal); margin: 20px 0 6px; }
+  p, li { max-width: 100ch; color: var(--dim); } b { color: var(--ink); } code { color: var(--teal); }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1100px; }
+  table { border-collapse: collapse; font-size: 12px; margin: 8px 0; max-width: 1100px; }
+  th, td { border-bottom: 1px solid var(--edge); padding: 5px 10px; text-align: left; vertical-align: top; color: var(--dim); }
+  th { color: var(--ink); font-weight: 600; }
+  td.ok { color: var(--teal); } td.no { color: var(--bad); }
+  .wrap { overflow-x: auto; }
+  img { image-rendering: pixelated; display: block; max-width: 100%; height: auto; }
+  figure { margin: 10px 0; } figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .anim { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-end; }
+</style>
+<body>
+<main>
+<h1>Figures: requirements and probe rounds</h1>
+<p class="summary" style="border-left-color:var(--teal)"><b>▶ <a href="shaft/index.html" style="color:var(--teal)">Figures in the shaft</a></b>: every version below, idle and animated, in the real rooms at 1×, 2× or 4×, with a version picker and keep/drop verdicts per role.</p>
+<p class="summary" style="border-left-color:var(--teal)"><b>▶ <a href="../v25/index.html" style="color:var(--teal)">Foreground cuts</a></b>: the stair rail, the cell bars, the canteen table and the school desks lifted into their own sprites, so people stand behind them. Before and after, at 1×, 2× or 4×.</p>
+<p>Figure probes, round by round. Each round asks one question, answers it with a handful of generations, and hands its decision to the next round. Newest round first.</p>
+
+<div class="summary">
+  <p><b>Decided so far:</b></p>
+  <ul>
+    <li><b>Scale:</b> adults ≈ <b>36 px</b>, children ≈ 25 px (your pick after round 1; spec and principles updated).</li>
+    <li><b>Route:</b> PixelLab <code>create_character</code>, side view. It holds the size, follows the costume, and has walk templates.</li>
+    <li><b>Wording:</b> a plain costume description (w1) is as good as the styled ones; the "Eastward" words add nothing (round 2).</li>
+    <li><b>Recipe (your verdict, round 4):</b> <code>create_character</code>, <code>mode: v3</code>, <b>size 40</b>, <code>outline: single color black outline</code>, <code>detail: high detail</code>,
+        description <i>"side view, &lt;costume&gt;"</i>. Every standard-mode and oversize version was dropped: no outline, too thin or too big.</li>
+    <li><b>Children:</b> the same recipe at <b>size 28</b> gives 25 px with the adults' outline and shading.</li>
+    <li><b>Motion:</b> template <code>walking-8-frames</code> and <code>breathing-idle</code> (1 gen each, east only) hold every v3 figure within ±1 px. Custom v3 actions need picking: the miner has four swing takes to choose from.</li>
+  </ul>
+  <p><b>Round 5 (now in the shaft viewer):</b> all 16 roles on the recipe, each with walk and idle. Re-rolled once: air tech (came out as a hazmat astronaut), constable (32 px), resident (bald, then near-black), medic (plain), teacher (40 px). PixelLab failed three re-rolls under load; they were simply resubmitted.</p>
+  <p><b>Cost so far:</b> about 130 generations.</p>
+</div>
+
+<h2>Round 6: the miner swing, four takes</h2>
+<p><b>Chosen: take 2</b>, with the colour drift repaired — every frame is held to the palette of the first frame
+(<code>shaft/fixpalette.py</code>, 607 pixels moved, the drawing untouched). It plays first below and is what the miner does in the shaft.</p>
+<p>The four attempts, all on the same figure, played at 1× and 4×.
+Take 3 is meant to be played forward then back; the others play straight through. Pick one in the
+<a href="shaft/index.html">shaft viewer</a> (section <i>Miner swing: four takes</i>), where they run at game size in the dig face.</p>
+<div class="anim" id="swings"></div>
+<table>
+  <tr><th>Take</th><th>How it was made</th><th>Frames</th><th>What it does</th></tr>
+  <tr><td>1 · raise and strike</td><td>v3 "raising the pickaxe overhead … striking down in front, feet planted"</td><td>9</td><td class="no">Ends crouched with the pickaxe down, so it snaps back to standing</td></tr>
+  <tr><td><b>2 · full cycle (chosen)</b></td><td>v3 12 frames "… then lifts it back up to the ready stance, seamless loop", then <code>fixpalette.py</code></td><td>13</td><td class="ok">Closes almost fully; the green drift on the trousers is repaired</td></tr>
+  <tr><td>3 · interpolation</td><td>v3 between two frames of take 1: raised overhead → struck down</td><td>7</td><td class="ok">Clean raise and strike; needs ping-pong to come back up</td></tr>
+  <tr><td>4 · repeated chop</td><td>v3 "chopping repeatedly at a rock wall … feet planted"</td><td>9</td><td>Loops on its own, but the swings are small and the pickaxe thins out</td></tr>
+</table>
+<figure><div class="wrap"><img src="r6/miner-swings-4x.png" width="1360" alt="The four miner swing takes, frame by frame"></div>
+<figcaption>Every frame of each take, 4×. Top to bottom: raise and strike · full cycle · interpolation · repeated chop.</figcaption></figure>
+
+<h2>Round 3: motion</h2>
+<p>Does a walk hold the figure's size and costume, and can a custom action (carry, swing, idle) replace the template? Played at 1× and 4×, on a room-coloured background.</p>
+<div class="anim" id="anims"></div>
+<table>
+  <tr><th>Animation</th><th>Recipe</th><th>Height per frame</th><th>Notes</th></tr>
+  <tr><td>Engineer walk</td><td>template <code>walking-8-frames</code>, 1 gen</td><td class="ok">36–37</td><td>Round 1. Clean, costume stable</td></tr>
+  <tr><td>Engineer idle</td><td>template <code>breathing-idle</code>, 1 gen</td><td class="ok">37</td><td class="no">Barely moves: invisible at 1×</td></tr>
+  <tr><td>Porter walk</td><td>template <code>walking-8-frames</code>, 1 gen</td><td class="ok">33–34</td><td>Crate stays on the back</td></tr>
+  <tr><td>Porter walk, loaded</td><td>v3 "walking steadily, leaning slightly forward under a heavy load", 1 gen</td><td class="ok">34–35</td><td>Canvas grew to 56 px; lean reads as weight</td></tr>
+  <tr><td>Miner swing</td><td>v3 "swinging a pickaxe down at a rock wall", 1 gen</td><td class="ok">36–38</td><td class="no">A small low chop, not a swing; a rock appears at the feet</td></tr>
+  <tr><td>Councillor idle</td><td>v3 "shifting weight, nodding while thinking", 1 gen</td><td class="ok">36–37</td><td class="no">Turns into a walking stride mid-loop</td></tr>
+</table>
+
+<h2>Round 2b: quality mode</h2>
+<p>Standard mode (left, 1 generation) against <code>v3</code> mode (right, 2 generations), same engineer description. v3 has real form shading on the cap, face and trousers, a readable face and wrench, and 38 colours against 16. It came out 44 px at size 48, so it is being re-run at size 40.</p>
+<figure><img src="r2/standard-vs-v3-6x.png" width="282" alt="Standard and v3 engineer side by side"><figcaption>Standard, size 32 (36 px) · v3, size 48 (44 px). 6×.</figcaption></figure>
+<h3>v3 at size 40: on scale</h3>
+<p>Size 40 lands at <b>37–38 px</b>, the chosen scale. Each pair: standard mode (left) and v3 at size 40 (right). v3 costs 2 generations instead of 1 but matches the rooms. The v3 porter's crate is far too big (30 px wide), so round 4 asks for a small one.</p>
+<figure><img src="r2b/standard-vs-v3s40-5x.png" width="900" alt="Standard and v3 figures in pairs"><figcaption>Engineer · porter · councillor. 5×.</figcaption></figure>
+<figure><div class="wrap"><img src="r2b/rooms-2x.png" width="920" alt="v3 figures in rooms"><figcaption>Workshop: engineer standard, v3 · council chamber: councillor standard, v3 · canteen: porter standard, then v3 porter, engineer and councillor. 2×.</figcaption></div></figure>
+<h3>Style image ("pro flash")</h3>
+<p><code>create_character_pro_flash</code> with a 48×48 crop of the workshop as its style image (about 6 generations). Left: v3 at size 40; right: pro flash. As rich as v3 but 44 px, and the cap went grey. Not worth the extra cost.</p>
+<figure><img src="r2b/v3-vs-proflash-6x.png" width="324" alt="v3 and pro flash engineers"><figcaption>6×.</figcaption></figure>
+
+<h2>Round 2: prompt wording</h2>
+<p>Four hard roles × three wordings, standard mode, size 32 (child size 22 with a larger head). <b>w1</b> plain costume · <b>w2</b> + "dieselpunk underground colony, Eastward style, warm lamp light, muted colours", detailed shading, high detail · <b>w3</b> "side view full body pixel art character, … clear readable silhouette, Eastward (Pixpil) art style, muted warm palette, one pixel black outline", guidance 10.</p>
+<figure><img src="r2/lineup.png" width="600" alt="Porter, councillor, miner and child in three wordings"><figcaption>Heights under each figure. 5×.</figcaption></figure>
+<table>
+  <tr><th>Role</th><th>w1 plain</th><th>w2 styled</th><th>w3 structured</th></tr>
+  <tr><td>Porter</td><td class="ok">crate on a frame, 34 px</td><td>crate floats behind the back</td><td class="ok">crate on a frame, 35 px</td></tr>
+  <tr><td>Councillor</td><td class="ok">grey hair, terracotta coat</td><td class="ok">same, a little busier</td><td>38 px, big hair</td></tr>
+  <tr><td>Miner</td><td class="ok">hard hat, pickaxe</td><td class="no">orange vest, stubby tool</td><td class="no">oversized hat, no pickaxe</td></tr>
+  <tr><td>Child</td><td class="ok">25 px, mint shirt</td><td class="ok">25 px, red scarf</td><td>25 px, dark</td></tr>
+</table>
+<p>The porter's crate, which the old mannequin route never managed, comes through in all three. The styled wordings do not make figures richer; <code>detailed shading</code> barely changes standard mode.</p>
+<figure><div class="wrap"><img src="r2/rooms-2x.png" width="1060" alt="Round 2 figures in their rooms"></div><figcaption>Council chamber: councillor w1, w3 · dig face: miner w1, w3 · simple suite: child w2, porter w1, w3 · workshop: engineer standard, v3. 2×.</figcaption></figure>
+
+<h2>Round 1: recipe</h2>
+<p>Which route gives figures that fit the rooms at the right size and can walk? Same role everywhere, the engineer. <b>Result:</b> 22 px reads as a child in every room; the character tool is the only route with size, costume and walk; you picked ≈ 36 px.</p>
+<figure><div class="wrap"><img src="r1/lineup-6x.png" width="858" alt="Eight engineers side by side"></div>
+<figcaption>Left to right: A mannequin 150 flat · C mannequin 150 detailed · E character tool size 24 · size 28 · size 32 · E2 size 32 detailed · G pixflux restyle of E · F free pixflux at 48. Shown 6×.</figcaption></figure>
+
+<table>
+  <tr><th>Try</th><th>Recipe</th><th>Height</th><th>Costume</th><th>Walkable</th><th>Notes</th></tr>
+  <tr><td>A</td><td>mannequin template, init 150, flat shading (v10 recipe)</td><td class="ok">21</td><td class="no">navy, not teal</td><td class="no">redraw per frame</td><td>Soles on row 30, not 31</td></tr>
+  <tr><td>B</td><td>as A, medium shading, "Eastward"</td><td class="ok">21</td><td class="no">navy</td><td class="no">redraw per frame</td><td>Same as A</td></tr>
+  <tr><td>C</td><td>as A, detailed shading, warm light on the front</td><td class="ok">21</td><td class="no">navy</td><td class="no">redraw per frame</td><td>14 colours; no visible rim light</td></tr>
+  <tr><td>D</td><td>as C at init 100</td><td>22</td><td>teal</td><td class="no">redraw per frame</td><td>Turned to face the viewer</td></tr>
+  <tr><td>E s24</td><td><code>create_character</code> side, size 24</td><td>29</td><td class="ok">teal + cream</td><td class="ok">walk templates</td><td>Clean profile</td></tr>
+  <tr><td>E s28</td><td>… size 28</td><td>31</td><td class="ok">teal + cream</td><td class="ok">walk templates</td><td>Best fit to the rooms</td></tr>
+  <tr><td>E s32</td><td>… size 32</td><td>36</td><td class="ok">teal + cream</td><td class="ok">walk templates</td><td>Large in the 96-px rooms</td></tr>
+  <tr><td>E2</td><td>… size 32, detailed shading, high detail</td><td>37</td><td class="ok">teal</td><td class="ok">walk templates</td><td>Barely different from E</td></tr>
+  <tr><td>G</td><td>pixflux over E s32, init 200, detailed</td><td>36</td><td class="ok">teal</td><td>—</td><td>Near copy of E</td></tr>
+  <tr><td>F</td><td>pixflux, no template, 48×48</td><td class="no">46</td><td class="ok">teal + cream</td><td class="no">redraw per frame</td><td>Richest shading; far too big</td></tr>
+</table>
+
+<h3>In the rooms, 2×</h3>
+<figure><div class="wrap"><img src="r1/rooms-2x.png" width="1316" alt="The engineers standing in four rooms"></div>
+<figcaption>Workshop, main generator, simple suite, canteen. Same order as the lineup, left to right, feet on each room's floorY.</figcaption></figure>
+
+
+<h2>Requirements</h2>
+<table>
+  <tr><th>#</th><th>Requirement</th><th>Check</th></tr>
+  <tr><td>R1</td><td><b>One scale</b> for everyone. Proposed: adult ≈ 30 px (was 22), child ≈ 20, headgear adds at most 2</td><td>Opaque box ±1 px across the set</td></tr>
+  <tr><td>R2</td><td>Fixed canvas, transparent, soles on the bottom row, centred, facing right (mirrored for left)</td><td>Box bottom and centre column</td></tr>
+  <tr><td>R3</td><td>Reads at 1× and 2× against busy rooms</td><td>Composite over the rooms each role works in</td></tr>
+  <tr><td>R4</td><td>Matches the rooms' look: warm light, clean shading, full dark outline, profile</td><td>Side by side with the rooms at 2×</td></tr>
+  <tr><td>R5</td><td>Role reads from headgear or tool plus garment colour; no two roles share both</td><td>All 16 in one lineup at 1×</td></tr>
+  <tr><td>R6</td><td>Animatable: walk for anyone moving, idle, and a few shared work loops</td><td>Loops close; size holds every frame</td></tr>
+  <tr><td>R7</td><td>Porter shows cargo, loaded and empty</td><td>Crate visible at 1×</td></tr>
+</table>
+<p>Roles (16): engineer, miner, porter, grower, pump-tech, air-tech, kitchen-hand, medic, teacher, constable, archivist, investigator, councillor, resident, child, elder.</p>
+
+<h2>Plan</h2>
+<ol>
+  <li><b>Round 1, recipe</b> (this page). Mannequin vs character tool vs free pixflux; scale in real rooms.</li>
+  <li><b>Round 2, prompt wording</b> on the chosen route: 4 roles including the hard ones (porter with crate, councillor, child, miner with lamp), 3–4 wordings each, plus the style lever (detail/shading/"Eastward"/lighting words). Pick one prompt template.</li>
+  <li><b>Round 3, motion</b>: walk templates vs custom (v3) walks on 2 roles, idle, one work loop; check the loop closes and the size holds.</li>
+  <li><b>Round 4, full set</b>: all 16 roles, 2 seeds each; lineup at 1× for R5; composite each role into its rooms; redo clashes.</li>
+  <li><b>Round 5, motion set</b>: walk + idle for all; shared work loops (hammer, tend, carry, read/sit).</li>
+  <li><b>Integrate</b>: sprites and strips in the manifest with anchors; the renderer draws them instead of the vector placeholders; porters walk the stairwell; workers stand on each room's floorY.</li>
+</ol>
+<p><a href="../v23/index.html">&larr; v23: light flicker</a></p>
+</main>
+<script>
+  // [strip, frames, ms, label]; every frame is square
+  const ANIMS = [
+    ['r1/engineer-e-s32-walk-strip.png', 8, 110, 'engineer · walk template'],
+    ['r1/engineer-e-s32-idle-strip.png', 4, 300, 'engineer · breathing idle'],
+    ['r3/porter-walk-template.png', 8, 110, 'porter · walk template'],
+    ['r3/porter-walk-loaded-v3.png', 8, 120, 'porter · v3 loaded walk'],
+    ['r3/miner-swing-v3.png', 8, 110, 'miner · v3 pickaxe swing'],
+    ['r3/councillor-idle-v3.png', 8, 180, 'councillor · v3 idle'],
+  ];
+  const SWINGS = [
+    ['r6/miner-swing-cycle-fixed.png', 13, 95, 'take 2, chosen · full cycle, palette held'],
+    ['shaft/img/miner-v3s40-work-raise.png', 9, 110, 'take 1 · raise and strike'],
+    ['shaft/img/miner-v3s40-work-cycle.png', 13, 95, 'take 2 · full cycle'],
+    ['shaft/img/miner-v3s40-work-interp.png', 7, 110, 'take 3 · interpolation (ping-pong)', true],
+    ['shaft/img/miner-v3s40-work-chop.png', 9, 110, 'take 4 · repeated chop'],
+  ];
+  const host = document.getElementById('anims');
+  for (const [src, frames, ms, label] of ANIMS) {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.width / frames, h = img.height;
+      const f = document.createElement('figure');
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:10px;align-items:flex-end;background:#3a323a;padding:6px';
+      const cs = [1, 4].map((z) => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.style.width = `${w * z}px`; c.style.imageRendering = 'pixelated'; row.appendChild(c); return c; });
+      const cap = document.createElement('figcaption'); cap.textContent = label; f.append(row, cap); host.appendChild(f);
+      let i = 0;
+      setInterval(() => { for (const c of cs) { const g = c.getContext('2d'); g.clearRect(0, 0, w, h); g.drawImage(img, i * w, 0, w, h, 0, 0, w, h); } i = (i + 1) % frames; }, ms);
+    };
+    img.src = src; // missing strips (still generating) simply do not appear
+  }
+  // The swing takes, in their own section. `pp` plays the loop forward then back.
+  const swingHost = document.getElementById('swings');
+  for (const [src, frames, ms, label, pp] of SWINGS) {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.width / frames, h = img.height;
+      const f = document.createElement('figure');
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:10px;align-items:flex-end;background:#3a2f26;padding:6px';
+      const cs = [1, 4].map((z) => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.style.width = `${w * z}px`; c.style.imageRendering = 'pixelated'; row.appendChild(c); return c; });
+      const cap = document.createElement('figcaption'); cap.textContent = label; f.append(row, cap); swingHost.appendChild(f);
+      let i = 0, dir = 1;
+      setInterval(() => {
+        for (const c of cs) { const g = c.getContext('2d'); g.clearRect(0, 0, w, h); g.drawImage(img, i * w, 0, w, h, 0, 0, w, h); }
+        if (pp) { if (i + dir < 0 || i + dir >= frames) dir = -dir; i += dir; } else i = (i + 1) % frames;
+      }, ms);
+    };
+    img.src = src;
+  }
+</script>
+</body>
+</html>

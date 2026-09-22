@@ -1,0 +1,8 @@
+piano-a 7f904133-cd2c-4eeb-8f55-eac9ec65e470
+piano-b 5be172ab-366d-4f90-96c4-97c1066cc8b8
+deco-a 9b06b275-c27d-415e-989d-70a81c8c1015
+deco-b 274a3b3c-5afc-4422-ae1f-c0c83e1ad479
+library-a a6d3c171-d66d-452f-9364-b39aead50b97
+library-b 8808d9b4-05b1-4ba8-bdb1-012bf43db118
+bath-a 1aede377-9ee8-459b-8f9d-70fd0278397f
+bath-b 5f9d3408-8617-4070-b0bb-b4e1d89d5281
