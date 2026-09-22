@@ -29,7 +29,9 @@
     "catalystConsumptionPerTick": 0.05,
     "qualityWarnThreshold": 60,
     "qualityCriticalThreshold": 30,
-    "sealedLevelDecayPerTick": 0.8
+    "sealedLevelDecayPerTick": 0.8,
+    "catalystDeliveryIntervalTicks": 900,
+    "catalystDeliveryQty": 12
   },
 
   "water": {
@@ -37,7 +39,9 @@
     "reclamationEfficiency": 0.68,
     "groundwaterIntakePerTick": 90,
     "pumpPowerPerLevelLifted": 1.4,
-    "cisternCapacityPerLevel": 200
+    "cisternCapacityPerLevel": 200,
+    "reclaimedQuality": 40,
+    "qualityDriftPerTick": 0.5
   },
 
   "structure": {

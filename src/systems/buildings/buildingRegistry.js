@@ -67,25 +67,30 @@ export function workScale(instance, def, ctx) {
 /**
  * Effective output scale for an instance: workScale, and nothing at all if it
  * went without its inputs last tick. A generator with no fuel generates
- * nothing; a scrubber with no carbon scrubs nothing. 0 means the building
- * contributes nothing this tick.
+ * nothing; a scrubber with no carbon scrubs nothing. A building on rationed
+ * water works at the share it was given. 0 means the building contributes
+ * nothing this tick.
  */
 export function outputScale(instance, def, ctx) {
   if (instance.starved) return 0;
-  return workScale(instance, def, ctx);
+  return workScale(instance, def, ctx) * (instance.waterShare ?? 1);
 }
 
 /**
  * Power a building asks for this tick, before the ladder decides. A recipe
  * building draws its current recipe's power on top of its own, and only while
- * it has a batch on — an idle smelter is cold.
+ * it has a batch on — an idle smelter is cold. A pump draws for the height it
+ * lifts, from the water system's last reading.
  */
-export function powerDemand(instance, def, ctx) {
+export function powerDemand(instance, def, ctx, state) {
   if (instance.brokenDown) return 0;
   // Draw does not scale with condition: a worn machine asks for as much and
   // gives back less, which is what makes deferred maintenance expensive.
   const recipe = instance.job ? ctx.catalog.recipes.byId[instance.job.recipeId] : null;
-  return (def.powerDraw ?? 0) + (recipe?.powerDraw ?? 0);
+  // A pump pays for every level it lifts water to where it is drunk.
+  const lifts = (def.produces ?? []).some((p) => p.id === 'water');
+  const lift = lifts && state ? state.resources.flows.water.liftLevels * ctx.config.water.pumpPowerPerLevelLifted : 0;
+  return (def.powerDraw ?? 0) + (recipe?.powerDraw ?? 0) + lift;
 }
 
 /**

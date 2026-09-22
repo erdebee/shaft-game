@@ -232,6 +232,7 @@ export function collectModifiers(state, ctx) {
     buffer: {},       // additive capacity, by resource id
     network: {},      // additive capacity/boost, by network id
     scrub: {},        // additive scrubbing, by flow id
+    quality: {},      // additive treatment share, by flow id (1 = fully treated)
     multiply: {},     // multiplicative, by "kind:target"
     capabilities: {}, // boolean
     recipes: {},      // boolean, by building id
@@ -269,6 +270,7 @@ export function collectModifiers(state, ctx) {
         case 'network.capacity':
         case 'network.boost': add(mods.network, e.target, e.value * scale); break;
         case 'flow.scrub': add(mods.scrub, e.target, e.value * scale); break;
+        case 'flow.setQuality': add(mods.quality, e.target, e.value * scale); break;
         case 'consumption.multiply': mul(`consumption:${e.target}`, e.value); break;
         case 'spoilage.multiply': mul(`spoilage:${e.target}`, e.value); break;
         case 'zone.outputMultiply': mul(`zone:${e.target}`, e.value); break;

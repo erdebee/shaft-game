@@ -1,5 +1,5 @@
 {
-  "_note": "Mechanical zone — the maintenance economy's engine, and Engineering's leverage as a faction. Neglecting this zone does not hurt immediately; it hurts about thirty days later, all at once.",
+  "_note": "Mechanical zone — the maintenance economy's engine, and Engineering's leverage as a faction. Neglecting this zone does not hurt immediately; it hurts about thirty days later, all at once. airLoad is air-quality points a working building takes from its own level per tick (a recipe building only while a batch runs); see systems/airQuality/perLevelAir.js.",
   "buildings": [
     {
       "id": "dig-face",
@@ -11,6 +11,7 @@
       "powerDraw": 90,
       "staffing": 6,
       "wearPerTick": 0.0034,
+      "airLoad": 2,
       "consumes": [],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "concrete", "qty": 2 }],
@@ -31,6 +32,7 @@
       "powerDraw": 0,
       "staffing": 4,
       "wearPerTick": 0.0028,
+      "airLoad": 3,
       "consumes": [],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "concrete", "qty": 1 }],

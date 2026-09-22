@@ -95,7 +95,7 @@ function collectConsumers(state, ctx) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
 
-    const base = powerDemand(instance, def, ctx);
+    const base = powerDemand(instance, def, ctx, state);
     if (base <= 0) continue;
 
     const distance = Math.abs(instance.level - generatorLevel);

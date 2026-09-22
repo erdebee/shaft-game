@@ -16,6 +16,7 @@
  */
 
 import { initialSeams } from '../systems/resources/minerals.js';
+import { initialWater } from '../systems/water/greywaterLoop.js';
 
 /**
  * @param {object} args
@@ -49,7 +50,7 @@ export function createGameState({ chapter, dataset, seed }) {
       abstracts: initialAbstracts(catalog, config),
       flows: {
         power: { generation: 0, demand: 0, brownedOut: [] },
-        water: { generation: 0, demand: 0, brownedOut: [] },
+        water: initialWater(),
       },
       cutSupplies: [],
     },

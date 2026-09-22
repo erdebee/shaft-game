@@ -47,12 +47,16 @@ export const TUNABLES = {
   'air.qualityWarnThreshold': METER,
   'air.qualityCriticalThreshold': METER,
   'air.sealedLevelDecayPerTick': N(0, 100),
+  'air.catalystDeliveryIntervalTicks': TICKS,
+  'air.catalystDeliveryQty': N(0, 1000),
 
   'water.potablePerCapitaPerTick': N(0, 10),
   'water.reclamationEfficiency': RATE,
   'water.groundwaterIntakePerTick': N(0, 10000),
   'water.pumpPowerPerLevelLifted': N(0, 1000),
   'water.cisternCapacityPerLevel': N(0, 100000),
+  'water.reclaimedQuality': METER,
+  'water.qualityDriftPerTick': N(0, 100),
 
   'structure.integrityStart': METER,
   'structure.levels': N(1, 200),
