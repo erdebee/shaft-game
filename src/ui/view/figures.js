@@ -164,7 +164,7 @@ function renderWorkers(layer, state, ctx, viewport) {
     if (count === 0) continue;
 
     const level = state.levels.find((l) => l.index === instance.level);
-    const rect = slotRect(instance.slot ?? 0, instance.slots ?? 1, level?.buildSlots ?? 8, instance.level);
+    const rect = slotRect(instance.slot ?? 0, instance.slots ?? 1, level?.buildSlots ?? 10, instance.level);
 
     for (let i = 0; i < count; i++) {
       const spot = workerSlot(rect, i, count);

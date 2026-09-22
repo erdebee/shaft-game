@@ -55,23 +55,27 @@ edges between them, a small number of shades per material, and depth implied by
 game references (`probe/v4`, `probe/v5`). It gives a cozy, lived-in,
 retro-industrial underground in desaturated teal and dusty terracotta over soft
 warm browns. It allows a little more soft two-tone modelling than a strict SNES
-flat. It is still clean, readable, low-texture and 16-bit in scale, and everything
-else in this section still binds. The locked reference renders are
-`probe/v12/main-generator-inpaint.png` and `probe/v12/house-inpaint.png`.
+flat. It is 16-bit in scale and clean at a glance, but **richly detailed**: many
+colour variations per material, strong lamplight and shadow, dithered light
+falloff, and textured, lived-in back walls with props and wear (since v15; the
+earlier "low texture" wish is withdrawn). Everything else in this section still
+binds, above all the flat side view. The reference renders for the detail
+level are the v16 rooms, for example `probe/v16/workshop-on.png` and
+`probe/v16/superior-suite-on.png`.
 
-This is a concrete, checkable target and it overrides any instinct toward
-richness. An asset that looks like a beautifully rendered miniature is wrong even
-though it is better art, because forty of them stacked in a column turn into
-mush — and because the moment one object has modelled volume, the flat ones beside
-it look unfinished.
+This is a concrete, checkable target. Richness lives in colour, light and
+surface detail, never in depth: an asset with modelled perspective or a receding
+floor is wrong however good it looks, because stacked forty deep in a column the
+depth cues fight each other, and a room that recedes makes the flat ones beside it
+look broken.
 
 ### Flatness rules
 
-- **Flat shading.** Two to four shades per material: a base, a shadow, a highlight
-  at most. No gradients, no soft falloff, no ambient occlusion, no rendered
-  specular.
-- **Hard edges.** Colour changes on a pixel boundary. Dithering is allowed as a
-  deliberate texture; anti-aliased blur is not.
+- **Pixel shading, not rendering.** Many shades per material are fine, and light
+  falls off in dithered steps. No smooth gradients, no airbrushed glow, no
+  ambient occlusion, no rendered specular.
+- **Hard edges.** Colour changes on a pixel boundary. Dithering is wanted, for
+  light falloff and material texture; anti-aliased blur is not.
 - **No modelled volume.** A pipe is a rectangle with a light band and a dark band,
   not a cylinder with a gradient wrapped around it.
 - **Nothing recedes — except a room's side walls.** No floors running away from

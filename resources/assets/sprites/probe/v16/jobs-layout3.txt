@@ -1,0 +1,8 @@
+school-a fd694ceb-9917-427c-8105-fd34680eaa5a
+school-b 9ece51c2-9cf9-4ea2-a8ac-df04d495acd3
+security-post-a 0ddf23a2-4c55-4f32-aaaa-e9ebbadb2e5e
+security-post-b d8ff4752-a8bd-432c-a04b-be95d0f98dd3
+battery-bank-a b3a66ce3-3b99-48b4-a044-bfba141e5b4a
+battery-bank-b 2dfc9897-1f9b-4e11-8c48-c300fd595672
+clinic-c c293cf4c-9be5-4ea0-9e5e-88ebe0b139f5
+clinic-d 7c4f2458-7734-45bb-bdf4-13db464af0ae

@@ -1,0 +1,8 @@
+w-steel-a 2a0868b0-53c0-404f-b221-c390301ef952
+w-steel-b 24270c01-d63e-4158-a0e0-3daaca811294
+w-concrete-a 1bbd686c-def9-498c-b2a5-3da661084578
+w-concrete-b e6d570e6-6706-43e8-aebe-c696f42310cb
+w-grating-a 813ca286-284f-4fde-b50a-2ebd0d5a0c69
+w-grating-b 36203429-e6d1-4bdb-855b-0222d63f3e1e
+w-civic-a bc3523ba-1ade-4e8d-a35c-662ff149c037
+w-civic-b 35d54e1e-084f-476e-88e3-3531b244d241

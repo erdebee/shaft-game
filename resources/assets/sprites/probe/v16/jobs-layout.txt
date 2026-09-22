@@ -1,0 +1,6 @@
+archive-a cfa68beb-009a-47a1-bed6-11fad95b1fae
+archive-b 8dbf7c58-94b7-4a35-9299-774e71d73044
+clinic-a b2aee47f-9bbb-48f8-93f3-c01d3eb63574
+clinic-b b4ee57f6-45df-4eeb-bdf1-250fc1bb0022
+workshop-a 9ad25f31-71af-4f51-8000-71faaffd455e
+workshop-b 53cbbc3f-0729-4f0c-9a80-9bc79891e9a6

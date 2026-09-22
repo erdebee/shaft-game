@@ -15,7 +15,8 @@
  * width is 64, 128, 192 or 256 (1–4 slots). "room" (default) draws slanted side walls at both
  * edges; "open" draws none, for the none-master of an open area (spec §2.2).
  * layout adds a blockout of the building's main masses (see LAYOUTS).
- * Writes resources/assets/room-guide-<width>-<kind>[-<layout>].png.
+ * --lit redraws the guide in four dithered lighting bands (see lightAt).
+ * Writes resources/assets/room-guide-<width>-<kind>[-<layout>][-lit].png.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -290,19 +291,28 @@ const LAYOUTS = {
     ['circle', 90, 40, 3, P.cream],                 // gauge
     ['rect', 112, 70, 120, 87, P.rust],             // sludge drum
   ],
+  // 2 slots: at 64 px the school kept coming back in perspective (probe/v17).
   school: [
-    ['circle', 32, 16, 2, P.amber],                 // lamp
-    ['rect', 12, 24, 52, 44, P.tealDeep],           // chalkboard
-    ['rect', 16, 28, 40, 28, P.cream],
-    ['rect', 16, 32, 46, 32, P.cream],
-    ['rect', 16, 36, 34, 36, P.cream],
-    ['rect', 12, 72, 28, 75, P.sand],               // pupils' desks
-    ['rect', 14, 76, 16, 87, P.sand],
-    ['rect', 24, 76, 26, 87, P.sand],
-    ['rect', 34, 72, 50, 75, P.sand],
-    ['rect', 36, 76, 38, 87, P.sand],
-    ['rect', 46, 76, 48, 87, P.sand],
-    ['circle', 46, 62, 4, P.tealLit],               // globe
+    ['rect', 10, 30, 26, 87, P.rust],               // bookshelf
+    ['rect', 12, 40, 24, 41, P.plum],
+    ['rect', 12, 54, 24, 55, P.plum],
+    ['rect', 12, 68, 24, 69, P.plum],
+    ['circle', 46, 16, 2, P.amber],                 // lamps
+    ['circle', 86, 16, 2, P.amber],
+    ['rect', 34, 22, 96, 50, P.tealDeep],           // chalkboard
+    ['rect', 38, 28, 70, 28, P.cream],
+    ['rect', 38, 33, 84, 33, P.cream],
+    ['rect', 38, 38, 62, 38, P.cream],
+    ['rect', 34, 51, 96, 52, P.sand],               // chalk ledge
+    ['rect', 34, 72, 50, 75, P.sand],               // pupils' desks
+    ['rect', 36, 76, 38, 87, P.sand], ['rect', 46, 76, 48, 87, P.sand],
+    ['rect', 56, 72, 72, 75, P.sand],
+    ['rect', 58, 76, 60, 87, P.sand], ['rect', 68, 76, 70, 87, P.sand],
+    ['rect', 78, 72, 94, 75, P.sand],
+    ['rect', 80, 76, 82, 87, P.sand], ['rect', 90, 76, 92, 87, P.sand],
+    ['rect', 102, 26, 116, 42, P.terracotta],       // pinned drawings
+    ['rect', 100, 66, 118, 87, P.rust],             // teacher's desk
+    ['circle', 110, 58, 5, P.tealLit],              // globe on the desk
   ],
   'security-post': [
     ['circle', 26, 16, 2, P.amber],                 // lamp
@@ -389,7 +399,28 @@ const LAYOUTS = {
   ],
 };
 
-export function roomGuide(width, kind = 'room', layout = null) {
+/**
+ * Lighting for --lit guides. A flat guide carries only ~12 colours, and the
+ * model keeps that palette: rooms came back with 8–16 colours, flat and
+ * unshaded (probe/v14). Four bands from lamp-lit ceiling to shadowed floor,
+ * Bayer-dithered where they meet and tinted warm to cool, give the guide ~35
+ * colours and show the model dithered light falloff to follow (probe/v15).
+ * Use it at strength 75: at 50 the extra shading reads as depth and rooms
+ * turn into perspective interiors.
+ */
+const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+const BAND_GAIN = [1.18, 1.05, 0.92, 0.8];
+const BAND_TINT = [[8, 2, -6], [3, 0, -2], [-2, 0, 3], [-5, -1, 6]];
+const clamp = (v) => Math.max(0, Math.min(255, v));
+
+function lightAt([r, g, b], x, y) {
+  const band = Math.min(3, Math.floor((y / HEIGHT) * 3 + BAYER[y % 4][x % 4] / 16));
+  const gain = BAND_GAIN[band];
+  const tint = BAND_TINT[band];
+  return [r, g, b].map((v, i) => clamp(Math.trunc(clamp(Math.trunc(v * gain)) + tint[i])));
+}
+
+export function roomGuide(width, kind = 'room', layout = null, lit = false) {
   const walls = kind === 'room';
   const shapes = layout ? LAYOUTS[layout] : [];
   if (!shapes) throw new Error(`unknown layout "${layout}" — expected ${Object.keys(LAYOUTS).join(' | ')}`);
@@ -403,7 +434,7 @@ export function roomGuide(width, kind = 'room', layout = null) {
     return hit && hex(hit);
   };
 
-  return encodePng(width, HEIGHT, (x, y) => {
+  const flat = (x, y) => {
     if (y <= CEILING_BOTTOM) return y === CEILING_BOTTOM ? C.ceilingEdge : C.ceiling;
     if (y >= FLOOR_TOP) return y === FLOOR_TOP ? C.floorTop : y >= HEIGHT - 2 ? C.floorBottom : C.floor;
 
@@ -418,17 +449,20 @@ export function roomGuide(width, kind = 'room', layout = null) {
       if (fromEdge === reach) return C.sideEdge;
     }
     return blockout(x, y) ?? C.wall;
-  });
+  };
+  return encodePng(width, HEIGHT, lit ? (x, y) => lightAt(flat(x, y), x, y) : flat);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const width = Number(process.argv[2]);
-  const kind = process.argv[3] ?? 'room';
-  const layout = process.argv[4] ?? null;
+  const lit = process.argv.includes('--lit');
+  const args = process.argv.slice(2).filter((a) => a !== '--lit');
+  const width = Number(args[0]);
+  const kind = args[1] ?? 'room';
+  const layout = args[2] ?? null;
   if (![64, 128, 192, 256].includes(width)) throw new Error("width must be 64, 128, 192 or 256");
   if (!['room', 'open'].includes(kind)) throw new Error('kind must be room or open');
-  const name = layout ? `${width}-${kind}-${layout}` : `${width}-${kind}`;
+  const name = (layout ? `${width}-${kind}-${layout}` : `${width}-${kind}`) + (lit ? '-lit' : '');
   const out = resolve(ROOT, `resources/assets/room-guide-${name}.png`);
-  writeFileSync(out, roomGuide(width, kind, layout));
+  writeFileSync(out, roomGuide(width, kind, layout, lit));
   console.log(`wrote ${out}`);
 }

@@ -1,0 +1,8 @@
+smelter-a 8ac9342b-df71-4d6e-a4e2-d4855668bb25
+smelter-b 639bc70d-b96e-4069-a03f-4fb0f834f3e3
+school-e 5ce7ec07-4546-4718-a36e-632b41f0ed0d
+school-f 32148e47-7d8a-4f62-b438-9088825dc9fb
+school-g decef409-14be-4069-9a77-bcdd6b924b36
+security-post-c bf709d9a-8128-4b10-b95b-d2d8cf203b23
+security-post-d ec101667-3fb4-4499-9862-a0d34714b673
+security-post-e ea3abe1d-c803-43e5-a155-eef3ab7d1e4e

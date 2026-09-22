@@ -26,7 +26,7 @@
   ],
 
   "levelTemplate": {
-    "buildSlots": 8,
+    "buildSlots": 10,
     "housingCapacityBonus": 0,
     "airVolume": 100,
     "zoneAllowances": {

@@ -1,0 +1,5 @@
+2f25079c-6844-4255-a2f5-e83c6f2190de workshop-off scrubber-bank-off reclamation-plant-off oxygen-garden-off
+d09a59ff-abe2-4f1c-892d-de37585e58f6 archive-off clinic-off
+f8f24a2f-c32f-4bd6-be97-0d07b2f5425b canteen-off
+2674ec11-15bf-42ee-bc85-8095a9c3ed48 superior-suite-off
+b352a0f5-f4a3-433d-bb96-5a7a5a11cef5 school-off security-post-off battery-bank-off

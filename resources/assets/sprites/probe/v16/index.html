@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Richer rooms</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --good: #86b6a2; --bad: #cf6a40;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  h3 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin: 30px 0 6px; }
+  h3 small { color: var(--faint); letter-spacing: 0; text-transform: none; font-size: 11px; margin-left: 8px; }
+  p { max-width: 90ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  a { color: var(--teal); }
+  .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .bar a { color: var(--dim); text-decoration: none; } .bar a:hover { color: var(--amber); }
+  .seg { display: inline-flex; gap: 0; }
+  .seg button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { color: var(--amber); border-color: var(--amber); position: relative; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .summary p { margin: 4px 0; }
+  .ok { color: var(--good); } .no { color: var(--bad); }
+
+  /* Shaft view: 640 × (levels × 104) reference pixels, scaled by an integer zoom. */
+  .shaftwrap { overflow-x: auto; padding-bottom: 6px; }
+  .shaft { position: relative; image-rendering: pixelated; background: #010202; transform-origin: top left; }
+  .shaft > * { position: absolute; }
+  .shaft img { image-rendering: pixelated; display: block; }
+  .rock { background-repeat: repeat; image-rendering: pixelated; }
+  .col { background: #120d15; border-left: 1px solid #241c26; border-right: 1px solid #241c26; }
+  .slab { background: #4f4148; border-top: 1px solid #8e7870; }
+  .tag { font: 6px/1 ui-monospace, monospace; color: #8e7870; z-index: 3; white-space: nowrap; }
+
+  .pipe { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; margin: 8px 0; }
+  figure { margin: 0; max-width: 100%; }
+  figure img { display: block; image-rendering: pixelated; max-width: 100%; height: auto; background: #000; }
+  figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; max-width: 42ch; }
+  figcaption .k { color: var(--ink); }
+  .note { font-size: 12px; color: var(--dim); max-width: 100ch; margin: 2px 0 0; }
+  table { border-collapse: collapse; margin: 12px 0; font-size: 12px; width: 100%; max-width: 1000px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--amber); font-weight: 600; }
+  td:first-child { color: var(--ink); }
+  .tablewrap { overflow-x: auto; }
+  ul { color: var(--dim); max-width: 95ch; padding-left: 20px; } li { margin: 4px 0; }
+  .pair { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  figure.rej img { opacity:.55; } figure.rej figcaption { color: var(--faint); }
+</style>
+<body>
+<main>
+<h1>Richer rooms &mdash; the eleven v14 rooms redone</h1>
+<p class="lead">You said the v14 rooms were too plain: simple backgrounds, a flat look, little colour, light or shadow, and no dithering. Each of the eleven is now redone with the
+<b>detail recipe</b> from the v15 test: a <b>lit, dithered guide</b> (the same blockout, redrawn in four lighting bands with dithering between them) at
+<b>strength 75</b>, with <b>detailed shading</b> and <b>highly detailed</b> as settings. The canteen and superior suite reuse the two v15 renders you've already seen.
+The nine rooms saved from v13 are unchanged.</p>
+
+<div class="bar">
+  <span>Zoom</span>
+  <span class="seg" id="zoom"><button data-z="1">1&times;</button><button data-z="2" class="on">2&times;</button><button data-z="3">3&times;</button></span>
+  <span>State</span>
+  <span class="seg" id="state"><button data-s="on" class="on">on</button><button data-s="off">off</button><button data-s="broken">broken</button></span>
+  <span>&middot;</span>
+  <a href="#shaft">Shaft</a><a href="#rooms">Rooms</a><a href="#findings">Findings</a><a href="#cost">Cost</a>
+</div>
+
+<div class="summary">
+  <p><b>Result.</b> Lit rooms now use <b>22&ndash;50 colours</b> (v14: 8&ndash;16) with visible dithering in light pools, textured back walls and many more props.
+     Off and broken keep the detail. The off states' colour counts stay at 19&ndash;60.</p>
+  <p><b>Two tries per room</b>, so there was a choice each time. Three rooms needed more: the <b>clinic</b> drew a window twice, then came back windowless with a stricter prompt;
+     the <b>school</b> drew a receding plank floor twice, then held flat at strength 90; <b>archive</b> try B went into perspective.</p>
+  <p><b>The pasting problem is solved for the states.</b> Edits now take the layout by its PixelLab URL rather than a pasted image string. Every guide upload also decoded this round.</p>
+</div>
+
+<h2 id="shaft">In the shaft &mdash; all twenty</h2>
+<p>The nine saved rooms from <code>sprites/buildings/</code> next to the eleven redone ones. The contrast in richness is now the other way round: the saved v13 rooms
+are the plainer ones.</p>
+<div class="shaftwrap"><div class="shaft" id="shaftview"></div></div>
+
+<h2 id="rooms">The eleven rooms</h2>
+<p>For each room: the old v14 render, the lit guide, the tries (the pick at full opacity), then <b>off</b> and <b>broken</b>.</p>
+<div id="rooms-list"></div>
+
+<h2 id="findings">Findings</h2>
+<ul>
+  <li><b class="ok">The lit guide works across all room types.</b> Machines, homes, gardens and offices all came back rich and still flat.</li>
+  <li><b class="ok">States keep the richness.</b> The edit tool does not flatten the palette, and every state stays in register with its on render.</li>
+  <li><b class="no">Pale rectangles become windows.</b> The clinic guide's light cabinet block was read as a window twice. Naming the cabinet explicitly and adding
+      "windowless, no window frame, no glass pane" fixed it. Guides should avoid large pale blocks high on the back wall.</li>
+  <li><b class="no">64-px rooms slide into perspective more easily.</b> The school needed strength 90. Security post A also shows a slight tiled floor plane.</li>
+  <li><b>64-px broken states are overloaded:</b> warning tape criss-crosses the whole room. A lighter prompt ("one strip of tape") would suit single slots better.</li>
+  <li><b>Side walls</b> read clearly on some rooms (workshop, clinic, scrubber bank) and only faintly on others (oxygen garden, canteen).</li>
+  <li><b>Now uneven with the saved nine.</b> The v13 rooms look plainer next to these. Redoing them would cost roughly 180&ndash;200 generations.</li>
+</ul>
+
+<h2 id="cost">Cost</h2>
+<div class="tablewrap"><table>
+  <tr><th>Step</th><th>Calls</th><th>Generations</th><th>Note</th></tr>
+  <tr><td>1 &middot; Lit guide</td><td>11</td><td>0</td><td><code>node tools/roomGuide.mjs &lt;w&gt; room &lt;layout&gt; --lit</code></td></tr>
+  <tr><td>2 &middot; Layout = on</td><td>22</td><td>22</td><td>two tries &times; nine rooms, plus two for the clinic and two for the school; canteen and superior reused from v15</td></tr>
+  <tr><td>4 &middot; States (edit tool)</td><td>10</td><td>~200</td><td>by URL; 128 px &times;4 per call, 64 px &times;3, 192 px one each</td></tr>
+  <tr><td><b>Total</b></td><td></td><td><b>~222</b></td><td>&asymp;20 per building</td></tr>
+</table></div>
+<p><a href="../v15/index.html">&larr; v15: the detail test</a> &middot; <a href="../v14/index.html">v14: the plain versions</a></p>
+</main>
+
+<script>
+const NEW = [
+  { id: 'canteen', name: 'Canteen (3 slots)', band: 'mid', w: 192, tries: ['../v15/canteen-R75.png'], pick: 0, note: 'The v15 render at strength 75. The range, hood, shelves and counter now carry real clutter.' },
+  { id: 'superior-suite', name: 'Superior suite', band: 'mid', w: 192, tries: ['../v15/superior-suite-R75.png'], pick: 0, note: 'The v15 render. Portraits, lamplight pool, wainscot, quilt.' },
+  { id: 'archive', name: 'Archive', band: 'shallow', w: 128, tries: ['archive-a.png', 'archive-b.png'], pick: 0, note: 'B went into a perspective room with windows.' },
+  { id: 'clinic', name: 'Clinic', band: 'mid', w: 128, tries: ['clinic-a.png', 'clinic-b.png', 'clinic-c.png', 'clinic-d.png'], pick: 3, note: 'A, B and C drew a window where the cabinet block is. D used the stricter windowless prompt.' },
+  { id: 'workshop', name: 'Workshop', band: 'deep', w: 128, tries: ['workshop-a.png', 'workshop-b.png'], pick: 0, note: 'A has the side walls and the caged lamp. B was flatter in colour (23).' },
+  { id: 'scrubber-bank', name: 'Scrubber bank', band: 'mid', w: 128, tries: ['scrubber-bank-a.png', 'scrubber-bank-b.png'], pick: 0, note: 'Both good; A keeps the fan housing.' },
+  { id: 'oxygen-garden', name: 'Oxygen garden', band: 'shallow', w: 128, tries: ['oxygen-garden-a.png', 'oxygen-garden-b.png'], pick: 0, note: 'B has a receding tiled floor. A still frames the moss wall like a panel.' },
+  { id: 'reclamation-plant', name: 'Reclamation plant', band: 'deep', w: 128, tries: ['reclamation-plant-a.png', 'reclamation-plant-b.png'], pick: 0, note: 'B came back with only 14 colours.' },
+  { id: 'school', name: 'School', band: 'mid', w: 64, tries: ['school-a.png', 'school-b.png', 'school-c.png', 'school-d.png'], pick: 3, note: 'A–C (strength 75) drew a receding plank floor. D is at strength 90.' },
+  { id: 'security-post', name: 'Security post', band: 'mid', w: 64, tries: ['security-post-a.png', 'security-post-b.png'], pick: 1, note: 'A had a perspective tile floor and fewer colours.' },
+  { id: 'battery-bank', name: 'Battery bank', band: 'deep', w: 64, tries: ['battery-bank-a.png', 'battery-bank-b.png'], pick: 0, note: 'B was darker and flatter.' },
+];
+const SAVED = { 'main-generator': 192, 'dig-face': 128, smelter: 128, 'deep-pump': 128, 'hydroponics-bay': 128, 'simple-suite': 128,
+                'council-chamber': 128, grove: 192, 'presidential-suite': 256 };
+const WIDTH = { ...SAVED, ...Object.fromEntries(NEW.map((r) => [r.id, r.w])) };
+const LEVELS = [
+  { n: 4,  band: 'shallow', slots: ['presidential-suite', 'council-chamber', 'archive'] },
+  { n: 6,  band: 'shallow', slots: ['oxygen-garden', 'grove', 'superior-suite'] },
+  { n: 22, band: 'mid',     slots: ['canteen', 'simple-suite', 'clinic', 'school'] },
+  { n: 24, band: 'mid',     slots: ['hydroponics-bay', 'scrubber-bank', 'security-post', 'smelter', null] },
+  { n: 34, band: 'deep',    slots: ['main-generator', 'battery-bank', 'workshop', 'reclamation-plant'] },
+  { n: 40, band: 'deep',    slots: ['deep-pump', 'dig-face', null, null, null, null] },
+];
+let META = {};
+let state = 'on', zoom = 2;
+
+const src = (id, s) => (id in SAVED ? `../../buildings/${id}-${s}.png` : `${id}-${s}.png`);
+
+function buildShaft() {
+  const el = document.getElementById('shaftview');
+  el.innerHTML = '';
+  el.style.width = `${640 * zoom}px`; el.style.height = `${LEVELS.length * 104 * zoom}px`;
+  const px = (v) => `${v * zoom}px`;
+  const add = (tag, cls, x, y, w, h, extra = {}) => {
+    const n = document.createElement(tag); n.className = cls;
+    Object.assign(n.style, { left: px(x), top: px(y), width: px(w), height: px(h) }, extra.style || {});
+    if (extra.src) n.src = extra.src; if (extra.text) n.textContent = extra.text;
+    el.appendChild(n); return n;
+  };
+  LEVELS.forEach((lv, i) => {
+    const y = i * 104;
+    add('div', 'col', 0, y, 64, 104);
+    add('div', 'col', 576, y, 64, 104);
+    add('div', 'rock', 64, y, 512, 96, { style: { backgroundImage: `url(../v14/${lv.band}-rock.png)`, backgroundSize: `${64 * zoom}px ${104 * zoom}px` } });
+    let x = 64;
+    for (const id of lv.slots) {
+      if (!id) { x += 64; continue; }
+      add('img', '', x, y, WIDTH[id], 96, { src: src(id, state) });
+      x += WIDTH[id];
+    }
+    add('div', 'slab', 0, y + 96, 640, 8);
+    add('div', 'tag', 3, y + 3, 60, 8, { text: `L${lv.n} · ${lv.band}`, style: { fontSize: `${6 * zoom}px` } });
+  });
+}
+
+const fig = (file, cap, w, cls = '') => `<figure class="${cls}"><img src="${file}" data-w="${w}" alt=""><figcaption>${cap}</figcaption></figure>`;
+const L = 'ABCD';
+
+function buildRooms() {
+  document.getElementById('rooms-list').innerHTML = NEW.map((r) => {
+    const m = META[r.id] || {};
+    return `<h3>${r.name}<small>${r.id} · ${r.band} · ${r.w}×96 · ${m.colours ?? '?'} colours · contrast ${m.contrast ?? '?'}</small></h3>
+      <div class="pipe">
+        ${fig(`../v14/${r.id}-on.png`, '<span class="k">v14</span> · before', r.w)}
+        ${fig(`guides/${r.w}-room-${r.id}-lit.png`, '<span class="k">lit guide</span>', r.w)}
+        ${r.tries.map((t, i) => fig(t, `<span class="k">try ${L[i]}</span>${i === r.pick ? ' · <b class="ok">pick = on</b>' : ''}`, r.w, i === r.pick ? '' : 'rej')).join('')}
+      </div>
+      <div class="pipe">
+        ${fig(`${r.id}-on.png`, `<span class="k">on</span> · lum ${m.on_lum ?? ''}`, r.w)}
+        ${fig(`${r.id}-off.png`, `<span class="k">off</span> · lum ${m.off_lum ?? ''} · diff ${m.off_diff ?? ''}`, r.w)}
+        ${fig(`${r.id}-broken.png`, `<span class="k">broken</span> · lum ${m.broken_lum ?? ''} · diff ${m.broken_diff ?? ''}`, r.w)}
+      </div>
+      <p class="note">${r.note}</p>`;
+  }).join('');
+  sizeFigures();
+}
+
+function sizeFigures() {
+  document.querySelectorAll('figure img').forEach((img) => { img.style.width = `${Number(img.dataset.w) * zoom}px`; });
+}
+
+function seg(id, key, fn) {
+  document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x === b));
+    fn(b.dataset[key]);
+  }));
+}
+seg('zoom', 'z', (z) => { zoom = Number(z); buildShaft(); sizeFigures(); });
+seg('state', 's', (s) => { state = s; buildShaft(); });
+
+fetch('meta.json').then((r) => r.json()).catch(() => ({})).then((m) => { META = m; buildRooms(); });
+buildShaft();
+</script>
+</body>
+</html>

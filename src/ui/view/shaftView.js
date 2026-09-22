@@ -205,7 +205,7 @@ function createBuildingNode(view, state, ctx, instance) {
   const def = ctx.catalog.buildings.byId[instance.buildingId];
   const sprite = spriteFor(def);
   const level = state.levels.find((l) => l.index === instance.level);
-  const r = slotRect(instance.slot ?? 0, instance.slots ?? 1, level?.buildSlots ?? 8, instance.level);
+  const r = slotRect(instance.slot ?? 0, instance.slots ?? 1, level?.buildSlots ?? 10, instance.level);
 
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', `building zone-${def.zone}`);

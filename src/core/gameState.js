@@ -101,7 +101,7 @@ function buildLevels(config, shaft, tables) {
 
   return Array.from({ length: count }, (_, i) => ({
     index: i + 1,
-    buildSlots: template.buildSlots ?? 8,
+    buildSlots: template.buildSlots ?? 10,
     airQuality: 100,
     sealed: false,
   }));

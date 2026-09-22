@@ -1,0 +1,5 @@
+edf2e3d1-ddad-42ec-bfe2-97e3f48f0989 workshop-broken scrubber-bank-broken reclamation-plant-broken oxygen-garden-broken
+3f4324e5-3d36-4f8d-8257-760fbdec4fe5 archive-broken clinic-broken
+acd766fe-3baa-4e60-98d9-8d65b216e0e3 school-broken security-post-broken battery-bank-broken
+9e630241-fe38-4297-ba4f-d437e60a92a4 canteen-broken
+62cde986-8075-44f2-9bdd-524d4ad5fab7 superior-suite-broken

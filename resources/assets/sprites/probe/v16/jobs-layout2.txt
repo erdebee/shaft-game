@@ -1,0 +1,6 @@
+scrubber-bank-a a3aedea8-ec07-4067-88b4-c8de1afa9609
+scrubber-bank-b 5417b324-100f-47f5-b38b-c2b838f9af85
+oxygen-garden-a ba27eaa5-0f49-45fa-ac7b-8fd59b651d61
+oxygen-garden-b 37b0bf80-1de7-46ca-af47-b7a30f07957e
+reclamation-plant-a c99c53d3-b8e5-4ef1-931b-611b56258ecd
+reclamation-plant-b 492e8ae1-201a-4963-b567-71ea359c5e4b

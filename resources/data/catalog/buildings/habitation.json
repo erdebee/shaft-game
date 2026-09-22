@@ -145,7 +145,7 @@
       "id": "school",
       "name": "School",
       "zone": "habitation",
-      "slots": 1,
+      "slots": 2,
       "levelConstraint": null,
       "priorityClass": "amenity",
       "powerDraw": 20,

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stairwell options</title>
+<style>
+  :root {
+    --bg: #0e0b10; --panel: #17121a; --edge: #2c2430; --ink: #e6d8c0; --dim: #a8988e;
+    --faint: #6c5a5c; --amber: #f2b25a; --teal: #86b6a2; --good: #86b6a2; --bad: #cf6a40;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+  main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin: 0 0 6px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
+       margin: 48px 0 8px; padding-top: 14px; border-top: 1px solid var(--edge); }
+  p { max-width: 90ch; color: var(--dim); margin: 6px 0; }
+  p.lead { color: var(--ink); }
+  b { color: var(--ink); font-weight: 600; }
+  code { color: var(--teal); }
+  a { color: var(--teal); }
+  .summary { background: var(--panel); border: 1px solid var(--edge); border-left: 3px solid var(--amber); padding: 14px 18px; margin: 18px 0; max-width: 1000px; }
+  .summary p { margin: 4px 0; }
+  .bar { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--edge);
+         display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--dim); }
+  .seg { display: inline-flex; }
+  .seg button { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 10px; cursor: pointer; margin-left: -1px; }
+  .seg button.on { color: var(--amber); border-color: var(--amber); position: relative; }
+  label.chk { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--edge); padding: 3px 6px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 22px 18px; }
+  .opt { background: var(--panel); border: 1px solid var(--edge); padding: 10px; }
+  .opt.pick { border-color: var(--amber); }
+  .opt h3 { font-size: 12px; margin: 0 0 6px; color: var(--teal); letter-spacing: .06em; text-transform: uppercase; }
+  .opt h3 span { color: var(--faint); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  .opt p { font-size: 11px; max-width: 30ch; margin: 6px 0 0; }
+  canvas { image-rendering: pixelated; display: block; background: #000; }
+  .shaftwrap { overflow-x: auto; padding-bottom: 6px; }
+  ul { color: var(--dim); max-width: 95ch; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+<body>
+<main>
+<h1>Stairwell &mdash; 2 slots, one continuous stair</h1>
+<p class="lead">The stairwell has <b>no floors and no ceilings</b> now: one back wall and one zigzag stair running the full height of the shaft. Each level keeps only a
+<b>thin exit landing on the right</b>, level with the rooms' floor, where people step off, plus the floor sign and a lamp beside it. Everything else is continuous.</p>
+
+<div class="summary">
+  <p><b>How it stays continuous.</b> The layout sketch repeats every 104 px (one level), and the flights run on through its edges. Each option is rendered <b>two levels tall
+     (128&times;208)</b>. <code>seamless.py</code> then cuts one 104-px tile out of it, placing the one unavoidable seam on the row where the two levels of the render match best,
+     so stacked tiles read as a single stair.</p>
+  <p><b>Chosen: Steel A, hand-fixed by you</b> (<code>stairwell-user.png</code>). It tiles cleanly, with the stair running through every join.</p>
+  <p><b>Round 3 (strength 120/150, one zigzag asked for explicitly):</b> six renders; three came out as a correct continuous zigzag (120a, 150a, 120c). The other three
+     drew separate single flights or put text on the plate. <b>120a is my pick</b>: Steel A's colours with a clean pattern and an invisible join.</p>
+  <p><b>Earlier:</b> Steel A was repaired at the join, but the pattern itself was off. Its two rendered floors differed slightly, so the stair broke at the join. I repainted only a 16-px band across the join
+     with the inpaint tool; everything outside the band is pixel-identical, and the stair now runs unbroken.</p>
+  <p><b>Steel B</b> (previous pick): a clean zigzag, a teal plate and lamp by every exit, and the smallest seam (difference 5.6 at the seam against about 14 for a typical row).
+     <b>Steel A</b> is warmer (lamp pools, two plates) with a slightly more visible seam. The civic tries drew parallel flights with doors (A) or a double zigzag (B), so both are rejected.</p>
+  <p><b>Floor numbers</b> are printed by the game on the blank plate; this page draws them with a 3&times;5 pixel font.</p>
+  <p><b>Shaft: 768 px</b> = 128-px stairwell + <b>10 build slots</b> (640 px), no lift column. Floor numbers use the 4&times;6 digits.</p>
+</div>
+
+<div class="bar">
+  <span>Zoom</span>
+  <span class="seg" id="zoom"><button data-z="2">2&times;</button><button data-z="3" class="on">3&times;</button><button data-z="4">4&times;</button></span>
+  <label class="chk"><input type="checkbox" id="nums" checked> floor numbers</label>
+  <span>&middot;</span>
+  <a href="#options">Options</a> <a href="#shaft">In the shaft</a> <a href="#notes">Notes</a>
+</div>
+
+<h2 id="options">Continuous stairwell, three levels high</h2>
+<p>For each option: the raw two-level render, then the cut tile stacked three times.</p>
+<div class="grid" id="gridc"></div>
+<h2>Earlier 2-slot round: separate floors (superseded)</h2>
+<div class="grid" id="gridw"></div>
+<h2>First round: 1 slot (superseded)</h2>
+<div class="grid" id="grid"></div>
+
+<h2 id="shaft">In the shaft</h2>
+<p>Floors 26&ndash;22 with the stairwell on the left (shaft 768 px: 128 stairwell + 640 build area, no lift column). Pick an option: <select id="pickshaft"></select></p>
+<div class="shaftwrap"><canvas id="shaftcv"></canvas></div>
+
+<h2 id="notes">Notes</h2>
+<ul>
+  <li><b>Layout sketch:</b> <code>stairGuide3.py</code> draws two periods of the stair (exit landing at row 88, flight up-left to a half landing, flight up-right to the next exit
+      landing), with every shape wrapping so the sketch itself tiles. Lighting is one dithered lamp pool per level, around the sign.</li>
+  <li><b>Seam:</b> <code>seamless.py</code> picks the cut row where the render's two levels agree best, and builds the tile so the exit landing stays on row 88.</li>
+  <li><b>Still to do, after a pick:</b> the top and bottom ends of the stairwell (where the stair starts and stops), a lamps-off version, moving the two scripts into
+      <code>tools/</code>, and the shaft-width decision.</li>
+</ul>
+<p>Cost: 12 generations (1 slot), 8 (2 slots, separate floors), 4 (continuous), 20 (seam repair), 6 (round 3). <a href="../v17/index.html">&larr; v17</a></p>
+</main>
+
+<script>
+// Sign-plate boxes in sprite pixels [x0, y0, x1, y1] and the ink colour for the digits.
+const OPTS_C = [
+  { id: 'stairwell-user', raw: 'stairwell-user.png', name: 'Steel A · hand-fixed', plate: [102, 58, 116, 67], ink: '#f3e6c8', note: 'Your manual fix of Steel A. Chosen. Tiles cleanly: the stair runs through every join.', pick: true },
+  { id: 'r3-120a-tile', raw: 'r3-120a.png', name: 'Round 3 · 120a', plate: [100, 59, 124, 76], ink: '#f3e6c8', note: 'Steel A colours: orange treads, grey riveted column, lamp and teal plate by each exit. Clean continuous zigzag; the join is invisible. My pick.' },
+  { id: 'r3-150a-tile', raw: 'r3-150a.png', name: 'Round 3 · 150a', plate: [103, 62, 123, 76], ink: '#f3e6c8', note: 'Steel zigzag with landings on both sides, brick-and-column wall, hanging lamp. Continuous; seam difference 3.3.' },
+  { id: 'r3-120c-tile', raw: 'r3-120c.png', name: 'Round 3 · 120c', plate: [102, 60, 124, 77], ink: '#f3e6c8', note: 'Grey steel stairs, warm wall lamp, tiled exit landing. Continuous, darker.' },
+  { id: 'c-steel-a-tile-fixed', raw: 'c-steel-a.png', name: 'Steel A, seam repaired', plate: [102, 58, 116, 64], ink: '#f3e6c8', note: 'Your pick. The two floors of the render did not match exactly, so the stair broke at the join. A 16-px band across the join was repainted (inpaint, everything else pixel-identical), and now the stair runs unbroken.' },
+  { id: 'c-steel-b-tile', raw: 'c-steel-b.png', name: 'Steel B', plate: [100, 65, 123, 79], ink: '#f3e6c8', note: 'Clean continuous zigzag on a brick wall, teal plate and lamp by each exit. Seam difference 5.6.' },
+  { id: 'c-steel-a-tile', raw: 'c-steel-a.png', name: 'Steel A, before repair', plate: [102, 58, 116, 64], ink: '#f3e6c8', note: 'The straight cut: the rails and stringer break at the join (row 13).' },
+  { id: 'c-civic-a-tile', raw: 'c-civic-a.png', name: 'Civic A', plate: null, ink: '#241c26', note: 'Rejected: parallel flights and doors instead of a zigzag.' },
+  { id: 'c-civic-b-tile', raw: 'c-civic-b.png', name: 'Civic B', plate: null, ink: '#241c26', note: 'Rejected: a busy double zigzag with dark doors; hard to read.' },
+];
+const OPTS_W = [
+  { id: 'w-steel-a',    name: 'Steel A',    plate: [91, 63, 121, 78], ink: '#f3e6c8', note: 'Riveted steel, teal rails, a door beside the exit. Clean but fewer colours (19).' },
+  { id: 'w-steel-b',    name: 'Steel B',    plate: [92, 63, 120, 79], ink: '#f3e6c8', note: 'Brick back wall, teal tubular rails, big plate by the exit. The clearest continuous zigzag. My pick.', pick: true },
+  { id: 'w-concrete-a', name: 'Concrete A', plate: [90, 66, 121, 81], ink: '#241c26', note: 'Rejected: a single flight, not a switchback.' },
+  { id: 'w-concrete-b', name: 'Concrete B', plate: null,              ink: '#241c26', note: 'Rejected: splits into short flights with doors; no clear plate.' },
+  { id: 'w-grating-a',  name: 'Grating A',  plate: [24, 63, 42, 76],  ink: '#241c26', note: 'Rust-red grating flights, pipes and a boiler. Busy; the plate is on the left.' },
+  { id: 'w-grating-b',  name: 'Grating B',  plate: [91, 63, 120, 80], ink: '#241c26', note: 'Rejected: drew two people on the stairs (rooms must be empty).' },
+  { id: 'w-civic-a',    name: 'Civic A',    plate: [92, 61, 123, 76], ink: '#f3e6c8', note: 'Teal rails, warm lamp, tidy wall. Close second.' },
+  { id: 'w-civic-b',    name: 'Civic B',    plate: null,              ink: '#241c26', note: 'Rejected: a single flight; only a tiny sign.' },
+];
+const OPTS = [
+  { id: 'steel-a',    name: 'Steel A',     plate: [34, 12, 56, 28], ink: '#f3e6c8', note: 'Riveted steel, teal rails, caged lamp. Rich (56 colours) but the lower flight leans into perspective.' },
+  { id: 'steel-b',    name: 'Steel B',     plate: [35, 12, 57, 26], ink: '#f3e6c8', note: 'Strength 90. Flat, clean zigzag, big teal plate, warm lamp. Repeats cleanly. My pick.', pick: true },
+  { id: 'concrete-a', name: 'Concrete A',  plate: [24, 8, 34, 14],  ink: '#241c26', note: 'Clean concrete flights. The plate is small and carries fake glyphs.' },
+  { id: 'concrete-b', name: 'Concrete B',  plate: [42, 7, 54, 21],  ink: '#241c26', note: 'Concrete with terracotta band and brass rail. Warm and readable.' },
+  { id: 'grating-a',  name: 'Grating A',   plate: [27, 17, 39, 28], ink: '#241c26', note: 'Steel grating, pipes on the wall, glowing lightbox. Darker.' },
+  { id: 'grating-b',  name: 'Grating B',   plate: [46, 11, 54, 17], ink: '#241c26', note: 'Rust-red stairs, very clear zigzag. Small plate.' },
+  { id: 'timber-a',   name: 'Timber A',    plate: [40, 5, 50, 17],  ink: '#f3e6c8', note: 'Wooden stair and balusters. Leans into perspective.' },
+  { id: 'timber-b',   name: 'Timber B',    plate: [37, 12, 56, 27], ink: '#f3e6c8', note: 'Strength 90. Nice lamp and plate, but the stair runs away from the viewer.' },
+  { id: 'rock-a',     name: 'Rock A',      plate: [40, 11, 53, 22], ink: '#241c26', note: 'Rejected: a staircase running away from the viewer, in full perspective.' },
+  { id: 'rock-b',     name: 'Rock B',      plate: [33, 12, 56, 23], ink: '#241c26', note: 'Strength 120. Flat, hanging board sign, but the steps read weakly.' },
+  { id: 'civic-a',    name: 'Civic A',     plate: [6, 7, 16, 21],   ink: '#f3e6c8', note: 'Green tiles, curved brass rail. The plate has a fake glyph.' },
+  { id: 'civic-b',    name: 'Civic B',     plate: [30, 10, 56, 24], ink: '#241c26', note: 'Softer civic version with a wide oval plate. Fewer colours (24).' },
+];
+
+// 4×6 floor digits, same data as resources/assets/fonts/floor-digits-4x6.json.
+const FONT = {
+  0: ['0110', '1001', '1001', '1001', '1001', '0110'], 1: ['0010', '0110', '0010', '0010', '0010', '0111'],
+  2: ['0110', '1001', '0001', '0010', '0100', '1111'], 3: ['1110', '0001', '0110', '0001', '0001', '1110'],
+  4: ['0011', '0101', '1001', '1111', '0001', '0001'], 5: ['1111', '1000', '1110', '0001', '0001', '1110'],
+  6: ['0110', '1000', '1110', '1001', '1001', '0110'], 7: ['1111', '0001', '0010', '0010', '0100', '0100'],
+  8: ['0110', '1001', '0110', '1001', '1001', '0110'], 9: ['0110', '1001', '1001', '0111', '0001', '0110'],
+};
+function drawNumber(ctx, n, box, ink, y0) {
+  const s = String(n); const w = s.length * 5 - 1;
+  const [x0, py0, x1, py1] = box;
+  const x = Math.floor((x0 + x1 + 1 - w) / 2);
+  const y = y0 + Math.floor((py0 + py1 + 1 - 6) / 2);
+  ctx.fillStyle = ink;
+  [...s].forEach((d, i) => FONT[d].forEach((row, r) => [...row].forEach((bit, c) => {
+    if (bit === '1') ctx.fillRect(x + i * 5 + c, y + r, 1, 1);
+  })));
+}
+
+const IMG = {};
+const load = (src) => IMG[src] || (IMG[src] = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }));
+let zoom = 3, nums = true;
+
+async function drawColumn(cv, opt, levels) {
+  const img = await load(`${opt.id}.png`);
+  const w = img.width;
+  cv.width = w; cv.height = 104 * levels.length;
+  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  levels.forEach((n, i) => {
+    ctx.drawImage(img, 0, i * 104);
+    if (nums && opt.plate) drawNumber(ctx, n, opt.plate, opt.ink, i * 104);
+  });
+  cv.style.width = `${w * zoom}px`; cv.style.height = `${cv.height * zoom}px`;
+}
+
+function buildGridC() {
+  const grid = document.getElementById('gridc'); grid.innerHTML = '';
+  OPTS_C.forEach((o) => {
+    const d = document.createElement('div'); d.className = `opt${o.pick ? ' pick' : ''}`;
+    d.innerHTML = `<h3>${o.name}<span>${o.raw} → ${o.id}.png</span></h3>`;
+    const row = document.createElement('div'); row.style.display = 'flex'; row.style.gap = '10px'; row.style.alignItems = 'flex-start';
+    const raw = document.createElement('canvas'); const cv = document.createElement('canvas');
+    row.appendChild(raw); row.appendChild(cv); d.appendChild(row);
+    const p = document.createElement('p'); p.textContent = o.note; p.style.maxWidth = '60ch'; d.appendChild(p);
+    grid.appendChild(d);
+    load(o.raw).then((img) => { raw.width = img.width; raw.height = img.height; raw.getContext('2d').drawImage(img, 0, 0);
+      raw.style.width = `${img.width * zoom}px`; raw.style.height = `${img.height * zoom}px`; });
+    drawColumn(cv, o, [12, 13, 14]);
+  });
+}
+
+function buildGridW() {
+  buildGridC();
+  const grid = document.getElementById('gridw'); grid.innerHTML = '';
+  OPTS_W.forEach((o) => {
+    const d = document.createElement('div'); d.className = `opt${o.pick ? ' pick' : ''}`;
+    d.innerHTML = `<h3>${o.name}<span>${o.id}.png</span></h3>`;
+    const cv = document.createElement('canvas'); d.appendChild(cv);
+    const p = document.createElement('p'); p.textContent = o.note; d.appendChild(p);
+    grid.appendChild(d);
+    drawColumn(cv, o, [12, 13, 14]);
+  });
+  const g = document.createElement('div'); g.className = 'opt';
+  g.innerHTML = '<h3>Layout sketch<span>guide2-stairwell-lit.png</span></h3>';
+  const gi = document.createElement('canvas'); g.appendChild(gi); grid.appendChild(g);
+  load('guide2-stairwell-lit.png').then((img) => {
+    gi.width = 128; gi.height = 312; const c = gi.getContext('2d');
+    for (let i = 0; i < 3; i++) c.drawImage(img, 0, i * 104);
+    gi.style.width = `${128 * zoom}px`; gi.style.height = `${312 * zoom}px`;
+  });
+}
+
+function buildGrid() {
+  buildGridW();
+  const grid = document.getElementById('grid'); grid.innerHTML = '';
+  OPTS.forEach((o) => {
+    const d = document.createElement('div'); d.className = `opt${o.pick ? ' pick' : ''}`;
+    d.innerHTML = `<h3>${o.name}<span>${o.id}.png</span></h3>`;
+    const cv = document.createElement('canvas'); d.appendChild(cv);
+    const p = document.createElement('p'); p.textContent = o.note; d.appendChild(p);
+    grid.appendChild(d);
+    drawColumn(cv, o, [12, 13, 14]);
+  });
+  const g = document.createElement('div'); g.className = 'opt';
+  g.innerHTML = '<h3>Layout sketch<span>guide-stairwell-lit.png</span></h3>';
+  const gi = document.createElement('canvas'); g.appendChild(gi); grid.appendChild(g);
+  load('guide-stairwell-lit.png').then((img) => {
+    gi.width = 64; gi.height = 312; const c = gi.getContext('2d');
+    for (let i = 0; i < 3; i++) c.drawImage(img, 0, i * 104);
+    gi.style.width = `${64 * zoom}px`; gi.style.height = `${312 * zoom}px`;
+  });
+}
+
+// Shaft: v17 arrangement, stairwell on the left, lift column on the right.
+const SAVED = ['main-generator', 'dig-face', 'deep-pump', 'hydroponics-bay', 'simple-suite', 'council-chamber', 'grove', 'presidential-suite'];
+const V17 = ['smelter', 'school', 'security-post'];
+const src = (id) => SAVED.includes(id) ? `../../buildings/${id}-on.png` : V17.includes(id) ? `../v17/${id}-on.png` : `../v16/${id}-on.png`;
+const LEVELS = [
+  { n: 26, band: 'shallow', slots: ['presidential-suite', 'superior-suite', 'council-chamber', 'security-post'] },
+  { n: 25, band: 'shallow', slots: ['oxygen-garden', 'grove', 'simple-suite', 'archive', 'battery-bank'] },
+  { n: 24, band: 'mid',     slots: ['canteen', 'school', 'clinic', 'hydroponics-bay'] },
+  { n: 23, band: 'mid',     slots: ['scrubber-bank', 'workshop', 'reclamation-plant', 'smelter'] },
+  { n: 22, band: 'deep',    slots: ['main-generator', 'deep-pump', 'dig-face'] },
+];
+async function buildShaft() {
+  const opt = [...OPTS_C, ...OPTS_W, ...OPTS].find((o) => o.id === document.getElementById('pickshaft').value);
+  const stair = await load(`${opt.id}.png`);
+  const SW = stair.width, BUILD = 640, WIDE = SW + BUILD;
+  const cv = document.getElementById('shaftcv'); cv.width = WIDE; cv.height = LEVELS.length * 104;
+  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#010202'; ctx.fillRect(0, 0, WIDE, cv.height);
+  for (const [i, lv] of LEVELS.entries()) {
+    const y = i * 104;
+    const rock = await load(`../v14/${lv.band}-rock.png`);
+    const E = SW + BUILD;
+    if (rock) for (let x = SW; x < E; x += rock.width) ctx.drawImage(rock, 0, 0, Math.min(rock.width, E - x), 96, x, y, Math.min(rock.width, E - x), 96);
+    let x = SW;
+    for (const id of lv.slots) {
+      if (!id) { x += 64; continue; }
+      const im = await load(src(id)); if (im) ctx.drawImage(im, x, y); x += im ? im.width : 64;
+    }
+    ctx.fillStyle = '#4f4148'; ctx.fillRect(SW, y + 96, BUILD, 8); ctx.fillStyle = '#8e7870'; ctx.fillRect(SW, y + 96, BUILD, 1);
+    ctx.drawImage(stair, 0, y);
+    if (nums && opt.plate) drawNumber(ctx, lv.n, opt.plate, opt.ink, y);
+    
+  }
+  cv.style.width = `${WIDE * zoom / 1.5}px`; cv.style.height = `${cv.height * zoom / 1.5}px`;
+}
+
+const sel = document.getElementById('pickshaft');
+OPTS_C.forEach((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = `${o.name} (continuous)`; if (o.pick) op.selected = true; sel.appendChild(op); });
+OPTS_W.forEach((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = `${o.name} (2 slots, separate floors)`; sel.appendChild(op); });
+OPTS.forEach((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = `${o.name} (1 slot)`; sel.appendChild(op); });
+sel.addEventListener('change', buildShaft);
+document.querySelectorAll('#zoom button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#zoom button').forEach((x) => x.classList.toggle('on', x === b));
+  zoom = Number(b.dataset.z); buildGrid(); buildShaft();
+}));
+document.getElementById('nums').addEventListener('change', (e) => { nums = e.target.checked; buildGrid(); buildShaft(); });
+buildGrid(); buildShaft();
+</script>
+</body>
+</html>

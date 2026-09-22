@@ -13,15 +13,15 @@ Every dimension in the game derives from one number: **a build slot is 64×96
 pixels.**
 
 ```
-Build slot         64 × 96 px          8 slots per level
+Build slot         64 × 96 px          10 slots per level
 Level pitch       104 px               = 96 clear interior + 8 structural slab
-Shaft width       640 px               = 64 stairwell + 512 build area + 64 lift bore
+Shaft width       768 px               = 128 stairwell + 640 build area (10 slots); no lift column
 
 Building sprites   64 × 96             1 slot
                   128 × 96             2 slots
                   192 × 96             3 slots  ← the reference proportion
 
-Column strips      64 × 104            stairwell, lift bore — tile vertically
+Column strip      128 × 104            stairwell (continuous stair, §2.2), tiles vertically
 Rock / back wall   64 × 104            one per depth band, tiles both ways
 Rooms have no frame — they butt against each other and the slab (§2.1)
 Figures            32 × 32 canvas      adult exactly 22 px, child 14 px, soles on row 31 (§4.2)
@@ -81,13 +81,13 @@ The view is authored in "shaft units" mapped to the screen by SVG `viewBox`
 | Constant | Now | Becomes |
 |---|---|---|
 | `LEVEL_HEIGHT` | 10 | **104** |
-| `SHAFT_WIDTH` | 100 | **640** |
-| `STAIR_X` | 7 | **32** |
-| `ELEVATOR_X` | 93 | **608** |
-| `BUILD_X` | 16 | **64** |
-| `BUILD_WIDTH` | 68 | **512** |
+| `SHAFT_WIDTH` | 100 | **768** |
+| `STAIR_X` | 7 | **64** (centre of the 128-px stairwell) |
+| `ELEVATOR_X` | 93 | **none**: no lift column (decided 2026-09-22) |
+| `BUILD_X` | 16 | **128** |
+| `BUILD_WIDTH` | 68 | **640** (10 slots) |
 
-`slotRect` then returns `x = 64 + slotIndex × 64`, `y = levelY(level)`,
+`slotRect` then returns `x = 128 + slotIndex × 64`, `y = levelY(level)`,
 `width = 64 × slots`, `height = 96` — with the 8 px slab occupying
 `levelY(level) + 96` to `levelY(level) + 104`.
 
@@ -208,7 +208,15 @@ state variants (§2.3) from each end variant. That is up to 4 ends × 3 states =
 sprites per open-area building. It is worth it for three buildings; it would not
 be worth it for every building, which is one reason the table stays short.
 
-The stairwell is a 64-px structure strip, not a placed building, but it follows
+**Stairwell, adopted 2026-09-22:** `sprites/structure/stairwell.png`, **128×104**, one
+continuous stair that tiles vertically with no floor or ceiling bands. Each tile holds an
+exit landing on the right at the rooms' floor line and a blank sign plate
+(`signPlate` in the manifest: x 102–116, y 58–67) on which the game prints the level
+number in the 4×6 floor-digit font (`fonts/floor-digits-4x6.json`). Made from `probe/v18`
+(Steel A, hand-fixed so the joins line up). The shaft is 768 px: the 128-px stairwell plus
+10 build slots, with no lift column (decided 2026-09-22).
+
+The stairwell is a structure strip, not a placed building, but it follows
 the same rule: it slants only where it meets something that is not stairwell.
 
 **Every room spans a single level** and is exactly 96 px of clear interior tall.
@@ -245,10 +253,10 @@ from row 81 to 90. So every room goes through four steps, cheap ones first:
 
 | Step | What | Tool | Cost |
 |---|---|---|---|
-| 1. Blockout | Add the building's main masses to `LAYOUTS` in `tools/roomGuide.mjs` (about 15 flat shapes), then run `node tools/roomGuide.mjs <width> room <building-id>` | local | 0 |
-| 2. Layout | `create_image_pixflux` with `init_image` = the blockout guide at strength **50** (70 for rooms of small furniture, such as the house). Try seeds and adjust the blockout until the layout is approved | pixflux | 1 per try |
+| 1. Blockout | Add the building's main masses to `LAYOUTS` in `tools/roomGuide.mjs` (about 15 flat shapes), then run `node tools/roomGuide.mjs <width> room <building-id> --lit` for the lit, dithered guide | local | 0 |
+| 2. Layout | `create_image_pixflux` with `init_image` = the **lit** guide at strength **75** for 128 px and wider; **120–160 for 64-px rooms**, which the model otherwise reads as a box seen from the front (v17; 200 loses the props), `shading: "detailed shading"`, `detail: "highly detailed"`, and the detail lead in the prompt (§4). Two seeds per room, then pick | pixflux | 1 per try |
 | 3. Master *(optional)* | Only when the layout render is not good enough to ship. `inpaint_image` over the approved layout, masking only the interior: `mask_x 7, mask_y 10, mask_width width − 14, mask_height 78` (open areas: `mask_x 0`, full width). The ceiling, side walls and floor line cannot move. **It redraws the room from the description; it does not keep the layout** (v13) | inpaint | ~20 |
-| 4. States | `off`, `broken` (and `damaged`) with **`edit_image`** on the `on` render: a text instruction that changes only light or damage. Up to **four rooms of ≤128 px per call** for the same price; 192 and 256 px rooms go one per call | edit | ~20 per call |
+| 4. States | `off`, `broken` (and `damaged`) with **`edit_image`** on the `on` render: a text instruction that changes only light or damage, ending in "keep all the detail, texture and dithering". Pass the `on` render by its PixelLab URL in `image_urls`, not as base64. Up to **four rooms of ≤128 px per call** for the same price; 192 and 256 px rooms go one per call | edit | ~20 per call |
 
 v13 measured **~46 generations per building** with every step, including one inpaint per room and unbatched states for the wide rooms. Skipping step 3 when the layout is good, and batching states four at a time, brings a 128-px building down to about 11 (1 layout + 10 for two batched edits).
 
@@ -269,6 +277,21 @@ v13 measured **~46 generations per building** with every step, including one inp
   room. `edit_image` gave genuinely dark `off` rooms (brightness 22–43 vs 66–103 lit)
   and damaged `broken` rooms, with the room unchanged. Check the edges of edit output:
   one 256-px render came back with a 1-px white column on each side.
+
+- **The lit guide sets the richness (v15, v16).** The model keeps the guide's palette.
+  Flat ~12-colour guides gave rooms of 8–16 colours with plain walls and no
+  dithering (v14). `--lit` redraws the blockout in four lighting bands, Bayer-dithered
+  where they meet and tinted warm to cool (~35 colours). With detailed shading it
+  gives 22–50 colours, dithered light pools and textured walls, and stays flat. At
+  strength 50 the extra shading reads as depth and rooms turn into perspective
+  interiors; at 75 they hold.
+- **Broken states of 64-px rooms** ask for "one single short strip" of warning tape;
+  the generic wording criss-crosses the whole room with tape (v16).
+- **Pale blocks high on the back wall become windows.** Name that object in the
+  prompt and add "windowless, no window frame, no glass pane" (the v16 clinic).
+- **Passing images.** Pasted base64 sometimes arrives garbled ("Could not decode
+  image"; free, but a lost turn). Guides are local, so they go as compact indexed
+  PNGs (~1–1.5k characters). Anything already on PixelLab goes by URL.
 
 **No palette forcing for now** (§6). No step passes `color_image_base64`, and
 inpaint or edit output is not snapped to a palette.
@@ -318,13 +341,13 @@ anything gated; `lazy` for the rest.
 
 | Asset | Tool | Key arguments |
 |---|---|---|
-| Building layout | **`tools/roomGuide.mjs`** → `create_image_pixflux` | `init_image` = the blockout guide at strength 50–70, `view: "side"`, **`no_background: false`** (rooms are opaque — see §2.1), fixed `seed`. See §2.4 |
+| Building layout | **`tools/roomGuide.mjs --lit`** → `create_image_pixflux` | `init_image` = the lit guide at strength 75, `view: "side"`, **`no_background: false`** (rooms are opaque — see §2.1), fixed `seed`. See §2.4 |
 | Building `on` render (master) | the approved layout render, or `inpaint_image` over it as a fallback | interior masked, envelope locked. See §2.4 |
 | Building `off` / `broken` / `damaged` renders | `edit_image` on the approved `on` | text instruction that changes only light or damage; batch up to four ≤128-px rooms per call (§2.4) |
 | Open-area end walls | `inpaint_image` over the approved `none` master | Repaint only the end strip that gets a wall (§2.2) |
 | Rock mass, back wall | **`tools/rockTile.mjs`** | Procedural, seamless, per band. Not generated — see §4.1 |
 | Floor slab, edges | `create_sidescroller_tileset` | 32 px tiles; platform set, so it gives the slab its top surface and end caps |
-| Stair / lift columns | `create_image_pixflux` | 64×104, vertically tileable |
+| Stairwell column | `create_image_pixflux` + hand fix | 128×104, vertically tileable (§2.2) |
 | Figures | **`tools/figureTemplate.mjs`** → `create_image_pixflux` | 32×32, `init_image` = the role's mannequin template at strength 150, `no_background: true`, facing east. See §4.2 |
 | Animated parts | `animate_object` over the approved `on` render | 4-frame loops |
 | UI panels, gauges | `create_ui_asset` | `style_image_base64` = an approved building, binding UI to the world |
@@ -337,35 +360,40 @@ alone will not:
 
 ```
 outline              "selective outline"   dark keyline where a shape meets the backdrop
-shading              "basic shading"       rooms, since the Eastward direction (v5–v12); see below
-detail               "medium detail"       "highly detailed" produces a render, not pixel art
+shading              "detailed shading"    rooms, since v15 (was "basic shading"); see below
+detail               "highly detailed"     rooms, since v15 (was "medium detail"); with the lit guide at 75
 view                 "side"                never omitted, on any call that accepts it
 text_guidance_scale  10                    the flat wording needs pushing to survive
 ```
 
-**The style lead is Eastward** (picked in `probe/v5`, refined through v12). Every
+**The style lead is Eastward** (picked in `probe/v5`, refined through v16). Every
 room prompt opens with this, verbatim:
 
-> Pixel art in the style of Eastward (Pixpil): cozy retro-industrial underground,
-> desaturated teal and dusty terracotta, soft warm browns, 16-bit inspired, clean
-> readable shapes.
+> Richly detailed pixel art in the style of Eastward (Pixpil): cozy
+> retro-industrial underground, desaturated teal and dusty terracotta, warm
+> browns, 16-bit. Dithered shading, strong light and shadow, bright highlights and
+> deep shadows, warm lamplight falloff rendered with dithering, many colour
+> variations within each material.
 
-It replaces "16-bit SNES sidescroller pixel art" at the front of the §5 template.
-The rest of the template still applies. Rooms moved from `flat shading` to
-`basic shading` with it: flat shading kept the SNES register, but lost the soft
-two-tone modelling that makes the Eastward look. Figures stay on `flat shading`
-(§4.2).
+Then the room's contents left to right, ending "everything in pure side view against
+the back wall", then a sentence starting "The back wall is detailed and textured:"
+with its materials, wear and fixtures. The envelope and negative tails of §5 follow;
+drop the old "three shades per material" and "low texture" phrases.
+
+**Richness replaced low texture on 2026-09-21** (v14 feedback). The v14 rooms
+(basic shading, medium detail, flat guides) read as plain: simple backgrounds, low
+colour and value range, no dithering. The detail recipe above fixes that without
+losing the flat side view. Figures stay on `flat shading` (§4.2).
 
 Backdrops and fills drop further still: `outline: "lineless"`,
 `detail: "low detail"`, `text_guidance_scale: 12`.
 
-**`shading` is the setting that decides whether this looks like a SNES game.**
-`detailed shading` gives beautifully rendered miniatures with modelled volume and
-soft falloff — and stacked forty deep in a column they turn to mush, and any flat
-asset beside them looks unfinished. `flat shading` gives blocks of colour with
-hard edges, which is the target (principles §2). Turning `detail` *down* at the
-same time is not a compromise: high detail is what reintroduces the rendered look
-through the back door.
+**`shading` and the guide decide the look together.** On its own, `detailed
+shading` pushed rooms toward rendered miniatures and perspective (v4–v11), which is
+why rooms ran on `basic shading` through v14. Paired with the lit guide at
+strength 75, it gives dithered, richly lit pixel art that stays a flat elevation.
+Keep the two together: detailed shading over a flat guide, or the lit guide below
+strength 75, brings the perspective back.
 
 ### 4.1 The rock backdrop is generated, not drawn
 

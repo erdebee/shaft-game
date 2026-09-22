@@ -1,0 +1,52 @@
+{
+ "smelter": {
+  "width": 128,
+  "colours": 28,
+  "contrast": 41.0,
+  "on_lum": 80,
+  "off_lum": 31,
+  "off_diff": 50.9,
+  "broken_lum": 66,
+  "broken_diff": 20.1
+ },
+ "security-post": {
+  "width": 64,
+  "colours": 42,
+  "contrast": 40.2,
+  "on_lum": 75,
+  "off_lum": 30,
+  "off_diff": 44.7,
+  "broken_lum": 70,
+  "broken_diff": 13.6
+ },
+ "school-wide": {
+  "width": 128,
+  "colours": 50,
+  "contrast": 34.3,
+  "on_lum": 72,
+  "off_lum": 24,
+  "off_diff": 47.8,
+  "broken_lum": 69,
+  "broken_diff": 13.0
+ },
+ "school-1slot": {
+  "width": 64,
+  "colours": 32,
+  "contrast": 29.9,
+  "on_lum": 69,
+  "off_lum": 28,
+  "off_diff": 41.0,
+  "broken_lum": 67,
+  "broken_diff": 11.4
+ },
+ "school": {
+  "width": 128,
+  "colours": 50,
+  "contrast": 34.3,
+  "on_lum": 72,
+  "off_lum": 24,
+  "off_diff": 47.8,
+  "broken_lum": 69,
+  "broken_diff": 13.0
+ }
+}

@@ -1,0 +1,4 @@
+16dae46f-efb9-4196-89b2-64c6dc4270a8 smelter-off
+45b99eb8-5a6f-4db3-92c8-bd843a0328a3 smelter-broken
+2764efe7-77b8-426c-9e6e-f60cbde05e55 school-off security-post-off
+bc5846b1-a7aa-4556-a2a8-19b177615fe0 school-broken security-post-broken

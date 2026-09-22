@@ -1,212 +1,236 @@
 {
-  "_note": "Media manifest. Same constraint as the data manifest: no build step and no directory listing, so every file is enumerated. preloadGroup controls what is fetched before the first frame ('boot'), what is fetched on chapter entry ('chapter1'/'chapter2'), and what streams on demand ('lazy'). The visual direction is set (concept/visual-design-principles.md); building sprites are listed as they are approved, one entry per state, each with the floorY its figures stand on (asset-production-spec §2.1).",
-  "version": 1,
-  "palettes": {
-    "_note": "Chapter palettes live in src/ui/styles/tokens.css as CSS custom properties, switched by a data-chapter attribute on the root element — NOT in JSON. Colour belongs in the stylesheet; this entry exists only to say so, so nobody adds a second source of truth here.",
-    "definedIn": "src/ui/styles/tokens.css",
-    "switchedBy": "data-chapter"
-  },
-  "fonts": [],
-  "icons": [],
-  "sprites": [
-    {
-      "id": "main-generator-on",
-      "path": "sprites/buildings/main-generator-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "main-generator-off",
-      "path": "sprites/buildings/main-generator-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "main-generator-broken",
-      "path": "sprites/buildings/main-generator-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "dig-face-on",
-      "path": "sprites/buildings/dig-face-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "dig-face-off",
-      "path": "sprites/buildings/dig-face-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "dig-face-broken",
-      "path": "sprites/buildings/dig-face-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "smelter-on",
-      "path": "sprites/buildings/smelter-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "smelter-off",
-      "path": "sprites/buildings/smelter-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "smelter-broken",
-      "path": "sprites/buildings/smelter-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "deep-pump-on",
-      "path": "sprites/buildings/deep-pump-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "deep-pump-off",
-      "path": "sprites/buildings/deep-pump-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "deep-pump-broken",
-      "path": "sprites/buildings/deep-pump-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "hydroponics-bay-on",
-      "path": "sprites/buildings/hydroponics-bay-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "hydroponics-bay-off",
-      "path": "sprites/buildings/hydroponics-bay-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "hydroponics-bay-broken",
-      "path": "sprites/buildings/hydroponics-bay-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 89
-    },
-    {
-      "id": "simple-suite-on",
-      "path": "sprites/buildings/simple-suite-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 92
-    },
-    {
-      "id": "simple-suite-off",
-      "path": "sprites/buildings/simple-suite-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 92
-    },
-    {
-      "id": "simple-suite-broken",
-      "path": "sprites/buildings/simple-suite-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 92
-    },
-    {
-      "id": "council-chamber-on",
-      "path": "sprites/buildings/council-chamber-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "council-chamber-off",
-      "path": "sprites/buildings/council-chamber-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "council-chamber-broken",
-      "path": "sprites/buildings/council-chamber-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "grove-on",
-      "path": "sprites/buildings/grove-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "grove-off",
-      "path": "sprites/buildings/grove-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "grove-broken",
-      "path": "sprites/buildings/grove-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 88
-    },
-    {
-      "id": "presidential-suite-on",
-      "path": "sprites/buildings/presidential-suite-on.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 91
-    },
-    {
-      "id": "presidential-suite-off",
-      "path": "sprites/buildings/presidential-suite-off.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 91
-    },
-    {
-      "id": "presidential-suite-broken",
-      "path": "sprites/buildings/presidential-suite-broken.png",
-      "preloadGroup": "lazy",
-      "chapter": null,
-      "floorY": 91
-    }
-  ],
-  "audio": [],
-  "_plannedGroups": {
-    "_note": "The shape entries will take, recorded now so the first real asset does not have to invent it: { id, path, preloadGroup, chapter }. Ids are kebab-case and stable, like every other id in the project.",
-    "example": {
-      "id": "hum-loop",
-      "path": "audio/hum-loop.ogg",
-      "preloadGroup": "boot",
-      "chapter": null
-    }
+ "_note": "Media manifest. Same constraint as the data manifest: no build step and no directory listing, so every file is enumerated. preloadGroup controls what is fetched before the first frame ('boot'), what is fetched on chapter entry ('chapter1'/'chapter2'), and what streams on demand ('lazy'). The visual direction is set (concept/visual-design-principles.md); building sprites are listed as they are approved, one entry per state, each with the floorY its figures stand on (asset-production-spec \u00a72.1).",
+ "version": 1,
+ "palettes": {
+  "_note": "Chapter palettes live in src/ui/styles/tokens.css as CSS custom properties, switched by a data-chapter attribute on the root element \u2014 NOT in JSON. Colour belongs in the stylesheet; this entry exists only to say so, so nobody adds a second source of truth here.",
+  "definedIn": "src/ui/styles/tokens.css",
+  "switchedBy": "data-chapter"
+ },
+ "fonts": [
+  {
+   "id": "floor-digits-4x6",
+   "path": "fonts/floor-digits-4x6.json",
+   "preloadGroup": "lazy",
+   "chapter": null
   }
+ ],
+ "icons": [],
+ "sprites": [
+  {
+   "id": "main-generator-on",
+   "path": "sprites/buildings/main-generator-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "main-generator-off",
+   "path": "sprites/buildings/main-generator-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "main-generator-broken",
+   "path": "sprites/buildings/main-generator-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "dig-face-on",
+   "path": "sprites/buildings/dig-face-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "dig-face-off",
+   "path": "sprites/buildings/dig-face-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "dig-face-broken",
+   "path": "sprites/buildings/dig-face-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "smelter-on",
+   "path": "sprites/buildings/smelter-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "smelter-off",
+   "path": "sprites/buildings/smelter-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "smelter-broken",
+   "path": "sprites/buildings/smelter-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "deep-pump-on",
+   "path": "sprites/buildings/deep-pump-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "deep-pump-off",
+   "path": "sprites/buildings/deep-pump-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "deep-pump-broken",
+   "path": "sprites/buildings/deep-pump-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "hydroponics-bay-on",
+   "path": "sprites/buildings/hydroponics-bay-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "hydroponics-bay-off",
+   "path": "sprites/buildings/hydroponics-bay-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "hydroponics-bay-broken",
+   "path": "sprites/buildings/hydroponics-bay-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 89
+  },
+  {
+   "id": "simple-suite-on",
+   "path": "sprites/buildings/simple-suite-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 92
+  },
+  {
+   "id": "simple-suite-off",
+   "path": "sprites/buildings/simple-suite-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 92
+  },
+  {
+   "id": "simple-suite-broken",
+   "path": "sprites/buildings/simple-suite-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 92
+  },
+  {
+   "id": "council-chamber-on",
+   "path": "sprites/buildings/council-chamber-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "council-chamber-off",
+   "path": "sprites/buildings/council-chamber-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "council-chamber-broken",
+   "path": "sprites/buildings/council-chamber-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "grove-on",
+   "path": "sprites/buildings/grove-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "grove-off",
+   "path": "sprites/buildings/grove-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "grove-broken",
+   "path": "sprites/buildings/grove-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 88
+  },
+  {
+   "id": "presidential-suite-on",
+   "path": "sprites/buildings/presidential-suite-on.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 91
+  },
+  {
+   "id": "presidential-suite-off",
+   "path": "sprites/buildings/presidential-suite-off.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 91
+  },
+  {
+   "id": "presidential-suite-broken",
+   "path": "sprites/buildings/presidential-suite-broken.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "floorY": 91
+  },
+  {
+   "id": "stairwell",
+   "path": "sprites/structure/stairwell.png",
+   "preloadGroup": "lazy",
+   "chapter": null,
+   "tile": {
+    "width": 128,
+    "height": 104,
+    "repeat": "vertical"
+   },
+   "signPlate": [
+    102,
+    58,
+    116,
+    67
+   ]
+  }
+ ],
+ "audio": [],
+ "_plannedGroups": {
+  "_note": "The shape entries will take, recorded now so the first real asset does not have to invent it: { id, path, preloadGroup, chapter }. Ids are kebab-case and stable, like every other id in the project.",
+  "example": {
+   "id": "hum-loop",
+   "path": "audio/hum-loop.ogg",
+   "preloadGroup": "boot",
+   "chapter": null
+  }
+ }
 }
