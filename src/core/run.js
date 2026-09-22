@@ -15,7 +15,7 @@ import { applyRecorded } from './commands.js';
 import { loadDataset } from '../config/contentLoader.js';
 
 import * as power from '../systems/power/priorityLadder.js';
-import * as resources from '../systems/resources/flowStock.js';
+import * as resources from '../systems/resources/index.js';
 import * as haulage from '../systems/haulage/haulageMethods.js';
 import * as buildings from '../systems/buildings/buildingRegistry.js';
 import * as roster from '../systems/population/roster.js';

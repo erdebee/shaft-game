@@ -62,7 +62,8 @@
   },
 
   "mining": {
-    "depletionPerExtractionTick": 0.0008,
+    "baseYieldPerTick": 0.6,
+    "depletionPerExtractionTick": 0.0002,
     "depthVentilationPowerPerLevel": 3,
     "depthWaterIngressPerLevel": 1.2,
     "recyclerEfficiency": 0.45

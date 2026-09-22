@@ -246,9 +246,11 @@ export function collectModifiers(state, ctx) {
   for (const instance of state.buildings) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
-    // A browned-out or wrecked building supplies nothing.
-    if (instance.powered === false) continue;
-    const scale = conditionScale(instance.condition, def, ctx);
+    // A browned-out, wrecked or starved building supplies nothing, and an
+    // understaffed one supplies part of it: a scrubber with no carbon, or
+    // with nobody to change the filters, cleans no air.
+    if (instance.powered === false || instance.starved) continue;
+    const scale = conditionScale(instance.condition, def, ctx) * staffingScale(instance, def);
     if (scale <= 0) continue;
     sources.push({ effects: def.effects ?? [], scale });
   }
@@ -298,6 +300,13 @@ export function conditionScale(condition, def, ctx) {
   if (breakdown === null || breakdown === undefined) return ctx.config.buildings.degradedEfficiencyMultiplier;
   if (condition <= breakdown) return 0;
   return ctx.config.buildings.degradedEfficiencyMultiplier;
+}
+
+/** Share of its staff an instance has; 1 for a building that needs none. */
+export function staffingScale(instance, def) {
+  const needed = def.staffing ?? 0;
+  if (needed === 0) return 1;
+  return clamp((instance.staffing ?? 0) / needed, 0, 1);
 }
 
 function resolveMemberSelector(state, target) {

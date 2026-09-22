@@ -15,6 +15,8 @@
  * so that state stays the minimum needed to reproduce a run.
  */
 
+import { initialSeams } from '../systems/resources/minerals.js';
+
 /**
  * @param {object} args
  * @param {number} args.chapter
@@ -43,6 +45,7 @@ export function createGameState({ chapter, dataset, seed }) {
 
     resources: {
       stocks: initialStocks(catalog, shaft),
+      seams: initialSeams(shaft),
       abstracts: initialAbstracts(catalog, config),
       flows: {
         power: { generation: 0, demand: 0, brownedOut: [] },

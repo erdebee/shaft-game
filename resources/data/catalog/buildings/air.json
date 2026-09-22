@@ -12,8 +12,8 @@
       "staffing": 2,
       "wearPerTick": 0.0024,
       "consumes": [
-        { "id": "activated-carbon", "qty": 2 },
-        { "id": "scrubber-catalyst", "qty": 1 }
+        { "id": "activated-carbon", "qty": 0.04 },
+        { "id": "scrubber-catalyst", "qty": 0.005 }
       ],
       "produces": [],
       "serviceRadiusLevels": 3,

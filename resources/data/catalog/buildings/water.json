@@ -28,7 +28,7 @@
       "powerDraw": 45,
       "staffing": 2,
       "wearPerTick": 0.002,
-      "consumes": [{ "id": "activated-carbon", "qty": 1 }],
+      "consumes": [{ "id": "activated-carbon", "qty": 0.02 }],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 3 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },

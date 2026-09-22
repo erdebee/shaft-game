@@ -37,6 +37,7 @@
     },
     {
       "id": "paper",
+      "reserve": 30,
       "name": "Paper",
       "unit": "quire",
       "producedBy": ["workshop"],

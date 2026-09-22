@@ -9,7 +9,7 @@
  * nothing — which is the whole reason power is first in SYSTEM_ORDER.
  */
 
-import { outputScale } from '../buildings/buildingRegistry.js';
+import { workScale } from '../buildings/buildingRegistry.js';
 
 export function createStock(id, { capacity, initial = 0 }) {
   return { id, capacity, amount: initial };
@@ -59,6 +59,11 @@ export function settle(stock, inflows = [], demands = []) {
  * Consumption is checked before production commits, so a building missing an
  * input produces nothing rather than producing from thin air — and that
  * missing input is reported, which is what makes a supply chain break legible.
+ *
+ * A building that went without is marked `starved`, which outputScale reads
+ * next tick: a generator with no fuel stops generating, a scrubber with no
+ * carbon stops scrubbing. The flag is this system's to write, and it is
+ * decided from workScale, never from itself.
  */
 export function tick(state, ctx) {
   const stocks = state.resources.stocks;
@@ -68,13 +73,17 @@ export function tick(state, ctx) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
 
-    const scale = outputScale(instance, def, ctx);
-    if (scale <= 0) continue;
-
     // Flow resources (power, water, air) are settled by their own systems.
     const inputs = (def.consumes ?? []).filter((c) => isStock(ctx, c.id));
     const outputs = (def.produces ?? []).filter((p) => isStock(ctx, p.id));
     if (inputs.length === 0 && outputs.length === 0) continue;
+
+    // An idle building needs nothing, so it cannot be short of anything.
+    const scale = workScale(instance, def, ctx);
+    if (scale <= 0) {
+      instance.starved = false;
+      continue;
+    }
 
     const multiplier = (id) => ctx.modifiers.multiply[`consumption:${id}`] ?? 1;
 
@@ -83,6 +92,7 @@ export function tick(state, ctx) {
       return (stocks[input.id] ?? 0) >= input.qty * scale * multiplier(input.id);
     });
 
+    instance.starved = !affordable;
     if (!affordable) {
       for (const input of inputs) {
         const need = input.qty * scale * multiplier(input.id);

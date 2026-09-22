@@ -11,7 +11,7 @@
       "powerDraw": 0,
       "staffing": 5,
       "wearPerTick": 0.0026,
-      "consumes": [{ "id": "fuel", "qty": 2 }],
+      "consumes": [{ "id": "fuel", "qty": 0.2 }],
       "produces": [{ "id": "power", "qty": 1200 }],
       "repairCost": [
         { "id": "basic-parts", "qty": 8 },

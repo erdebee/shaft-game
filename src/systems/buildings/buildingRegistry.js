@@ -15,7 +15,7 @@
  */
 
 import { clamp } from '../../utils/math.js';
-import { conditionScale } from '../../core/effects.js';
+import { conditionScale, staffingScale } from '../../core/effects.js';
 
 /**
  * Wear and breakdown. A building only wears while it is actually running —
@@ -53,48 +53,60 @@ export function tick(state, ctx) {
 }
 
 /**
- * Effective output scale for an instance: condition, staffing and breakdown
- * combined. 0 means the building contributes nothing this tick.
+ * How hard an instance can work this tick: condition, staffing, power and
+ * breakdown combined, but NOT whether it has its inputs. The resources system
+ * uses this to decide whether inputs are needed at all, and is the one that
+ * sets `starved` — so it must not read the flag it is about to write.
  */
-export function outputScale(instance, def, ctx) {
+export function workScale(instance, def, ctx) {
   if (instance.brokenDown) return 0;
   if (instance.powered === false) return 0;
-
-  const byCondition = conditionScale(instance.condition, def, ctx);
-  const needed = def.staffing ?? 0;
-  const byStaffing = needed === 0 ? 1 : clamp((instance.staffing ?? 0) / needed, 0, 1);
-
-  return byCondition * byStaffing;
+  return conditionScale(instance.condition, def, ctx) * staffingScale(instance, def);
 }
 
-/** Power a building asks for this tick, before the ladder decides. */
+/**
+ * Effective output scale for an instance: workScale, and nothing at all if it
+ * went without its inputs last tick. A generator with no fuel generates
+ * nothing; a scrubber with no carbon scrubs nothing. 0 means the building
+ * contributes nothing this tick.
+ */
+export function outputScale(instance, def, ctx) {
+  if (instance.starved) return 0;
+  return workScale(instance, def, ctx);
+}
+
+/**
+ * Power a building asks for this tick, before the ladder decides. A recipe
+ * building draws its current recipe's power on top of its own, and only while
+ * it has a batch on — an idle smelter is cold.
+ */
 export function powerDemand(instance, def, ctx) {
   if (instance.brokenDown) return 0;
   // Draw does not scale with condition: a worn machine asks for as much and
   // gives back less, which is what makes deferred maintenance expensive.
-  return def.powerDraw ?? 0;
+  const recipe = instance.job ? ctx.catalog.recipes.byId[instance.job.recipeId] : null;
+  return (def.powerDraw ?? 0) + (recipe?.powerDraw ?? 0);
 }
 
 /**
- * Place an instance. Slot and zone validation lives in core/commands.js, which
- * is the only caller — placement is player intent, not simulation.
+ * A new placed instance. Slot and zone validation lives in core/commands.js,
+ * which is the only caller — placement is player intent, not simulation.
  */
-export function place(state, ctx, buildingId, level) {
-  const def = ctx.catalog.buildings.byId[buildingId];
-  if (!def) throw new Error(`buildingRegistry: unknown building "${buildingId}"`);
-
-  const instance = {
-    instanceId: `b${state.buildings.length + 1}`,
-    buildingId,
+export function createInstance(def, ctx, { instanceId, level, slot }) {
+  return {
+    instanceId,
+    buildingId: def.id,
     level,
+    slot,
     slots: def.slots ?? 1,
     condition: ctx.config.buildings.conditionStart,
     staffing: 0,
     powered: true,
     brokenDown: false,
+    starved: false,
+    job: null,       // recipe buildings: { recipeId, progress } while a batch runs
+    recipeId: null,  // recipe buildings: a recipe the player pinned, or null for auto
   };
-  state.buildings.push(instance);
-  return instance;
 }
 
 /** Instances on a level, in placement order. */

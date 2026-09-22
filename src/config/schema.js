@@ -70,6 +70,7 @@ export const TUNABLES = {
   'buildings.breakdownCheckIntervalTicks': TICKS,
   'buildings.repairLabourPerCondition': N(0, 1000),
 
+  'mining.baseYieldPerTick': N(0, 100),
   'mining.depletionPerExtractionTick': RATE,
   'mining.depthVentilationPowerPerLevel': N(0, 1000),
   'mining.depthWaterIngressPerLevel': N(0, 1000),

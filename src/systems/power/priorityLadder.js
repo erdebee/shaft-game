@@ -38,6 +38,15 @@ export function tick(state, ctx) {
 
   const brownedOut = allocate(consumers, ladder, available);
 
+  // Anything drawing nothing this tick is not on the ladder, and so is not
+  // browned out. Without this an idle smelter that lost power mid-batch would
+  // stay dark forever: dark, it cannot start a batch, and without a batch it
+  // never asks for power again.
+  const drawing = new Set(consumers.map((c) => c.instanceId));
+  for (const instance of state.buildings) {
+    if (!drawing.has(instance.instanceId)) instance.powered = true;
+  }
+
   const flow = state.resources.flows.power;
   flow.generation = generation;
   flow.demand = demand;

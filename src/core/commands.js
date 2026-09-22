@@ -16,6 +16,7 @@
 import { SPEEDS } from './clock.js';
 import { applyEffects } from './effects.js';
 import { evaluate } from './predicates.js';
+import { createInstance } from '../systems/buildings/buildingRegistry.js';
 
 const HANDLERS = {
   /** Pause, resume, or change speed. The only command available from tick 0. */
@@ -52,17 +53,11 @@ const HANDLERS = {
     const slot = firstFreeSlot(state, ctx, def, level);
     if (slot === null) return;
 
-    state.buildings.push({
+    state.buildings.push(createInstance(def, ctx, {
       instanceId: `b${state.buildings.length + 1}`,
-      buildingId: cmd.buildingId,
       level: cmd.level,
       slot,
-      slots: def.slots ?? 1,
-      condition: ctx.config.buildings.conditionStart,
-      staffing: 0,
-      powered: true,
-      brokenDown: false,
-    });
+    }));
     log(state, `${def.name} built on level ${cmd.level}`);
   },
 

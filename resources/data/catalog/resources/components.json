@@ -1,8 +1,9 @@
 {
-  "_note": "Component DEFINITIONS only — what a thing is. How it is made lives in recipes.json, because production needs a building, power and labour, not just inputs. producibleLocally=false means the settlement depends on outside supply; read componentChain.js and the README's 'one thread to be careful with' before changing any of these.",
+  "_note": "Component DEFINITIONS only — what a thing is. How it is made lives in recipes.json, because production needs a building, power and labour, not just inputs. producibleLocally=false means the settlement depends on outside supply; read componentChain.js and the README's 'one thread to be careful with' before changing any of these. reserve is the stock a recipe building keeps on hand: with nothing pinned, it makes whatever is furthest below reserve and idles once everything is at it; reservePriority (default 1) weights that shortfall, so the life-support stocks — fuel for the generator, carbon for the scrubbers — win a tie with steel (componentChain.js).",
   "components": [
     {
       "id": "steel-billet",
+      "reserve": 20,
       "name": "Steel billet",
       "tier": "refined",
       "unit": "t",
@@ -10,6 +11,7 @@
     },
     {
       "id": "copper-wire",
+      "reserve": 10,
       "name": "Copper wire",
       "tier": "refined",
       "unit": "km",
@@ -17,6 +19,7 @@
     },
     {
       "id": "precision-contacts",
+      "reserve": 10,
       "name": "Precision contacts",
       "tier": "refined",
       "unit": "unit",
@@ -24,6 +27,8 @@
     },
     {
       "id": "fuel",
+      "reserve": 80,
+      "reservePriority": 2,
       "name": "Fuel",
       "tier": "refined",
       "unit": "t",
@@ -31,6 +36,8 @@
     },
     {
       "id": "activated-carbon",
+      "reserve": 40,
+      "reservePriority": 2,
       "name": "Activated carbon",
       "tier": "refined",
       "unit": "t",
@@ -39,6 +46,7 @@
     },
     {
       "id": "concrete",
+      "reserve": 20,
       "name": "Concrete",
       "tier": "refined",
       "unit": "t",
@@ -46,6 +54,7 @@
     },
     {
       "id": "glass",
+      "reserve": 10,
       "name": "Glass",
       "tier": "refined",
       "unit": "m2",
@@ -53,6 +62,7 @@
     },
     {
       "id": "basic-parts",
+      "reserve": 40,
       "name": "Basic parts",
       "tier": "component",
       "unit": "unit",
@@ -62,6 +72,7 @@
     },
     {
       "id": "electrical-components",
+      "reserve": 10,
       "name": "Electrical components",
       "tier": "component",
       "unit": "unit",
@@ -71,6 +82,7 @@
     },
     {
       "id": "precision-components",
+      "reserve": 5,
       "name": "Precision components",
       "tier": "component",
       "unit": "unit",

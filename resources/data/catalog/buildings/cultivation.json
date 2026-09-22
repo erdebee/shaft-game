@@ -27,7 +27,7 @@
       "powerDraw": 70,
       "staffing": 3,
       "wearPerTick": 0.0022,
-      "consumes": [{ "id": "water", "qty": 4 }, { "id": "scrap", "qty": 1 }],
+      "consumes": [{ "id": "water", "qty": 4 }, { "id": "scrap", "qty": 0.05 }],
       "produces": [{ "id": "food", "qty": 10 }],
       "repairCost": [{ "id": "basic-parts", "qty": 4 }],
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
