@@ -26,45 +26,46 @@ test('residents fill homes, and the overflow spreads over the habitable levels',
 });
 
 test('when water runs short, people drink first and buildings are rationed', async () => {
-  const run = await runWith([...POWERED, ['deep-pump', 40], ['hydroponics-bay', 13], ['simple-suite', 24]], { stocks: FUEL });
-  run.state.population.headcount = 80;
-  // Too few people to drink the pump dry, enough plants to go short.
-  ticks(run, 5);
-  let water = run.state.resources.flows.water;
-  assert.equal(water.peopleShare, 1);
+  const layout = [...POWERED, ['deep-pump', 40], ['hydroponics-bay', 13], ['simple-suite', 24]];
 
-  run.state.population.headcount = 2000;
-  ticks(run, 5);
-  water = run.state.resources.flows.water;
-  assert.ok(water.peopleShare < 1, 'expected people to go short too, eventually');
+  const plenty = await runWith(layout, { stocks: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 } });
+  ticks(plenty, 5);
+  assert.equal(plenty.state.resources.flows.water.peopleShare, 1);
+  assert.equal(plenty.state.resources.flows.water.buildingShare, 1);
+
+  // 2400 people at the default rate drink far more than one pump lifts.
+  const short = await runWith(layout, { stocks: FUEL });
+  ticks(short, 5);
+  const water = short.state.resources.flows.water;
+  assert.ok(water.peopleShare > 0 && water.peopleShare < 1);
   assert.equal(water.buildingShare, 0, 'buildings get nothing until people have drunk');
-  assert.equal(instanceOf(run, 'hydroponics-bay').waterShare, 0);
+  assert.equal(instanceOf(short, 'hydroponics-bay').waterShare, 0);
 });
 
 test('cisterns bank a surplus and release it in a shortfall', async () => {
-  const run = await runWith([...POWERED, ['deep-pump', 40], ['cistern', 32]], { stocks: FUEL });
-  run.state.population.headcount = 0;
+  const run = await runWith([...POWERED, ['deep-pump', 40], ['cistern', 32]], {
+    stocks: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 },
+  });
   ticks(run, 20);
   const water = run.state.resources.flows.water;
   assert.equal(water.capacity, 200);
   assert.equal(water.stored, 200);
 
-  // Pump off: the cistern carries the first ticks of demand.
+  // Pump off: the cistern carries the demand.
   instanceOf(run, 'deep-pump').brokenDown = true;
-  run.state.population.headcount = 200;
   ticks(run, 1);
   assert.equal(run.state.resources.flows.water.peopleShare, 1);
   assert.ok(run.state.resources.flows.water.stored < 200);
 });
 
 test('reclaimed water fouls the supply unless a purifier treats it', async () => {
-  const layout = [...POWERED, ['deep-pump', 40], ['reclamation-plant', 42], ['simple-suite', 24]];
-  const dirty = await runWith(layout, { stocks: FUEL });
-  const clean = await runWith([...layout, ['purifier', 41]], { stocks: { ...FUEL, 'activated-carbon': 100 } });
-  for (const run of [dirty, clean]) run.state.population.headcount = 80;
+  const layout = [...POWERED, ['deep-pump', 40], ['reclamation-plant', 42]];
+  const tunables = { 'water.potablePerCapitaPerTick': 0.01 };
+  const dirty = await runWith(layout, { stocks: FUEL, tunables });
+  const clean = await runWith([...layout, ['purifier', 41]], { stocks: { ...FUEL, 'activated-carbon': 100 }, tunables });
   ticks(dirty, 200);
   ticks(clean, 200);
-  assert.ok(dirty.state.resources.flows.water.quality < 90);
+  assert.ok(dirty.state.resources.flows.water.quality < 90, `got ${dirty.state.resources.flows.water.quality}`);
   assert.ok(clean.state.resources.flows.water.quality > dirty.state.resources.flows.water.quality);
 });
 

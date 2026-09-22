@@ -17,6 +17,7 @@
 
 import { initialSeams } from '../systems/resources/minerals.js';
 import { initialWater } from '../systems/water/greywaterLoop.js';
+import { initialVitals } from '../systems/population/vitals.js';
 
 /**
  * @param {object} args
@@ -65,6 +66,9 @@ export function createGameState({ chapter, dataset, seed }) {
       factionSatisfaction: initialFactions(catalog, config),
       lotteryMultiplier: 1,
       nextWorkerId: 1,
+      ...initialVitals(config),
+      labour: { pool: 0, assigned: 0, wanted: 0 },
+      strikes: [],
     },
 
     governance: {

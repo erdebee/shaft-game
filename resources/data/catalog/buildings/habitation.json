@@ -111,12 +111,12 @@
       "powerDraw": 30,
       "staffing": 3,
       "wearPerTick": 0.0016,
-      "consumes": [{ "id": "water", "qty": 3 }, { "id": "food", "qty": 18 }],
+      "consumes": [{ "id": "water", "qty": 3 }, { "id": "food", "qty": 1 }],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
       "effects": [{ "op": "meter.add", "target": "morale", "value": 3 }],
-      "_note": "The canteen is where food is actually consumed, which is what makes it the destination for every food haul. Distance from the hydroponics bay is therefore paid in porter-hours every single day, forever — placement is permanent policy."
+      "_note": "The canteen is where people eat, which is what makes it the destination for every food haul. Distance from the hydroponics bay is therefore paid in porter-hours every single day, forever — placement is permanent policy. The rations themselves are drawn per head (population.foodPerCapitaPerTick); the canteen's own 1 food a tick is kitchen loss, and with an empty larder it is starved and its morale goes with it."
     },
     {
       "id": "clinic",

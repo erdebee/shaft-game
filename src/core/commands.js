@@ -68,11 +68,19 @@ const HANDLERS = {
     log(state, 'Order of Supply amended');
   },
 
-  /** Assign or unassign workers to a building. */
+  /**
+   * Set how many crews a building should have. The labour pool fills it next
+   * tick if it can (systems/population/staffing.js); it never exceeds what
+   * the building has posts for.
+   */
   'player:assignStaff': (state, ctx, cmd) => {
     const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
     if (!instance) return;
-    instance.staffing = Math.max(0, cmd.count);
+    const posts = ctx.catalog.buildings.byId[instance.buildingId]?.staffing ?? 0;
+    instance.staffTarget = Math.max(0, Math.min(posts, cmd.count));
+    // Until the pool next deals, the building has what it asked for — so a
+    // building placed and staffed before the first tick works on that tick.
+    instance.staffing = instance.staffTarget;
   },
 };
 

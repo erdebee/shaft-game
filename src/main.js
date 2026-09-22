@@ -179,9 +179,25 @@ function wireLog(state) {
     record(`Short of ${id} by ${qty.toFixed(1)}`, 'warn');
   });
 
-  on('haulage:arrived', ({ cargo, toLevel }) => {
-    record(`Delivered ${cargo.qty} ${cargo.id} to level ${toLevel}`);
+  on('water:shortfall', ({ peopleShare, tick }) => {
+    if (!onset('water', tick)) return;
+    record(peopleShare < 1 ? 'Water rationed: people are going thirsty' : 'Water rationed: buildings on short supply', 'critical');
   });
+
+  on('air:critical', ({ level }) => record(`The air on level ${level} is failing`, 'critical'));
+  on('air:recovered', ({ level }) => record(`The air on level ${level} is breathable again`));
+
+  on('population:day', ({ deaths, births }) => {
+    const causes = { starvation: 'starved', thirst: 'died of thirst', suffocation: 'suffocated', illness: 'died of illness' };
+    const lost = Object.entries(deaths)
+      .map(([cause, n]) => [cause, Math.round(n)])
+      .filter(([, n]) => n > 0)
+      .map(([cause, n]) => `${n} ${causes[cause]}`);
+    if (lost.length) record(`Today ${lost.join(', ')}`, 'critical');
+    if (births >= 1) record(`${Math.round(births)} born under the lottery`);
+  });
+
+  on('supply:delivered', ({ id, qty }) => record(`${qty} ${id} came down from outside`));
 
   on('clock:autoPaused', ({ reason }) => {
     record(`Paused: ${reason}`, 'warn');

@@ -21,10 +21,11 @@ import * as airQuality from '../systems/airQuality/perLevelAir.js';
 import * as haulage from '../systems/haulage/haulageMethods.js';
 import * as buildings from '../systems/buildings/buildingRegistry.js';
 import * as roster from '../systems/population/roster.js';
+import * as population from '../systems/population/index.js';
 
 /** The system registry, keyed to match SYSTEM_ORDER in engine.js. */
 export function createSystems() {
-  return { power, resources, water, airQuality, haulage, buildings, population: roster };
+  return { power, resources, water, airQuality, haulage, buildings, population };
 }
 
 /**

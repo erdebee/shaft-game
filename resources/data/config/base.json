@@ -82,7 +82,22 @@
     "birthLotterySlotsPerCycle": 6,
     "birthLotteryCycleTicks": 1800,
     "deathAgeMean": 68,
-    "focusPerStaffPulled": 1
+    "focusPerStaffPulled": 1,
+    "workersPerStaffPoint": 10,
+    "healthStart": 80,
+    "healthBaseline": 70,
+    "healthDriftPerTick": 0.05,
+    "hungerHealthPenalty": 60,
+    "thirstHealthPenalty": 70,
+    "badWaterHealthPenalty": 30,
+    "badAirHealthPenalty": 50,
+    "waterQualitySafe": 60,
+    "illnessThreshold": 40,
+    "sickShareAtZeroHealth": 0.6,
+    "starvationDeathRate": 0.0005,
+    "thirstDeathRate": 0.001,
+    "suffocationDeathRate": 0.002,
+    "illnessDeathRate": 0.0002
   },
 
   "factions": {

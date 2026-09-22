@@ -20,11 +20,12 @@ export const dataset = await loadDataset({ readJson, chapter: 1, profile: 'defau
 /**
  * @param {Array<[string, number]>} layout  [buildingId, level] pairs
  * @param {object} [options]
- * @param {object} [options.stocks]  overwrite opening stocks, by id
+ * @param {object} [options.stocks]    overwrite opening stocks, by id
+ * @param {object} [options.tunables]  override config values, by dot path
  * @param {boolean} [options.staffed=true]
  */
-export async function runWith(layout, { stocks = {}, staffed = true, seed = 4242 } = {}) {
-  const run = await createRun({ dataset, seed, chapter: 1, readJson });
+export async function runWith(layout, { stocks = {}, tunables = {}, staffed = true, seed = 4242 } = {}) {
+  const run = await createRun({ dataset: withTunables(tunables), seed, chapter: 1, readJson });
   for (const [buildingId, level] of layout) {
     dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level });
   }
@@ -38,6 +39,20 @@ export async function runWith(layout, { stocks = {}, staffed = true, seed = 4242
   }
   Object.assign(run.state.resources.stocks, stocks);
   return run;
+}
+
+/** The shared dataset, or a copy with some config values replaced. */
+function withTunables(tunables) {
+  if (Object.keys(tunables).length === 0) return dataset;
+  const config = structuredClone(dataset.config);
+  for (const [path, value] of Object.entries(tunables)) {
+    const keys = path.split('.');
+    const last = keys.pop();
+    const node = keys.reduce((n, k) => n[k], config);
+    if (!(last in node)) throw new Error(`runWith: unknown tunable ${path}`);
+    node[last] = value;
+  }
+  return { ...dataset, config };
 }
 
 export function ticks(run, n) {

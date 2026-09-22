@@ -106,6 +106,7 @@ export function createInstance(def, ctx, { instanceId, level, slot }) {
     slots: def.slots ?? 1,
     condition: ctx.config.buildings.conditionStart,
     staffing: 0,
+    staffTarget: def.staffing ?? 0, // crews the player wants here; the pool decides `staffing`
     powered: true,
     brokenDown: false,
     starved: false,

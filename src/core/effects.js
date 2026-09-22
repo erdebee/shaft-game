@@ -248,10 +248,12 @@ export function collectModifiers(state, ctx) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
     // A browned-out, wrecked or starved building supplies nothing, and an
-    // understaffed one supplies part of it: a scrubber with no carbon, or
-    // with nobody to change the filters, cleans no air.
+    // understaffed or water-rationed one supplies part of it: a scrubber with
+    // no carbon, or with nobody to change the filters, cleans no air; a
+    // clinic with no water heals nobody.
     if (instance.powered === false || instance.starved) continue;
-    const scale = conditionScale(instance.condition, def, ctx) * staffingScale(instance, def);
+    const scale = conditionScale(instance.condition, def, ctx) * staffingScale(instance, def)
+      * (instance.waterShare ?? 1);
     if (scale <= 0) continue;
     sources.push({ effects: def.effects ?? [], scale });
   }
