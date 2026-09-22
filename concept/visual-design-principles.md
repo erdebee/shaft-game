@@ -385,8 +385,7 @@ should be painting during a crisis.
 
 ## 8. Motion
 
-The existing three-kind split in [`src/ui/view/spriteMap.js`](../src/ui/view/spriteMap.js)
-holds, and the art is produced to fit it:
+Motion comes in three kinds, and the art is produced to fit them:
 
 | Kind | What it is | Made of |
 |---|---|---|

@@ -8,7 +8,7 @@
  *
  * Rooms are the approved pixel renders from the asset manifest (roomArt.js),
  * one <image> per state with CSS choosing which shows. A building with no
- * render falls back to its symbol in the vector sheet.
+ * render yet draws as a plain block, so a new catalog entry is still visible.
  *
  * Structure is built once and mutated; only figures and animated parts are
  * touched per frame. That split is what keeps 60fps affordable: the expensive
@@ -23,31 +23,11 @@ import {
 import {
   levelY, roomRect, visualJitter, LEVEL_HEIGHT, ROOM_HEIGHT, SHAFT_WIDTH, STAIR_WIDTH, BUILD_X, SEAM,
 } from './interpolate.js';
-import { spriteFor } from './spriteMap.js';
 import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
-import { createFigureLayer, renderFigures, renderCars } from './figures.js';
+import { createFigureLayer, renderFigures } from './figures.js';
 import { SPEEDS } from '../../core/clock.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/**
- * Inline the sprite sheet into the document.
- *
- * It has to be inline: a <use href="external.svg#id"> does not inherit the
- * page's CSS custom properties, so tokens.css could not colour it, and "no raw
- * hex outside tokens.css" is a project rule.
- */
-export async function loadSprites(path = './resources/assets/sprites/buildings.svg') {
-  if (document.getElementById('sprite-sheet')) return;
-  const res = await fetch(path, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`Sprite sheet not found: ${path}`);
-
-  const host = document.createElement('div');
-  host.id = 'sprite-sheet';
-  host.hidden = true;
-  host.innerHTML = await res.text();
-  document.body.prepend(host);
-}
 
 /**
  * @param art  the result of roomArt.loadRoomArt()
@@ -134,7 +114,6 @@ export function createShaftView(root, state, ctx, art) {
     syncBuildings(view, currentState, currentCtx);
     syncSeams(view, currentState);
     syncLevels(view, currentState);
-    renderCars(currentState, currentCtx, tick, alpha, view.buildingNodes);
     renderFigures(view.figureLayer, currentState, currentCtx, tick, alpha, view.viewport, view.art);
   }
 }
@@ -339,11 +318,11 @@ function createBuildingNode(view, ctx, instance) {
       g.appendChild(win);
     }
   } else {
-    const use = document.createElementNS(SVG_NS, 'use');
-    use.setAttribute('href', `#sprite-${spriteFor(def).symbol}`);
-    use.setAttribute('width', String(width));
-    use.setAttribute('height', String(ROOM_HEIGHT));
-    g.appendChild(use);
+    const block = document.createElementNS(SVG_NS, 'rect');
+    block.setAttribute('class', 'room-missing');
+    block.setAttribute('width', String(width));
+    block.setAttribute('height', String(ROOM_HEIGHT));
+    g.appendChild(block);
   }
 
   if (art?.fg) g.foreground = foregroundNode(view, def, art.fg, width);

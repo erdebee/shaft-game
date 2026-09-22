@@ -14,7 +14,7 @@ import { on } from './core/eventBus.js';
 
 import * as router from './ui/router.js';
 import * as dashboard from './ui/screens/dashboard.js';
-import { createShaftView, loadSprites } from './ui/view/shaftView.js';
+import { createShaftView } from './ui/view/shaftView.js';
 import { loadRoomArt } from './ui/view/roomArt.js';
 import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
@@ -89,7 +89,6 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   }
 
   // --- UI --------------------------------------------------------------
-  await loadSprites();
   const roomArt = await loadRoomArt();
 
   const app = document.getElementById('app');

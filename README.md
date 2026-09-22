@@ -185,9 +185,9 @@ export `tick(state, ctx)`, write only your own domain, emit through `ctx.emit`.
 4. **Dilemmas.** The content, the interpreters and the hard-pause path all
    exist; `dilemmaEngine` needs to select and raise them, and `dilemmaModal`
    needs to present them.
-5. **Set the visual direction**, then replace the working palette in
-   `ui/styles/tokens.css` and the placeholder sprites in
-   `resources/assets/sprites/buildings.svg`.
+5. **Lift cars.** The freight elevator and dumbwaiter carry trips in the sim
+   but draw no moving car: the vector sheet that had one is gone, and the
+   pixel rooms need a car sprite driven by `tripPosition`.
 
 Also open: touch gestures and a responsive panel layout for tablet (the view is
 already resolution-independent and the panel already stacks below 60rem, but

@@ -3,8 +3,8 @@
  *
  * The view splits one concern across two nodes on purpose:
  *
- *   the wrapper <g>        POSITION, written by JS as a transform attribute
- *   the inner .figure-sprite  ANIMATION, written by CSS
+ *   the wrapper <g>              POSITION, written by JS as a transform attribute
+ *   the inner [data-part="strip"]  ANIMATION, written by CSS
  *
  * A CSS `transform` overrides an SVG `transform` attribute, so animating
  * `transform` on the positioned wrapper replaces its position. Worse, a
@@ -71,36 +71,32 @@ test('no CSS rule sets transform or animation on a JS-positioned figure wrapper'
     [],
     'These rules animate or transform a figure wrapper, whose transform attribute is ' +
       'written by src/ui/view/figures.js. CSS transform wins over the attribute, so the ' +
-      'figure will slide toward the SVG origin. Move the declaration to .figure-sprite:\n' +
+      'figure will slide toward the SVG origin. Move the declaration to the [data-part="strip"]:\n' +
       offenders.join('\n'),
   );
 });
 
-test('ambient figure animation is declared on the inner sprite', () => {
-  const animated = rules(css).filter(
-    (r) => /(^|;)\s*animation\s*:/i.test(r.body) &&
-      r.selectors.some((s) => s.includes('figure')),
-  );
+test('ambient animation is declared on the frame strip', () => {
+  const animated = rules(css).filter((r) => /(^|;)\s*animation(-[a-z]+)?\s*:/i.test(r.body));
   assert.ok(
-    animated.length > 0,
-    'expected at least one ambient figure animation — has it been removed?',
+    animated.some((r) => r.selectors.some((s) => s.includes('[data-part="strip"]'))),
+    'expected the frame-strip animation — has it been removed?',
   );
   for (const rule of animated) {
     for (const selector of rule.selectors) {
-      if (!selector.includes('figure')) continue;
       assert.match(
         selector.trim().split(/[\s>+~]+/).pop(),
-        /\.figure-sprite/,
-        `figure animation must target .figure-sprite, not "${selector.trim()}"`,
+        /\[data-part(="[a-z-]+")?\]/,
+        `ambient animation must target a [data-part] node, not "${selector.trim()}"`,
       );
     }
   }
 });
 
-test('paused state stops ambient animation via the sprite, not the wrapper', () => {
+test('paused state stops ambient animation on every part', () => {
   assert.match(
     css,
-    /\.shaft\.paused\s+\.figure-sprite\s*\{[^}]*animation-play-state:\s*paused/,
-    'pausing the clock must also pause ambient figure animation (.shaft.paused .figure-sprite)',
+    /\.shaft\.paused\s+\[data-part\]\s*\{[^}]*animation-play-state:\s*paused/,
+    'pausing the clock must also pause ambient animation (.shaft.paused [data-part])',
   );
 });

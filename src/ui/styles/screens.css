@@ -171,80 +171,42 @@ body {
    and bury the stairwell. */
 .stairwell-fg { fill: none; }
 
-/* Vector fallback, for a building with no render yet. The sheet carries no
-   colour of its own. */
-.b-shell  { fill: var(--concrete-lit); }
-.b-detail { fill: var(--concrete); stroke: var(--concrete); }
-.b-hot    { fill: var(--sodium-lamp); }
-.b-cool   { fill: var(--cool); stroke: var(--cool); }
-.building.unpowered use { opacity: 0.35; }
-.building.unpowered .b-hot { fill: var(--dead); }
-.building.broken .b-shell  { fill: var(--rust); }
+/* A building with no render yet: a plain block, so it is visible. */
+.room-missing { fill: var(--concrete-lit); }
+.building.unpowered .room-missing { opacity: 0.35; }
+.building.broken .room-missing    { fill: var(--rust); }
 
-/* A figure is a wrapper <g> (position, set by JS) around a .figure-sprite
-   <use> (animation, set by CSS). Never animate `transform` on the wrapper:
-   CSS transform beats the SVG transform attribute, so the figure would
-   interpolate between its real position and the origin. See figures.js. */
-.figure       { pointer-events: none; }
-.f-body       { fill: var(--figure); stroke: var(--figure); }
-.f-cargo      { fill: var(--cargo); }
-.figure-worker .f-body { fill: var(--figure-dim); stroke: var(--figure-dim); }
-
-/* Porters face the way they are walking — which reverses at every switchback
-   landing, not at the top and bottom of the trip. Safe on the inner node. */
-.figure-porter[data-facing="west"] .figure-sprite {
-  transform: scaleX(-1);
-  transform-origin: center;
-}
+/* A figure is a wrapper <g> (position, set by JS) around a flip <g> (facing,
+   set by JS) around a strip (animation, set by CSS). Never animate
+   `transform` on the wrapper: CSS transform beats the SVG transform
+   attribute, so the figure would interpolate between its real position and
+   the origin. See figures.js. */
+.figure { pointer-events: none; }
 
 /* ---- Animation ----
-   Three kinds, three mechanisms (see src/ui/view/spriteMap.js):
+   Two kinds, two mechanisms:
      sim-time motion  driven from JS with tick + alpha, not here
-     state transition CSS transitions on a class, above
-     ambient loop     the keyframes below
+     ambient loop     frame strips stepped by the keyframe below
 
    Ambient loops must stop with the simulation, or workers keep hammering
    away while the game is paused. One class on the root does it. */
 
-@keyframes spin   { to { transform: rotate(360deg); } }
-@keyframes glow   { 50% { opacity: 0.45; } }
-@keyframes bob    { 50% { transform: translateY(-1px); } }
 @keyframes strip  { to { transform: translateX(calc(var(--strip-width) * -1px)); } }
 
-[data-part="fan"]     { animation: spin 2.4s linear infinite; }
 /* A room's animation strip: one frame per step under a room-sized window. */
 [data-part="strip"]   { animation: strip var(--strip-duration) steps(var(--frames)) infinite; }
-[data-part="glow"],
-[data-part="lamps"],
-[data-part="lamp"],
-[data-part="charge"],
-[data-part="piston"],
-[data-part="waterline"] { animation: glow 3.2s ease-in-out infinite; }
 
 /* A pixel figure is a window the size of one frame over a strip of frames,
    stepped by the same keyframe a room's animation uses. The delay spreads a
    room's workers out of lockstep; JS hashes it from the figure's placement. */
 .figure-window [data-part="strip"] { animation-delay: var(--phase, 0s); }
 
-/* On the inner sprite, not the wrapper — the wrapper's transform is JS-owned
-   position and a keyframe here would overwrite it. */
-.figure-worker .figure-sprite {
-  animation: bob 1.8s ease-in-out infinite;
-  animation-delay: var(--phase, 0s);
-}
-
-.shaft.paused [data-part],
-.shaft.paused .figure-sprite { animation-play-state: paused; }
-
-/* Doors are two-state, driven by sim state rather than a loop. */
-[data-part="door"] { transition: transform 400ms ease; }
-.level.sealed [data-part="door"] { transform: scaleX(1); }
+.shaft.paused [data-part] { animation-play-state: paused; }
 
 /* Motion is information here, so under reduced-motion figures keep moving —
    they just snap between levels instead of gliding, and the decorative loops
    stop entirely. base.css already collapses durations; this removes the
    ambient animation rather than leaving it stuttering at 0.01ms. */
 @media (prefers-reduced-motion: reduce) {
-  [data-part], .figure-sprite { animation: none; }
-  [data-part="door"] { transition: none; }
+  [data-part] { animation: none; }
 }

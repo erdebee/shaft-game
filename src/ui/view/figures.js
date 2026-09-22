@@ -13,22 +13,12 @@
  */
 
 import {
-  tripPosition, stairWalk, levelCentreY, roomRect, workerSlot, visualJitter, LEVEL_HEIGHT,
+  tripPosition, stairWalk, roomRect, workerSlot, visualJitter,
 } from './interpolate.js';
-import { spriteFor, workerFigureCount } from './spriteMap.js';
 import { isLevelVisible } from './viewport.js';
 import { SPEEDS } from '../../core/clock.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-
-/**
- * Figure size in shaft units (sprite pixels). An adult is about 36 px tall in a
- * 96-px room (spec §4.2): chest-high to a counter, a head under a doorway. The
- * vector placeholder is drawn 1:2; a real figure carries its own measurements
- * in the manifest and ignores these.
- */
-const FIGURE_W = 18;
-const FIGURE_H = 36;
 
 /**
  * Which role works in a building. The catalogue answers for most of them
@@ -60,6 +50,15 @@ export function rolesForBuilding(def, ctx) {
  */
 const FIGURE_SPEED_LIMIT = SPEEDS.FAST;
 
+/** How many ambient worker figures to draw for an instance. */
+export function workerFigureCount(instance, buildingDef) {
+  const staffed = Math.min(instance.staffing ?? 0, buildingDef.staffing ?? 0);
+  // Cap at three, and never more than one per slot: past that the figures stop
+  // reading as people and start reading as texture, and the information is
+  // already in the staffing number.
+  return Math.min(staffed, 3, instance.slots ?? 1);
+}
+
 /**
  * Show and hide.
  *
@@ -84,43 +83,6 @@ export function createFigureLayer(parent) {
   return { group, porters: [], workers: [], parent };
 }
 
-/**
- * Grow a pool of figure nodes to at least `count`, returning the pool.
- *
- * Each figure is a WRAPPER <g> holding a <use>, and the split is load-bearing:
- *
- *   the <g>   carries POSITION, written by JS as a transform attribute
- *   the <use> carries ANIMATION, written by CSS as a transform
- *
- * They cannot share a node. A CSS `transform` overrides an SVG `transform`
- * attribute, so an ambient keyframe on the positioned node replaces its
- * position — and because a keyframe that only defines 50% takes the attribute
- * value at 0% and 100%, the figure smoothly interpolates between where it
- * belongs and the SVG origin. The symptom is people sliding diagonally to the
- * top-left corner and back, once per animation cycle.
- *
- * Keep every CSS animation on the inner node and every JS position on the
- * wrapper, and the two can never fight.
- */
-function ensurePool(layer, pool, count, symbolId, className) {
-  while (pool.length < count) {
-    const node = document.createElementNS(SVG_NS, 'g');
-    node.setAttribute('class', className);
-
-    const sprite = document.createElementNS(SVG_NS, 'use');
-    sprite.setAttribute('href', `#sprite-${symbolId}`);
-    sprite.setAttribute('class', 'figure-sprite');
-    sprite.setAttribute('width', String(FIGURE_W));
-    sprite.setAttribute('height', String(FIGURE_H));
-    node.appendChild(sprite);
-
-    hide(node);
-    layer.group.appendChild(node);
-    pool.push(node);
-  }
-  return pool;
-}
-
 // ---- Pixel figures ---------------------------------------------------------
 
 /**
@@ -131,9 +93,13 @@ function ensurePool(layer, pool, count, symbolId, className) {
  *   the flip <g>     FACING     (JS transform attribute)
  *   the strip <image> ANIMATION (CSS keyframes, see screens.css)
  *
- * The same three-node split as the vector figure above, for the same reason: a
- * CSS animation on a node whose transform attribute JS owns would drag the
- * figure towards the origin once per cycle.
+ * They cannot share a node. A CSS `transform` overrides an SVG `transform`
+ * attribute, so an ambient keyframe on the positioned node replaces its
+ * position — and because a keyframe that only defines 50% takes the attribute
+ * value at 0% and 100%, the figure smoothly interpolates between where it
+ * belongs and the SVG origin. The symptom is people sliding diagonally to the
+ * top-left corner and back, once per animation cycle. Keep every CSS
+ * animation on the strip and every JS transform on the two <g>s.
  */
 function ensureSpritePool(layer, pool, count, className) {
   while (pool.length < count) {
@@ -200,15 +166,9 @@ function placeSprite(entry, clip, x, y, facing) {
  * Called from shaftView.render, which is called from the engine's rAF loop.
  * Reads state; never writes it.
  */
-export function renderFigures(layer, state, ctx, tick, alpha, viewport, art = null) {
-  const figures = art?.figures;
-  if (figures?.size) {
-    renderSpritePorters(layer, state, tick, alpha, viewport, figures);
-    renderSpriteWorkers(layer, state, ctx, viewport, art);
-    return;
-  }
-  renderPorters(layer, state, ctx, tick, alpha, viewport);
-  renderWorkers(layer, state, ctx, viewport, art);
+export function renderFigures(layer, state, ctx, tick, alpha, viewport, art) {
+  renderSpritePorters(layer, state, tick, alpha, viewport, art.figures);
+  renderSpriteWorkers(layer, state, ctx, viewport, art);
 }
 
 /** Porters on the stairwell, walking their trip. */
@@ -285,115 +245,4 @@ function renderSpriteWorkers(layer, state, ctx, viewport, art) {
   });
 
   for (let i = placements.length; i < pool.length; i++) hide(pool[i].node);
-}
-
-function renderPorters(layer, state, ctx, tick, alpha, viewport) {
-  const thinned = state.clock.speed > FIGURE_SPEED_LIMIT;
-
-  // Trips on the stairwell get a figure; a trip inside an elevator is drawn as
-  // the car itself, by shaftView, so it is skipped here.
-  const trips = thinned
-    ? []
-    : state.haulage.trips.filter((t) => t.method === 'stairwell');
-
-  const pool = ensurePool(layer, layer.porters, trips.length, 'porter', 'figure figure-porter');
-
-  trips.forEach((trip, i) => {
-    const node = pool[i];
-    const pos = tripPosition(trip, tick, alpha);
-
-    if (!isLevelVisible(viewport, Math.round(pos.level))) {
-      hide(node);
-      return;
-    }
-
-    show(node);
-    // Trips that start on the same tick along the same route interpolate to
-    // exactly the same point and would stack into one figure. A stable
-    // per-trip offset spreads them along the stair instead — derived from the
-    // trip id, so a porter never jitters between frames.
-    const step = stairWalk(pos.y + (visualJitter(trip.id) - 0.5) * 10, pos.descending);
-
-    // Figures are anchored at their feet, so subtract the sprite height.
-    node.setAttribute(
-      'transform',
-      `translate(${Math.round(step.x - FIGURE_W / 2)} ${Math.round(step.y - FIGURE_H)})`,
-    );
-    node.setAttribute('data-facing', step.facing < 0 ? 'west' : 'east');
-  });
-
-  for (let i = trips.length; i < pool.length; i++) hide(pool[i]);
-}
-
-/**
- * Ambient workers inside buildings. Position is derived from the building's
- * slot and the figure's index — deterministic, so nobody twitches between
- * frames. Their idle animation is CSS, with a phase offset hashed from the
- * instance id so a row of workers is not in lockstep.
- */
-function renderWorkers(layer, state, ctx, viewport, art) {
-  const placements = [];
-
-  for (const instance of state.buildings) {
-    if (!isLevelVisible(viewport, instance.level)) continue;
-    if (instance.powered === false) continue; // dark building, nobody working
-
-    const def = ctx.catalog.buildings.byId[instance.buildingId];
-    if (!def) continue;
-
-    const count = workerFigureCount(instance, def);
-    if (count === 0) continue;
-
-    const rect = roomRect(instance, state.buildings);
-    const room = art?.rooms.get(def.id);
-    const floorY = room?.floorY;
-
-    for (let i = 0; i < count; i++) {
-      const spot = workerSlot(rect, i, count, floorY, room?.seats);
-      placements.push({ ...spot, key: `${instance.instanceId}:${i}` });
-    }
-  }
-
-  const pool = ensurePool(layer, layer.workers, placements.length, 'worker', 'figure figure-worker');
-
-  placements.forEach((spot, i) => {
-    const node = pool[i];
-    show(node);
-    node.setAttribute('transform', `translate(${spot.x - FIGURE_W / 2} ${spot.y - FIGURE_H})`);
-    // Stable per-figure phase, so the row looks alive rather than mechanical.
-    node.style.setProperty('--phase', `${(visualJitter(spot.key) * -2.4).toFixed(2)}s`);
-  });
-
-  for (let i = placements.length; i < pool.length; i++) hide(pool[i]);
-}
-
-/**
- * Elevator and dumbwaiter car positions. Cars are part of the building sprite
- * rather than free figures, so they are moved by transforming the sprite's
- * `car` part — the same trip interpolation, a different visual.
- */
-export function renderCars(state, ctx, tick, alpha, nodesByInstance) {
-  for (const instance of state.buildings) {
-    const def = ctx.catalog.buildings.byId[instance.buildingId];
-    if (!def) continue;
-
-    const sprite = spriteFor(def);
-    if (!sprite.parts.some((p) => p.kind === 'car')) continue;
-
-    const node = nodesByInstance.get(instance.instanceId);
-    const car = node?.querySelector('[data-part="car"]');
-    if (!car) continue;
-
-    const trip = state.haulage.trips.find(
-      (t) => t.method === def.id || (def.id === 'freight-elevator' && t.method === 'freight-elevator'),
-    );
-
-    // Idle cars sit at the building's own level rather than snapping to zero.
-    const targetY = trip
-      ? tripPosition(trip, tick, alpha).y
-      : levelCentreY(instance.level);
-
-    const offset = targetY - levelCentreY(instance.level);
-    car.setAttribute('transform', `translate(0 ${(offset / LEVEL_HEIGHT) * 100})`);
-  }
 }
