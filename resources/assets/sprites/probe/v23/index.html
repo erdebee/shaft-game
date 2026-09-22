@@ -29,13 +29,16 @@ The game can swap a room's on image for its dim one at random moments, so the li
   <p><b>How it's made (no generations used):</b> every colour of the lit render is mapped to one darker colour. How much depends on the room's own off render: colours that go dark when the lamps are off (lamp glass, light pools, lit walls) dim the most; shadows barely change.
      The palette, dithering and every edge stay exactly as drawn, so switching between the two images changes only the light.</p>
   <p><b>Rerun:</b> <code>python3 dim.py 0.3</code> in this folder (0.3 = about 17% darker; raise it for a deeper dip).</p>
-  <p><b>Flicker in this demo:</b> each room waits a random 2&ndash;12 s, then blinks dim 1&ndash;3 times for 40&ndash;120 ms each. The seven animated rooms keep playing their loops.</p>
+  <p><b>Flicker in this demo:</b> each room waits a random 15&ndash;60 s, then blinks dim 1&ndash;3 times for 40&ndash;120 ms each. The seven animated rooms keep playing their loops.</p>
+  <p><b>Spacer (chosen: dissolve, 2 px):</b> rooms sit 2 px apart. Each gap pixel takes the neighbouring room's edge colour, darkened towards a shadow core with checkerboard dither, so rooms fade into the seam.</p>
 </div>
 
 <h2>In the shaft</h2>
 <div class="ctl"><span>Zoom</span><button data-z="1">1&times;</button><button data-z="2">2&times;</button>
   <span>Flicker</span><button data-f="0">off</button><button data-f="1">normal</button><button data-f="3">busy</button>
-  <button id="alldim">hold all dim</button></div>
+  <button id="alldim">hold all dim</button>
+  <span>Spacer</span><button data-g="0">0</button><button data-g="2">2 px</button><button data-g="3">3 px</button><button data-g="4">4 px</button>
+  <span>Style</span><button data-s="dissolve">dissolve</button><button data-s="solid">solid</button></div>
 <div class="wrap"><canvas id="cv"></canvas></div>
 
 <h2>On and dim, side by side</h2>
@@ -70,7 +73,7 @@ const FONT = {
   8: ['0110', '1001', '0110', '1001', '1001', '0110'], 9: ['0110', '1001', '1001', '0111', '0001', '0110'],
 };
 const load = (s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = s; });
-let zoom = 2, rate = 1, holdDim = false;
+let zoom = 2, rate = 1, holdDim = false, gap = 2, style = 'dissolve';
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 (async () => {
@@ -78,36 +81,73 @@ const rnd = (a, b) => a + Math.random() * (b - a);
   const rock = { shallow: await load('../v14/shallow-rock.png'), mid: await load('../v14/mid-rock.png'), deep: await load('../v14/deep-rock.png') };
   const rooms = [];
   for (const [i, [n, band, slots]] of LEVELS.entries()) {
-    let x = 128;
     for (const id of slots) {
       const on = await load(onSrc(id));
-      const r = { id, x, y: i * 104, w: on.width, on };
+      const r = { id, row: i, y: i * 104, w: on.width, on };
       if (ANIM[id]) { r.strip = await load(`../v20/${id}-on-anim-strip.png`); [, r.frames, r.ms] = ANIM[id]; }
-      else { r.dim = await load(`${id}-dim.png`); r.next = performance.now() + rnd(500, 8000); r.blinks = []; }
-      rooms.push(r); x += on.width;
+      else { r.dim = await load(`${id}-dim.png`); r.next = performance.now() + rnd(2000, 60000); r.blinks = []; }
+      rooms.push(r);
     }
   }
-  const cv = document.getElementById('cv'); cv.width = 768; cv.height = LEVELS.length * 104;
-  const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
-  const size = () => { cv.style.width = `${768 * zoom}px`; cv.style.height = `${cv.height * zoom}px`; };
-  size();
-  // static backdrop: rock, slabs, stairwell, floor numbers
-  const bg = document.createElement('canvas'); bg.width = cv.width; bg.height = cv.height; const b = bg.getContext('2d');
+  const cv = document.getElementById('cv'); cv.height = LEVELS.length * 104;
+  const ctx = cv.getContext('2d');
+  const size = () => { cv.style.width = `${cv.width * zoom}px`; cv.style.height = `${cv.height * zoom}px`; };
+  const bg = document.createElement('canvas'); bg.height = cv.height; const b = bg.getContext('2d');
+  // Lay rooms out with a `gap`-px concrete pillar before each one, then redraw the static backdrop.
+  const edge = (img, x) => {   // one column of an image as 96 [r,g,b]
+    const t = document.createElement('canvas'); t.width = 1; t.height = 96;
+    t.getContext('2d').drawImage(img, x, 0, 1, 96, 0, 0, 1, 96);
+    const d = t.getContext('2d').getImageData(0, 0, 1, 96).data;
+    return Array.from({ length: 96 }, (_, k) => [d[k * 4], d[k * 4 + 1], d[k * 4 + 2]]);
+  };
+  const stairEdge = edge(stair, 127);
+  const layout = () => {
+  const W = 768 + 10 * gap;
+  const xs = LEVELS.map(() => 128);
+  for (const r of rooms) { r.x = xs[r.row] + gap; xs[r.row] = r.x + r.w; }
+  cv.width = bg.width = W; ctx.imageSmoothingEnabled = false; size();
+  // static backdrop: rock, slabs, pillars, stairwell, floor numbers
   b.fillStyle = '#010202'; b.fillRect(0, 0, bg.width, bg.height);
   LEVELS.forEach(([n, band], i) => {
     const y = i * 104, r = rock[band];
-    if (r) for (let x = 128; x < 768; x += r.width) b.drawImage(r, 0, 0, Math.min(r.width, 768 - x), 96, x, y, Math.min(r.width, 768 - x), 96);
-    b.fillStyle = '#4f4148'; b.fillRect(128, y + 96, 640, 8); b.fillStyle = '#8e7870'; b.fillRect(128, y + 96, 640, 1);
+    if (r) for (let x = 128; x < W; x += r.width) b.drawImage(r, 0, 0, Math.min(r.width, W - x), 96, x, y, Math.min(r.width, W - x), 96);
+    b.fillStyle = '#4f4148'; b.fillRect(128, y + 96, W - 128, 8); b.fillStyle = '#8e7870'; b.fillRect(128, y + 96, W - 128, 1);
+    let left = stairEdge;
+    for (const rm of rooms) if (rm.row === i) {
+      const px = rm.x - gap;
+      if (gap && style === 'solid') {
+        // pillar: slab concrete with a lit left edge and a shadowed right edge, joined to the slab below
+        b.fillStyle = '#4f4148'; b.fillRect(px, y, gap, 97);
+        b.fillStyle = '#8e7870'; b.fillRect(px, y, 1, 97);
+        if (gap > 2) { b.fillStyle = '#2e2530'; b.fillRect(px + gap - 1, y, 1, 96); }
+      } else if (gap) {
+        // dissolve: each gap pixel takes its neighbours' edge colour, darkened towards a shadow core,
+        // with checkerboard dither on the outer columns so the rooms fade into the seam
+        const right = edge(rm.on, 0), id = b.createImageData(gap, 96);
+        for (let yy = 0; yy < 96; yy++) for (let c = 0; c < gap; c++) {
+          const L = left[yy], R = right[yy], core = L.map((v, k) => (v + R[k]) * 0.2);
+          const t = (c + 0.5) / gap, near = t < 0.5 ? L : R, d = Math.abs(t - 0.5) * 2;   // d: 0 centre .. ~1 edge
+          const lit = near.map((v) => v * 0.62);
+          const useLit = d > 0.6 ? true : d > 0.2 ? ((px + c + yy) & 1) === 0 : false;
+          const col = useLit ? lit : core, o = (yy * gap + c) * 4;
+          id.data[o] = col[0]; id.data[o + 1] = col[1]; id.data[o + 2] = col[2]; id.data[o + 3] = 255;
+        }
+        b.putImageData(id, px, y);
+      }
+      left = edge(rm.on, rm.w - 1);
+    }
     b.drawImage(stair, 0, y);
     const s = String(n), w = s.length * 5 - 1, tx = Math.floor((102 + 116 + 1 - w) / 2), ty = y + Math.floor((58 + 67 + 1 - 6) / 2);
     b.fillStyle = '#f3e6c8';
     [...s].forEach((d, j) => FONT[d].forEach((row, rr) => [...row].forEach((bit, c) => { if (bit === '1') b.fillRect(tx + j * 5 + c, ty + rr, 1, 1); })));
   });
+  };
+  layout();
   const schedule = (r, t) => {
-    // a flicker: 1-3 short dips, then a quiet 2-12 s
+    // a flicker: 1-3 short dips, then a quiet 15-60 s
     let at = t; r.blinks = [];
     for (let k = 0, n = 1 + Math.floor(Math.random() * 3); k < n; k++) { const len = rnd(40, 120); r.blinks.push([at, at + len]); at += len + rnd(40, 160); }
-    r.next = at + rnd(2000, 12000) / rate;
+    r.next = at + rnd(15000, 60000) / rate;
   };
   const draw = (t) => {
     ctx.drawImage(bg, 0, 0);
@@ -121,7 +161,9 @@ const rnd = (a, b) => a + Math.random() * (b - a);
   };
   requestAnimationFrame(draw);
   document.querySelectorAll('[data-z]').forEach((btn) => btn.addEventListener('click', () => { zoom = Number(btn.dataset.z); size(); }));
-  document.querySelectorAll('[data-f]').forEach((btn) => btn.addEventListener('click', () => { rate = Number(btn.dataset.f); rooms.forEach((r) => { r.next = performance.now() + rnd(0, 3000); r.blinks = []; }); }));
+  document.querySelectorAll('[data-f]').forEach((btn) => btn.addEventListener('click', () => { rate = Number(btn.dataset.f); rooms.forEach((r) => { r.next = performance.now() + rnd(0, 20000); r.blinks = []; }); }));
+  document.querySelectorAll('[data-g]').forEach((btn) => btn.addEventListener('click', () => { gap = Number(btn.dataset.g); layout(); }));
+  document.querySelectorAll('[data-s]').forEach((btn) => btn.addEventListener('click', () => { style = btn.dataset.s; layout(); }));
   document.getElementById('alldim').addEventListener('click', (e) => { holdDim = !holdDim; e.target.textContent = holdDim ? 'release' : 'hold all dim'; });
   document.getElementById('pairs').innerHTML = rooms.filter((r) => r.dim).map((r) =>
     `<figure><div class="pair"><img src="${r.on.src}" style="width:${r.w * 2}px"><img src="${r.id}-dim.png" style="width:${r.w * 2}px"></div><figcaption>${r.id} · on | dim</figcaption></figure>`).join('');
