@@ -24,7 +24,7 @@ const ASSET_ROOT = './resources/assets/';
 /**
  * Fetch the media manifest and the floor-digit font, and index the room art by
  * building id. Buildings without an `-on` render are simply absent, and the
- * view falls back to the vector sheet for them.
+ * view draws them as a plain block until they have one.
  */
 export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
   const res = await fetch(manifestPath, { cache: 'no-cache' });
