@@ -10,15 +10,17 @@ import { runWith, instanceOf } from '../helpers/sim.js';
 import { dispatch, placement, buildCost } from '../../src/core/commands.js';
 
 test('building costs its materials, and is refused without them', async () => {
-  const run = await runWith([]);
+  const run = await runWith([['depot', 30]]);
   const def = run.ctx.catalog.buildings.byId.workshop;
   const cost = buildCost(run.ctx, def);
   assert.ok(cost.length > 0);
 
-  for (const c of cost) run.state.resources.stocks[c.id] = c.qty;
+  // Materials are paid from the depots and storehouses.
+  const depot = instanceOf(run, 'depot');
+  depot.stock = Object.fromEntries(cost.map((c) => [c.id, c.qty]));
   dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId: 'workshop', level: 36 });
   assert.ok(instanceOf(run, 'workshop'));
-  for (const c of cost) assert.equal(run.state.resources.stocks[c.id], 0);
+  for (const c of cost) assert.equal(depot.stock[c.id] ?? 0, 0);
 
   const again = placement(run.state, run.ctx, 'workshop', 35);
   assert.equal(again.ok, false);
@@ -26,7 +28,7 @@ test('building costs its materials, and is refused without them', async () => {
 });
 
 test('placement explains a refusal', async () => {
-  const run = await runWith([], { stocks: { 'basic-parts': 1e4, concrete: 1e4 } });
+  const run = await runWith([['storehouse', 20]], { stocks: { 'basic-parts': 1e4, concrete: 1e4, wood: 1e4 } });
   assert.equal(placement(run.state, run.ctx, 'dig-face', 5).reason, 'wrong-depth');
   assert.equal(placement(run.state, run.ctx, 'shaft-exit', 7, { inherited: true }).reason, 'fixed');
   assert.equal(placement(run.state, run.ctx, 'school', 99).reason, 'no-level');

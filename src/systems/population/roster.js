@@ -35,7 +35,7 @@ export function tick(state, ctx) {
  * Ids are sequential from state so they survive a save; names come from the
  * seeded pool so the same run always produces the same people.
  */
-export function hire(state, ctx, job, level = 1) {
+export function hire(state, ctx, job, level = 1, stationId = null) {
   const id = `w${state.population.nextWorkerId}`;
   state.population.nextWorkerId += 1;
 
@@ -47,6 +47,11 @@ export function hire(state, ctx, job, level = 1) {
     fatigue: 0,
     tripId: null,
     levelsWalked: 0,
+    stationId,      // porters: the station they live at, rest at and wait at
+    route: [],      // porters: the stops they walk, in order (haulage/haulageMethods.js)
+    stop: 0,        // porters: the next stop on the route
+    carrying: {},   // porters: goods in hand, by id
+    resting: false,
   };
   state.population.workers.push(worker);
   return worker;
@@ -73,16 +78,4 @@ function makeName(ctx) {
   const given = ctx.rng.names.pick(pools.given);
   const family = ctx.rng.names.pick(pools.family);
   return `${given} ${family}`;
-}
-
-/**
- * Seed the starting roster. Porter count comes from the haulage demand the
- * shaft is expected to carry, not from a magic number — one porter per two
- * levels is enough to keep the stairwell busy without saturating it.
- */
-export function seedRoster(state, ctx) {
-  const porters = Math.max(4, Math.round(state.levels.length / 4));
-  for (let i = 0; i < porters; i++) {
-    hire(state, ctx, 'porter', 1 + ((i * 7) % state.levels.length));
-  }
 }

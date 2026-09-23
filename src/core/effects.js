@@ -24,6 +24,7 @@ import { clamp } from '../utils/math.js';
 import { EFFECT_OPS } from '../config/schema.js';
 import * as S from './selectors.js';
 import { workRate } from '../systems/society/meters.js';
+import { putInStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
 
 /**
  * Ops that describe a standing capability or modifier rather than an event.
@@ -59,8 +60,11 @@ const HANDLERS = {
     state.meters[e.target] = clamp((state.meters[e.target] ?? 0) + e.value, min, max);
   },
 
+  // Goods are local: a gift lands in the common stores, and a loss comes out
+  // of them. What will not fit, or is not there, is simply not.
   'stock.add': (state, ctx, e) => {
-    state.resources.stocks[e.target] = Math.max(0, (state.resources.stocks[e.target] ?? 0) + e.value);
+    if (e.value >= 0) putInStorehouses(state, ctx, e.target, e.value);
+    else takeFromStorehouses(state, ctx, e.target, -e.value);
   },
 
   'focus.add': (state, ctx, e) => {

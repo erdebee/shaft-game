@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runWith, ticks, instanceOf } from '../helpers/sim.js';
+import { runWith, ticks, instanceOf, KITCHEN, FED_KEEP } from '../helpers/sim.js';
 import { dispatch } from '../../src/core/commands.js';
 import { labourPool } from '../../src/systems/population/staffing.js';
 
@@ -16,12 +16,13 @@ const CALM = {
   'water.potablePerCapitaPerTick': 0,
 };
 
-test('people eat per head from the food stock', async () => {
-  const run = await runWith([], { stocks: { food: 1000 }, tunables: CALM });
+test('people eat per head at the canteens', async () => {
+  const run = await runWith(KITCHEN, { stocks: { food: 3000 }, tunables: CALM });
   const pop = run.state.population;
-  const before = run.state.resources.stocks.food;
-  ticks(run, 1);
-  const eaten = before - run.state.resources.stocks.food;
+  const canteens = run.state.buildings.filter((b) => b.buildingId === 'canteen');
+  const before = canteens.reduce((n, b) => n + b.stock.food, 0);
+  for (let i = 0; i < 1; i++) (await import('../../src/core/engine.js')).stepOnce(run.engine);
+  const eaten = before - canteens.reduce((n, b) => n + (b.stock.food ?? 0), 0);
   const perHead = run.ctx.config.population.foodPerCapitaPerTick;
   assert.ok(eaten > 0 && eaten <= pop.headcount * perHead * 1.2, `ate ${eaten}`);
   assert.equal(pop.needs.food, 1);
@@ -52,7 +53,7 @@ test('the day report counts deaths by cause, then resets', async () => {
 });
 
 test('people on a level with critical air suffocate; clean levels do not', async () => {
-  const run = await runWith([['simple-suite', 20]], { stocks: { food: 1e6 }, tunables: CALM });
+  const run = await runWith([...KITCHEN, ['simple-suite', 20]], { keep: FED_KEEP, tunables: CALM });
   run.state.population.headcount = 80;
   const level = run.state.levels[19];
   level.sealed = true; // nothing reaches it, and it goes stale
@@ -63,10 +64,10 @@ test('people on a level with critical air suffocate; clean levels do not', async
 
 test('health sinks in bad air and a clinic lifts it', async () => {
   // A pump for the clinic's water; nobody else drinks (CALM).
-  const layout = [...POWERED, ['deep-pump', 40], ['simple-suite', 20]];
+  const layout = [...POWERED, ['canteen', 26], ['canteen', 28], ['deep-pump', 40], ['simple-suite', 20]];
   const tunables = { ...CALM, 'air.contaminantPerCapitaPerTick': 0 };
-  const sick = await runWith(layout, { stocks: { food: 1e6, fuel: 500 }, tunables });
-  const tended = await runWith([...layout, ['clinic', 22]], { stocks: { food: 1e6, fuel: 500 }, tunables });
+  const sick = await runWith(layout, { keep: FED_KEEP, tunables });
+  const tended = await runWith([...layout, ['clinic', 22]], { keep: FED_KEEP, tunables });
   for (const run of [sick, tended]) {
     for (const level of run.state.levels) level.airQuality = 40;
     run.state.population.health = 60;
@@ -124,7 +125,7 @@ test("a striking faction's buildings get no staff", async () => {
 
 test('the birth lottery adds children once a cycle, in a fed Shaft', async () => {
   // Clean air and water, so nobody dies to muddy the count.
-  const run = await runWith([], { stocks: { food: 1e6 }, tunables: { ...CALM, 'air.contaminantPerCapitaPerTick': 0 } });
+  const run = await runWith(KITCHEN, { keep: FED_KEEP, tunables: { ...CALM, 'air.contaminantPerCapitaPerTick': 0 } });
   const { birthLotteryCycleTicks: cycle, birthLotterySlotsPerCycle: slots } = run.ctx.config.population;
   ticks(run, cycle - 1);
   const children = run.state.population.cohorts.children;

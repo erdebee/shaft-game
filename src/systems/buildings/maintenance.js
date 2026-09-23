@@ -10,7 +10,9 @@
  * below buildings.repairThreshold and stays on it until it is whole again, so
  * crews finish a job rather than dabbing at everything.
  *
- * No parts, no repairs: the job stalls and the crews wait. Neglecting the
+ * Crews draw their parts from the depots and storehouses, nearest the job
+ * first — parts sitting in the workshop's own store are not yet anywhere a
+ * crew can reach. No parts, no repairs: the job stalls and the crews wait. Neglecting the
  * workshop does not hurt today; it hurts thirty days later, all at once.
  *
  * Owns state.maintenance and instance.condition upward (wear, downward, is
@@ -19,6 +21,7 @@
 
 import { clamp } from '../../utils/math.js';
 import { currentLadder } from '../power/priorityLadder.js';
+import { inStorehouses, takeFromStorehouses } from '../resources/stores.js';
 
 export function initialMaintenance(config) {
   return { crewTarget: config.buildings.maintenanceCrewsStart, crews: 0, stalledOn: null };
@@ -38,14 +41,14 @@ export function tick(state, ctx) {
   for (const { instance, def } of queue(state, ctx)) {
     if (capacity <= 0) break;
     const restore = Math.min(capacity, 1 - instance.condition);
-    const affordable = affordableShare(state, def, restore);
+    const affordable = affordableShare(state, ctx, def, restore);
     if (affordable <= 0) {
-      m.stalledOn ??= missingPart(state, def);
+      m.stalledOn ??= missingPart(state, ctx, def);
       continue;
     }
     const done = restore * affordable;
     for (const cost of def.repairCost ?? []) {
-      state.resources.stocks[cost.id] -= cost.qty * done;
+      takeFromStorehouses(state, ctx, cost.id, cost.qty * done, instance.level);
     }
     instance.condition = clamp(instance.condition + done, 0, 1);
     capacity -= done;
@@ -77,16 +80,16 @@ function queue(state, ctx) {
 }
 
 /** Share of `restore` the stores can pay for: 1 if all of it, 0 if none. */
-function affordableShare(state, def, restore) {
+function affordableShare(state, ctx, def, restore) {
   let share = 1;
   for (const cost of def.repairCost ?? []) {
     const need = cost.qty * restore;
     if (need <= 0) continue;
-    share = Math.min(share, (state.resources.stocks[cost.id] ?? 0) / need);
+    share = Math.min(share, inStorehouses(state, ctx, cost.id) / need);
   }
   return clamp(share, 0, 1);
 }
 
-function missingPart(state, def) {
-  return (def.repairCost ?? []).find((c) => (state.resources.stocks[c.id] ?? 0) <= 0)?.id ?? null;
+function missingPart(state, ctx, def) {
+  return (def.repairCost ?? []).find((c) => inStorehouses(state, ctx, c.id) <= 0)?.id ?? null;
 }

@@ -5,7 +5,7 @@
       "id": "stairwell",
       "name": "Stairwell",
       "speed": "slow",
-      "ticksPerLevel": 2,
+      "ticksPerLevel": 1,
       "powerPerTrip": 0,
       "capacityPerTrip": 4,
       "concurrentTrips": null,
@@ -13,7 +13,7 @@
       "requiresBuilding": null,
       "breakdownProne": false,
       "constraints": ["worker-fatigue", "shift-change-congestion"],
-      "fatiguePerLevel": 0.01,
+      "fatiguePerLevel": 0.002,
       "_note": "Free and always available. The cost is paid in worker condition and in congestion at shift change, when everyone is on the stairs at once."
     },
     {

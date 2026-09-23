@@ -7,23 +7,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { runWith, ticks, instanceOf } from '../helpers/sim.js';
+
+// Crews take their parts from the common stores, so every test has one.
+const STORE = ['storehouse', 11];
 import { dispatch } from '../../src/core/commands.js';
 
 const CALM = { 'water.potablePerCapitaPerTick': 0, 'air.contaminantPerCapitaPerTick': 0 };
 const STOCKED = { food: 1e6, fuel: 500, 'basic-parts': 100, concrete: 50 };
 
 test('crews restore a worn building and spend its repair cost', async () => {
-  const run = await runWith([['main-generator', 38], ['workshop', 36]], { stocks: STOCKED, tunables: CALM });
+  const run = await runWith([['main-generator', 38], ['workshop', 36], STORE], { stocks: STOCKED, tunables: CALM });
   const workshop = instanceOf(run, 'workshop');
   workshop.condition = 0.5;
-  const parts = run.state.resources.stocks['basic-parts'];
+  const parts = instanceOf(run, 'storehouse').stock['basic-parts'];
   ticks(run, 40);
   assert.ok(instanceOf(run, 'workshop').condition > 0.9);
-  assert.ok(run.state.resources.stocks['basic-parts'] < parts);
+  assert.ok(instanceOf(run, 'storehouse').stock['basic-parts'] < parts, 'parts came out of the storehouse');
 });
 
 test('a broken-down building is repaired before a merely worn one', async () => {
-  const run = await runWith([['main-generator', 38], ['school', 10], ['canteen', 26]], {
+  const run = await runWith([['main-generator', 38], ['school', 10], ['canteen', 26], STORE], {
     stocks: STOCKED, tunables: { ...CALM, 'buildings.maintenanceCrewsStart': 1 },
   });
   const school = instanceOf(run, 'school');
@@ -38,7 +41,7 @@ test('a broken-down building is repaired before a merely worn one', async () => 
 });
 
 test('with no parts, repairs stall and say so', async () => {
-  const run = await runWith([['main-generator', 38], ['school', 10]], {
+  const run = await runWith([['main-generator', 38], ['school', 10], STORE], {
     stocks: { ...STOCKED, 'basic-parts': 0 }, tunables: CALM,
   });
   instanceOf(run, 'school').condition = 0.5;

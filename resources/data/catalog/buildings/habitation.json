@@ -112,6 +112,8 @@
       "staffing": 3,
       "wearPerTick": 0.0016,
       "consumes": [{ "id": "water", "qty": 3 }, { "id": "food", "qty": 1 }],
+      "serves": 2000,
+      "storeCapacity": { "food": 3000 },
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },

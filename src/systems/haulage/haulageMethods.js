@@ -1,194 +1,192 @@
 /**
  * haulageMethods.js
- * Vertical movement of stock resources between levels, by assigned porters.
- * Three methods, defined in catalog/infrastructure/haulage.json: the stairwell
- * (slow, free, fatiguing), the freight elevator (fast, costs power per trip,
- * breaks down) and the dumbwaiter (medium, small loads only).
+ * The `haulage` system: porters, and nothing but porters, move goods between
+ * buildings' stores (systems/resources/stores.js).
  *
- * Distance in levels equals labour time, so placement is permanent policy: a
- * hydroponics bay twenty levels from the canteen burns porter-hours every day,
- * forever.
+ * A porter works a ROUTE the player sets: a loop of stops, each naming a
+ * building, an action (pick up or drop off), a good, and a quantity ('all',
+ * or a number per visit). The porter walks the stairwell to the stop's level,
+ * does what the stop says, and goes on to the next; after the last stop, the
+ * first again. A pick-up takes what is there, up to the quantity and the room
+ * in the porter's arms; a drop-off leaves what the building has room for and
+ * carries the rest on. A stop at a building that is gone is skipped.
  *
- * Emits trips rather than moving goods instantaneously. A trip is a record with
- * a route and a tick window — which is what makes haul latency real, and what
- * the view layer interpolates to animate a porter between levels. See
- * src/ui/view/interpolate.js; the view never writes back here.
+ * A porter with no route goes back to their station and waits there. A porter
+ * worn out (haulage.porterRestAt) walks back to the station to rest, and
+ * picks the route up where they left it once rested (fatigue recovers while
+ * standing — population/roster.js).
  *
- * SLICE SCOPE: one route (a producer to its consumer) proves the trip layer
- * end to end. General queue resolution against per-method capacity comes with
- * the resources system.
+ * Walking is a TRIP: a record with a route and a tick window, which is what
+ * the view interpolates to draw the porter on the stairs
+ * (src/ui/view/interpolate.js). The view never writes back here.
+ *
+ * The freight elevator and dumbwaiter carry nothing yet: lift cars come with
+ * their own art, and until then every porter walks.
+ *
+ * Owns state.haulage and each porter's level, route position, load and
+ * fatigue from walking.
  */
 
 import { clamp } from '../../utils/math.js';
-import { idleWorker } from '../population/roster.js';
+import { amount, put, take } from '../resources/stores.js';
 
 export function tick(state, ctx) {
   arriveTrips(state, ctx);
-  dispatchTrips(state, ctx);
+  for (const porter of porters(state)) {
+    if (porter.tripId === null) act(state, ctx, porter);
+  }
+}
+
+/** Every porter, in hire order: the order they act in within a tick. */
+export function porters(state) {
+  return state.population.workers.filter((w) => w.job === 'porter');
+}
+
+/** The station a porter belongs to, if it still stands. */
+export function stationOf(state, porter) {
+  return state.buildings.find((b) => b.instanceId === porter.stationId) ?? null;
+}
+
+/** Units a porter is carrying, across all goods. */
+export function load(porter) {
+  let sum = 0;
+  for (const qty of Object.values(porter.carrying ?? {})) sum += qty;
+  return sum;
 }
 
 /**
- * Complete trips whose arrival tick has come: deliver the cargo, free the
- * porter, and charge the fatigue for the distance actually walked.
+ * What a porter is doing, for the panel: 'walking', 'resting', 'idle' (no
+ * route), or 'working' (at a stop).
  */
+export function porterStatus(state, porter) {
+  if (porter.tripId !== null) return 'walking';
+  if (porter.resting) return 'resting';
+  if (!porter.route?.length) return 'idle';
+  return 'working';
+}
+
+/**
+ * Check a route before it is set. Each stop needs a standing building, an
+ * action, a physical good, and 'all' or a positive quantity. Returns the
+ * cleaned stops, or null if any stop is malformed.
+ */
+export function validRoute(state, ctx, stops) {
+  if (!Array.isArray(stops)) return null;
+  const out = [];
+  for (const stop of stops) {
+    if (!state.buildings.some((b) => b.instanceId === stop?.instanceId)) return null;
+    if (stop.action !== 'pickup' && stop.action !== 'dropoff') return null;
+    const good = ctx.catalog.stocks.byId[stop.goodId] || ctx.catalog.minerals.byId[stop.goodId] || ctx.catalog.components.byId[stop.goodId];
+    if (!good) return null;
+    if (stop.qty !== 'all' && !(Number.isFinite(stop.qty) && stop.qty > 0)) return null;
+    out.push({ instanceId: stop.instanceId, action: stop.action, goodId: stop.goodId, qty: stop.qty });
+  }
+  return out;
+}
+
+/** Complete trips whose arrival tick has come. */
 function arriveTrips(state, ctx) {
   const arrived = state.haulage.trips.filter((t) => t.arriveTick <= state.clock.tick);
   if (arrived.length === 0) return;
+  const method = ctx.catalog.haulage.byId.stairwell;
 
   for (const trip of arrived) {
-    state.resources.stocks[trip.cargo.id] =
-      (state.resources.stocks[trip.cargo.id] ?? 0) + trip.cargo.qty;
-
-    const worker = state.population.workers.find((w) => w.id === trip.workerId);
-    if (worker) {
-      const method = ctx.catalog.haulage.byId[trip.method];
-      const distance = Math.abs(trip.toLevel - trip.fromLevel);
-      worker.fatigue = clamp(worker.fatigue + distance * (method?.fatiguePerLevel ?? 0), 0, 1);
-      worker.levelsWalked += distance;
-      worker.level = trip.toLevel;
-      worker.tripId = null;
-    }
-
-    ctx.emit('haulage:arrived', {
-      tripId: trip.id,
-      cargo: trip.cargo,
-      toLevel: trip.toLevel,
-      workerId: trip.workerId,
-    });
+    const porter = state.population.workers.find((w) => w.id === trip.workerId);
+    if (!porter) continue;
+    const distance = Math.abs(trip.toLevel - trip.fromLevel);
+    porter.fatigue = clamp(porter.fatigue + distance * (method?.fatiguePerLevel ?? 0), 0, 1);
+    porter.levelsWalked += distance;
+    porter.level = trip.toLevel;
+    porter.tripId = null;
   }
-
   state.haulage.trips = state.haulage.trips.filter((t) => t.arriveTick > state.clock.tick);
 }
 
-/**
- * Start new trips for any outstanding route demand, while porters are free.
- * A route is only served when its source has cargo to move, so an empty
- * hydroponics bay produces no porters — the stairwell going quiet is itself
- * information.
- */
-function dispatchTrips(state, ctx) {
-  for (const route of routesFor(state, ctx)) {
-    const stock = state.resources.stocks[route.cargoId] ?? 0;
-    if (stock < route.qty) continue;
+/** One porter's decision for this tick: rest, go home, walk on, or work a stop. */
+function act(state, ctx, porter) {
+  const cfg = ctx.config.haulage;
+  const station = stationOf(state, porter);
 
-    const worker = idleWorker(state, 'porter');
-    if (!worker) return; // no porters free; the rest of the routes wait
+  if (porter.resting) {
+    if (porter.fatigue > cfg.porterRestedAt) return;
+    porter.resting = false;
+  }
+  if (porter.fatigue >= cfg.porterRestAt) {
+    porter.resting = true;
+    if (station && porter.level !== station.level) walk(state, ctx, porter, station.level);
+    return;
+  }
 
-    const method = pickMethod(state, ctx, route);
-    if (!method) continue;
+  const route = porter.route ?? [];
+  if (route.length === 0) {
+    if (station && porter.level !== station.level) walk(state, ctx, porter, station.level);
+    return;
+  }
 
-    // Cargo leaves the source stock now and reappears on arrival. Goods in
-    // transit are genuinely unavailable, which is the point of modelling trips.
-    state.resources.stocks[route.cargoId] = stock - route.qty;
-
-    const distance = Math.abs(route.toLevel - route.fromLevel);
-    const ticks = Math.max(1, Math.round(distance * method.ticksPerLevel));
-
-    const trip = {
-      id: `t${state.haulage.nextTripId}`,
-      method: method.id,
-      workerId: worker.id,
-      fromLevel: route.fromLevel,
-      toLevel: route.toLevel,
-      cargo: { id: route.cargoId, qty: route.qty },
-      startTick: state.clock.tick,
-      arriveTick: state.clock.tick + ticks,
-    };
-    state.haulage.nextTripId += 1;
-    state.haulage.trips.push(trip);
-    worker.tripId = trip.id;
-
-    ctx.emit('haulage:departed', { tripId: trip.id, ...route, method: method.id });
+  // Skip stops at buildings that are gone, but never loop forever on a route
+  // whose every stop is gone.
+  for (let tries = 0; tries < route.length; tries++) {
+    const stop = route[porter.stop % route.length];
+    const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
+    if (!building) {
+      porter.stop = (porter.stop + 1) % route.length;
+      continue;
+    }
+    if (porter.level !== building.level) {
+      walk(state, ctx, porter, building.level);
+      return;
+    }
+    work(state, ctx, porter, stop, building);
+    porter.stop = (porter.stop + 1) % route.length;
+    return;
   }
 }
 
-/**
- * Routes to serve this tick. Derived from placed buildings: anything that
- * produces a haulable stock feeds the nearest building that consumes it.
- *
- * Recomputed each tick rather than cached, so demolishing a canteen stops the
- * porters without any bookkeeping.
- */
-export function routesFor(state, ctx) {
-  const routes = [];
+/** Do what a stop says, at the building the porter is standing at. */
+function work(state, ctx, porter, stop, building) {
+  const def = ctx.catalog.buildings.byId[building.buildingId];
+  porter.carrying ??= {};
+  const limit = stop.qty === 'all' ? Infinity : stop.qty;
 
-  for (const source of state.buildings) {
-    const sourceDef = ctx.catalog.buildings.byId[source.buildingId];
-    if (!sourceDef || source.powered === false) continue;
-
-    for (const produced of sourceDef.produces ?? []) {
-      const stockDef = ctx.catalog.stocks.byId[produced.id];
-      if (!stockDef?.haulable) continue;
-
-      const sink = nearestConsumer(state, ctx, produced.id, source.level);
-      if (!sink || sink.level === source.level) continue;
-
-      routes.push({
-        cargoId: produced.id,
-        qty: Math.max(1, Math.round(produced.qty)),
-        fromLevel: source.level,
-        toLevel: sink.level,
-      });
+  if (stop.action === 'pickup') {
+    const space = ctx.config.haulage.porterCapacity - load(porter);
+    const taken = take(building, stop.goodId, Math.min(limit, space));
+    if (taken > 0) {
+      porter.carrying[stop.goodId] = (porter.carrying[stop.goodId] ?? 0) + taken;
+      ctx.emit('haulage:pickup', { workerId: porter.id, instanceId: building.instanceId, goodId: stop.goodId, qty: taken });
+    }
+  } else {
+    const held = porter.carrying[stop.goodId] ?? 0;
+    const given = put(building, def, ctx, stop.goodId, Math.min(limit, held));
+    if (given > 0) {
+      porter.carrying[stop.goodId] = held - given;
+      if (porter.carrying[stop.goodId] <= 1e-9) delete porter.carrying[stop.goodId];
+      ctx.emit('haulage:dropoff', { workerId: porter.id, instanceId: building.instanceId, goodId: stop.goodId, qty: given });
     }
   }
-
-  // Sorted so dispatch order never depends on placement order.
-  return routes.sort(
-    (a, b) => a.cargoId.localeCompare(b.cargoId) || a.fromLevel - b.fromLevel || a.toLevel - b.toLevel,
-  );
 }
 
-function nearestConsumer(state, ctx, resourceId, fromLevel) {
-  const candidates = state.buildings
-    .filter((b) => {
-      const def = ctx.catalog.buildings.byId[b.buildingId];
-      return (def?.consumes ?? []).some((c) => c.id === resourceId);
-    })
-    .sort(
-      (a, b) =>
-        Math.abs(a.level - fromLevel) - Math.abs(b.level - fromLevel) ||
-        a.instanceId.localeCompare(b.instanceId),
-    );
-  return candidates[0] ?? null;
+/** Start a walk down (or up) the stairwell. */
+function walk(state, ctx, porter, toLevel) {
+  const method = ctx.catalog.haulage.byId.stairwell;
+  const distance = Math.abs(toLevel - porter.level);
+  const trip = {
+    id: `t${state.haulage.nextTripId}`,
+    method: 'stairwell',
+    workerId: porter.id,
+    fromLevel: porter.level,
+    toLevel,
+    cargo: { ...(porter.carrying ?? {}) },
+    startTick: state.clock.tick,
+    arriveTick: state.clock.tick + Math.max(1, Math.round(distance * (method?.ticksPerLevel ?? 2))),
+  };
+  state.haulage.nextTripId += 1;
+  state.haulage.trips.push(trip);
+  porter.tripId = trip.id;
 }
 
-/**
- * The best available method for a route. Mechanised methods need their
- * building placed and the grid up; the stairwell always works, which is why
- * it is the floor rather than an option.
- */
-export function pickMethod(state, ctx, route) {
-  const preference = ['freight-elevator', 'dumbwaiter', 'stairwell'];
-
-  for (const id of preference) {
-    const method = ctx.catalog.haulage.byId[id];
-    if (!method) continue;
-    if (route.qty > method.capacityPerTrip) continue;
-
-    if (method.requiresBuilding) {
-      const machines = state.buildings.filter(
-        (b) => b.buildingId === method.requiresBuilding && b.powered !== false && !b.brokenDown,
-      );
-      if (machines.length === 0) continue;
-
-      // One car per machine. This is what 'limited-cars' means, and it is what
-      // sends the overflow down the stairwell — which is why a Shaft with a
-      // single elevator still has people walking.
-      if (method.concurrentTrips !== null) {
-        const inUse = state.haulage.trips.filter((t) => t.method === id).length;
-        if (inUse >= machines.length * method.concurrentTrips) continue;
-      }
-    }
-    return method;
-  }
-  return ctx.catalog.haulage.byId['stairwell'] ?? null;
-}
-
-/** Effective throughput of a method over a distance, in units per tick. */
-export function throughput(methodId, fromLevel, toLevel, ctx) {
-  const method = ctx.catalog.haulage.byId[methodId];
-  if (!method) return 0;
-  const distance = Math.max(1, Math.abs(toLevel - fromLevel));
-  const ticks = Math.max(1, distance * method.ticksPerLevel);
-  return method.capacityPerTrip / ticks;
+/** What a stop would move right now — for the route editor's preview. */
+export function stopAvailable(state, stop) {
+  const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
+  return building ? amount(building, stop.goodId) : 0;
 }

@@ -1,0 +1,59 @@
+{
+  "_note": "Logistics zone. Every physical good lives in some building's own store, and nothing moves unless a porter carries it (systems/resources/stores.js, systems/haulage/). Depots and storehouses hold any mix of goods up to their capacity; repair crews and builders draw their materials from them. Porters live at a porter station, are hired there, and wait there when they have no route.",
+  "buildings": [
+    {
+      "id": "depot",
+      "name": "Depot",
+      "zone": "logistics",
+      "slots": 1,
+      "levelConstraint": null,
+      "priorityClass": "industry",
+      "powerDraw": 5,
+      "staffing": 0,
+      "wearPerTick": 0.0008,
+      "consumes": [],
+      "produces": [],
+      "storage": { "capacity": 1500 },
+      "repairCost": [{ "id": "basic-parts", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.4, "breakdown": 0.1 },
+      "effects": [],
+      "_note": "A cage of shelves off the landing. Small, cheap, and wherever it is needed: a depot beside the canteens shortens every food run."
+    },
+    {
+      "id": "storehouse",
+      "name": "Storehouse",
+      "zone": "logistics",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "industry",
+      "powerDraw": 10,
+      "staffing": 0,
+      "wearPerTick": 0.0008,
+      "consumes": [],
+      "produces": [],
+      "storage": { "capacity": 8000 },
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "concrete", "qty": 1 }],
+      "conditionThresholds": { "degraded": 0.4, "breakdown": 0.1 },
+      "effects": [],
+      "_note": "The Shaft's common store. Repair crews and builders take their parts and materials from here, nearest first — a part still in the workshop is not yet a part anyone can use."
+    },
+    {
+      "id": "porter-station",
+      "name": "Porter station",
+      "zone": "logistics",
+      "slots": 2,
+      "levelConstraint": null,
+      "priorityClass": "industry",
+      "powerDraw": 10,
+      "staffing": 0,
+      "wearPerTick": 0.0008,
+      "consumes": [],
+      "produces": [],
+      "porterStation": { "porters": 8 },
+      "repairCost": [{ "id": "basic-parts", "qty": 2 }],
+      "conditionThresholds": { "degraded": 0.4, "breakdown": 0.1 },
+      "effects": [],
+      "_note": "Where porters are hired, where they rest, and where they wait when nobody has told them what to carry. Each station houses porterStation.porters of them."
+    }
+  ]
+}

@@ -4,7 +4,6 @@
   "id": "default",
   "name": "The Shaft",
   "facilityNumber": 12,
-
   "tunables": {
     "structure": {
       "levels": 42
@@ -16,7 +15,6 @@
       "groundwaterIntakePerTick": 90
     }
   },
-
   "layout": {
     "_note": "Vertical arrangement. deepestHabitedLevel gates where population may live; digFaceLevel is where extraction currently sits.",
     "surfaceLevel": 1,
@@ -27,51 +25,745 @@
     "apocryphaLevel": 3,
     "hiddenPassageLevel": 41
   },
-
   "opening": {
-    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched.",
+    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched. porters: each hired at the named station and given the route, stops naming [buildingId, level, nth] — nth counts that building on that level in placement order (0 when omitted); each stop picks up or drops off one good, `qty` per visit or all.",
     "buildings": [
-      ["auditorium", 1],
-      ["shaft-exit", 1],
-      ["council-chamber", 2],
-      ["archive", 3],
-      ["oxygen-garden", 6],
-      ["superior-suite", 8],
-      ["common-hall", 10],
-      ["junction", 12],
-      ["hydroponics-bay", 13],
-      ["hydroponics-bay", 13],
-      ["hydroponics-bay", 14],
-      ["hydroponics-bay", 14],
-      ["protein-vats", 15],
-      ["protein-vats", 15],
-      ["hydroponics-bay", 16],
-      ["hydroponics-bay", 16],
-      ["food-processing", 17],
-      ["grove", 5],
-      ["scrubber-bank", 20],
-      ["freight-elevator", 20],
-      ["clinic", 22],
-      ["simple-suite", 24],
-      ["canteen", 26],
-      ["simple-suite", 27],
-      ["canteen", 28],
-      ["junction", 30],
-      ["cistern", 32],
-      ["scrubber-bank", 30],
-      ["workshop", 36],
-      ["smelter", 37],
-      ["main-generator", 38],
-      ["judicial", 4],
-      ["dig-face", 40],
-      ["deep-pump", 40],
-      ["reclamation-plant", 42]
+      [
+        "auditorium",
+        1
+      ],
+      [
+        "shaft-exit",
+        1
+      ],
+      [
+        "council-chamber",
+        2
+      ],
+      [
+        "archive",
+        3
+      ],
+      [
+        "oxygen-garden",
+        6
+      ],
+      [
+        "superior-suite",
+        8
+      ],
+      [
+        "common-hall",
+        10
+      ],
+      [
+        "junction",
+        12
+      ],
+      [
+        "hydroponics-bay",
+        13
+      ],
+      [
+        "hydroponics-bay",
+        13
+      ],
+      [
+        "hydroponics-bay",
+        14
+      ],
+      [
+        "hydroponics-bay",
+        14
+      ],
+      [
+        "protein-vats",
+        15
+      ],
+      [
+        "protein-vats",
+        15
+      ],
+      [
+        "hydroponics-bay",
+        16
+      ],
+      [
+        "hydroponics-bay",
+        16
+      ],
+      [
+        "food-processing",
+        17
+      ],
+      [
+        "grove",
+        5
+      ],
+      [
+        "scrubber-bank",
+        20
+      ],
+      [
+        "freight-elevator",
+        20
+      ],
+      [
+        "clinic",
+        22
+      ],
+      [
+        "simple-suite",
+        24
+      ],
+      [
+        "canteen",
+        26
+      ],
+      [
+        "simple-suite",
+        27
+      ],
+      [
+        "canteen",
+        28
+      ],
+      [
+        "junction",
+        30
+      ],
+      [
+        "cistern",
+        32
+      ],
+      [
+        "scrubber-bank",
+        30
+      ],
+      [
+        "workshop",
+        36
+      ],
+      [
+        "smelter",
+        37
+      ],
+      [
+        "main-generator",
+        38
+      ],
+      [
+        "judicial",
+        4
+      ],
+      [
+        "dig-face",
+        40
+      ],
+      [
+        "deep-pump",
+        40
+      ],
+      [
+        "reclamation-plant",
+        42
+      ],
+      [
+        "porter-station",
+        18
+      ],
+      [
+        "storehouse",
+        35
+      ],
+      [
+        "porter-station",
+        35
+      ]
+    ],
+    "porters": [
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "Upper bays to the first canteen.",
+        "route": [
+          {
+            "at": [
+              "hydroponics-bay",
+              13,
+              0
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "hydroponics-bay",
+              13,
+              1
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              26
+            ],
+            "dropoff": "food"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "Middle bays to the second canteen.",
+        "route": [
+          {
+            "at": [
+              "hydroponics-bay",
+              14,
+              0
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "hydroponics-bay",
+              14,
+              1
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              28
+            ],
+            "dropoff": "food"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "The vats' protein: the second canteen first, the first with whatever is left.",
+        "route": [
+          {
+            "at": [
+              "protein-vats",
+              15,
+              0
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "protein-vats",
+              15,
+              1
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              28
+            ],
+            "dropoff": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              26
+            ],
+            "dropoff": "food"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "The lowest bays: the first canteen first, the second with whatever is left.",
+        "route": [
+          {
+            "at": [
+              "hydroponics-bay",
+              16,
+              0
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "hydroponics-bay",
+              16,
+              1
+            ],
+            "pickup": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              26
+            ],
+            "dropoff": "food"
+          },
+          {
+            "at": [
+              "canteen",
+              28
+            ],
+            "dropoff": "food"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "Timber from the grove to everything that burns or builds with it, and the workshop's paper back up to the offices.",
+        "route": [
+          {
+            "at": [
+              "grove",
+              5
+            ],
+            "pickup": "wood"
+          },
+          {
+            "at": [
+              "auditorium",
+              1
+            ],
+            "dropoff": "wood"
+          },
+          {
+            "at": [
+              "superior-suite",
+              8
+            ],
+            "dropoff": "wood"
+          },
+          {
+            "at": [
+              "common-hall",
+              10
+            ],
+            "dropoff": "wood"
+          },
+          {
+            "at": [
+              "workshop",
+              36
+            ],
+            "dropoff": "wood"
+          },
+          {
+            "at": [
+              "workshop",
+              36
+            ],
+            "pickup": "paper"
+          },
+          {
+            "at": [
+              "council-chamber",
+              2
+            ],
+            "dropoff": "paper"
+          },
+          {
+            "at": [
+              "archive",
+              3
+            ],
+            "dropoff": "paper"
+          },
+          {
+            "at": [
+              "judicial",
+              4
+            ],
+            "dropoff": "paper"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          18
+        ],
+        "_note": "What comes down through the Exit, and the smelter's carbon, to the scrubbers.",
+        "route": [
+          {
+            "at": [
+              "shaft-exit",
+              1
+            ],
+            "pickup": "scrubber-catalyst"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              20
+            ],
+            "dropoff": "scrubber-catalyst"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              30
+            ],
+            "dropoff": "scrubber-catalyst"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "pickup": "scrubber-catalyst",
+            "qty": 2
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "pickup": "activated-carbon",
+            "qty": 10
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "activated-carbon"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              30
+            ],
+            "dropoff": "activated-carbon"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              20
+            ],
+            "dropoff": "activated-carbon"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              30
+            ],
+            "dropoff": "scrubber-catalyst"
+          },
+          {
+            "at": [
+              "scrubber-bank",
+              20
+            ],
+            "dropoff": "scrubber-catalyst"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          35
+        ],
+        "_note": "Scrap from the stores up to the vats.",
+        "route": [
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "pickup": "scrap",
+            "qty": 100
+          },
+          {
+            "at": [
+              "protein-vats",
+              15,
+              0
+            ],
+            "dropoff": "scrap"
+          },
+          {
+            "at": [
+              "protein-vats",
+              15,
+              1
+            ],
+            "dropoff": "scrap"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          35
+        ],
+        "_note": "The face's coal and ore to the smelter.",
+        "route": [
+          {
+            "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "coal"
+          },
+          {
+            "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "iron-ore"
+          },
+          {
+            "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "copper-ore"
+          },
+          {
+            "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "limestone"
+          },
+          {
+            "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "silica-sand"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "dropoff": "coal"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "dropoff": "iron-ore"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "dropoff": "copper-ore"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "dropoff": "limestone"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "dropoff": "silica-sand"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "coal"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "iron-ore"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "copper-ore"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "limestone"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "silica-sand"
+          }
+        ]
+      },
+      {
+        "station": [
+          "porter-station",
+          35
+        ],
+        "_note": "The smelter's fuel to the generator, its steel and wire to the workshop, and what the workshop and smelter make to the stores.",
+        "route": [
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "fuel"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "pickup": "fuel",
+            "qty": 30
+          },
+          {
+            "at": [
+              "main-generator",
+              38
+            ],
+            "dropoff": "fuel"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "activated-carbon"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "fuel"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "steel-billet"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "copper-wire"
+          },
+          {
+            "at": [
+              "workshop",
+              36
+            ],
+            "dropoff": "steel-billet"
+          },
+          {
+            "at": [
+              "workshop",
+              36
+            ],
+            "dropoff": "copper-wire"
+          },
+          {
+            "at": [
+              "workshop",
+              36
+            ],
+            "pickup": "basic-parts"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "concrete"
+          },
+          {
+            "at": [
+              "smelter",
+              37
+            ],
+            "pickup": "glass"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "basic-parts"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "concrete"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "glass"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "steel-billet"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "copper-wire"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "activated-carbon"
+          }
+        ]
+      }
     ]
   },
-
   "startingStocks": {
-    "_note": "What the settlement has in hand at tick zero. Structure rather than a tunable, like layout and veins, because it is a map of resource ids and not a scalar the schema can range-check. Read by core/gameState.js — and being in data rather than boot code is what lets a run replay from its command log alone.",
-    "food": 30000,
+    "_note": "What the settlement has in hand at tick zero. Structure rather than a tunable, like layout and veins, because it is a map of resource ids and not a scalar the schema can range-check. Read by core/run.js stockOpening — and being in data rather than boot code is what lets a run replay from its command log alone. They go into the depots and storehouses, in this order, and what will not fit is not there — so food comes last. The canteens and every other building also open with their own input stores full.",
     "paper": 40,
     "fuel": 60,
     "coal": 200,
@@ -81,15 +773,33 @@
     "wood": 40,
     "basic-parts": 30,
     "activated-carbon": 20,
-    "scrubber-catalyst": 40
+    "scrubber-catalyst": 40,
+    "food": 1500
   },
-
   "veins": [
-    { "id": "iron-ore", "abundance": 1.0 },
-    { "id": "copper-ore", "abundance": 0.8 },
-    { "id": "coal", "abundance": 0.9 },
-    { "id": "limestone", "abundance": 1.0 },
-    { "id": "silica-sand", "abundance": 0.7 },
-    { "id": "gold-ore", "abundance": 0.25 }
+    {
+      "id": "iron-ore",
+      "abundance": 1.0
+    },
+    {
+      "id": "copper-ore",
+      "abundance": 0.8
+    },
+    {
+      "id": "coal",
+      "abundance": 0.9
+    },
+    {
+      "id": "limestone",
+      "abundance": 1.0
+    },
+    {
+      "id": "silica-sand",
+      "abundance": 0.7
+    },
+    {
+      "id": "gold-ore",
+      "abundance": 0.25
+    }
   ]
 }

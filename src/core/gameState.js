@@ -47,10 +47,9 @@ export function createGameState({ chapter, dataset, seed }) {
     buildings: [],
     nextInstanceId: 1,
     maintenance: initialMaintenance(config),
-    haulage: { trips: [], queue: [], nextTripId: 1 },
+    haulage: { trips: [], nextTripId: 1 },
 
     resources: {
-      stocks: initialStocks(catalog, shaft),
       seams: initialSeams(shaft),
       abstracts: initialAbstracts(catalog, config),
       flows: {
@@ -118,22 +117,6 @@ function buildLevels(config, shaft, tables) {
     airQuality: 100,
     sealed: false,
   }));
-}
-
-/**
- * Every stockable resource at zero, then the shaft profile's opening stores
- * on top. Declaring all ids up front keeps the object's key set stable across
- * a run, which matters for both save size and state fingerprinting.
- */
-function initialStocks(catalog, shaft) {
-  const stocks = {};
-  for (const collection of ['stocks', 'minerals', 'components']) {
-    for (const id of catalog[collection]?.ids ?? []) stocks[id] = 0;
-  }
-  for (const [id, qty] of Object.entries(shaft.startingStocks ?? {})) {
-    if (id in stocks) stocks[id] = qty;
-  }
-  return stocks;
 }
 
 function initialAbstracts(catalog, config) {

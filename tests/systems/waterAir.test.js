@@ -12,7 +12,7 @@ import { residentsByLevel, housingCapacity } from '../../src/systems/population/
 import { powerDemand } from '../../src/systems/buildings/buildingRegistry.js';
 
 const POWERED = [['main-generator', 38], ['battery-bank', 38]];
-const FUEL = { fuel: 1000 };
+const FUEL = { fuel: 100 };
 
 test('residents fill homes, and the overflow spreads over the habitable levels', async () => {
   const run = await runWith([['simple-suite', 24]]);
@@ -29,13 +29,13 @@ test('residents fill homes, and the overflow spreads over the habitable levels',
 test('when water runs short, people drink first and buildings are rationed', async () => {
   const layout = [...POWERED, ['deep-pump', 40], ['hydroponics-bay', 13], ['simple-suite', 24]];
 
-  const plenty = await runWith(layout, { stocks: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 } });
+  const plenty = await runWith(layout, { keep: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 } });
   ticks(plenty, 5);
   assert.equal(plenty.state.resources.flows.water.peopleShare, 1);
   assert.equal(plenty.state.resources.flows.water.buildingShare, 1);
 
   // 2400 people at the default rate drink far more than one pump lifts.
-  const short = await runWith(layout, { stocks: FUEL });
+  const short = await runWith(layout, { keep: FUEL });
   ticks(short, 5);
   const water = short.state.resources.flows.water;
   assert.ok(water.peopleShare > 0 && water.peopleShare < 1);
@@ -45,7 +45,7 @@ test('when water runs short, people drink first and buildings are rationed', asy
 
 test('cisterns bank a surplus and release it in a shortfall', async () => {
   const run = await runWith([...POWERED, ['deep-pump', 40], ['cistern', 32]], {
-    stocks: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 },
+    keep: FUEL, tunables: { 'water.potablePerCapitaPerTick': 0.001 },
   });
   ticks(run, 20);
   const water = run.state.resources.flows.water;
@@ -62,8 +62,8 @@ test('cisterns bank a surplus and release it in a shortfall', async () => {
 test('reclaimed water fouls the supply unless a purifier treats it', async () => {
   const layout = [...POWERED, ['deep-pump', 40], ['reclamation-plant', 42]];
   const tunables = { 'water.potablePerCapitaPerTick': 0.01 };
-  const dirty = await runWith(layout, { stocks: FUEL, tunables });
-  const clean = await runWith([...layout, ['purifier', 41]], { stocks: { ...FUEL, 'activated-carbon': 100 }, tunables });
+  const dirty = await runWith(layout, { keep: FUEL, tunables });
+  const clean = await runWith([...layout, ['purifier', 41]], { keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 }, tunables });
   ticks(dirty, 200);
   ticks(clean, 200);
   assert.ok(dirty.state.resources.flows.water.quality < 90, `got ${dirty.state.resources.flows.water.quality}`);
@@ -71,8 +71,8 @@ test('reclaimed water fouls the supply unless a purifier treats it', async () =>
 });
 
 test('a pump draws more power the higher people live', async () => {
-  const low = await runWith([...POWERED, ['deep-pump', 40], ['simple-suite', 34]], { stocks: FUEL });
-  const high = await runWith([...POWERED, ['deep-pump', 40], ['simple-suite', 4]], { stocks: FUEL });
+  const low = await runWith([...POWERED, ['deep-pump', 40], ['simple-suite', 34]], { keep: FUEL });
+  const high = await runWith([...POWERED, ['deep-pump', 40], ['simple-suite', 4]], { keep: FUEL });
   for (const run of [low, high]) { run.state.population.headcount = 80; ticks(run, 2); }
   const draw = (run) => {
     const pump = instanceOf(run, 'deep-pump');
@@ -83,7 +83,7 @@ test('a pump draws more power the higher people live', async () => {
 
 test('residents foul their own level, and a scrubber cleans only within its radius', async () => {
   const run = await runWith([...POWERED, ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 30]], {
-    stocks: { ...FUEL, 'activated-carbon': 100 },
+    keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 },
   });
   run.state.population.headcount = 160;
   ticks(run, 60);
@@ -95,7 +95,7 @@ test('residents foul their own level, and a scrubber cleans only within its radi
 });
 
 test('a sealed level loses its air even with a scrubber next door', async () => {
-  const run = await runWith([...POWERED, ['scrubber-bank', 20]], { stocks: { ...FUEL, 'activated-carbon': 100 } });
+  const run = await runWith([...POWERED, ['scrubber-bank', 20]], { keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 } });
   run.state.population.headcount = 0;
   run.state.levels[20].sealed = true; // level 21
   ticks(run, 30);
@@ -104,13 +104,14 @@ test('a sealed level loses its air even with a scrubber next door', async () => 
 });
 
 test('the catalyst arrives from outside on schedule, until the supply is cut', async () => {
-  const run = await runWith([]);
+  const run = await runWith([['shaft-exit', 1]]);
+  const exit = instanceOf(run, 'shaft-exit');
   const every = run.ctx.config.air.catalystDeliveryIntervalTicks;
-  const start = run.state.resources.stocks['scrubber-catalyst'];
+  const qty = run.ctx.config.air.catalystDeliveryQty;
   ticks(run, every);
-  assert.equal(run.state.resources.stocks['scrubber-catalyst'], start + run.ctx.config.air.catalystDeliveryQty);
+  assert.equal(exit.stock['scrubber-catalyst'], qty, 'it lands at the Exit, for a porter to carry down');
 
   run.state.resources.cutSupplies.push('scrubber-catalyst');
   ticks(run, every);
-  assert.equal(run.state.resources.stocks['scrubber-catalyst'], start + run.ctx.config.air.catalystDeliveryQty);
+  assert.equal(exit.stock['scrubber-catalyst'], qty);
 });

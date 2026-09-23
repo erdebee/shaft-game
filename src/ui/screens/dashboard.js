@@ -11,6 +11,7 @@ import { render as renderMeter, flowState } from '../components/resourceMeter.js
 import { el, button, card } from '../components/dom.js';
 import { daysOfSupply } from '../../core/selectors.js';
 import { unhoused, residentsByLevel } from '../../systems/population/housing.js';
+import { total } from '../../systems/resources/stores.js';
 
 const WATCHED_STOCKS = ['food', 'fuel', 'activated-carbon', 'scrubber-catalyst', 'basic-parts', 'paper', 'wood'];
 const METERS = ['morale', 'trust', 'stability', 'productivity', 'discontent', 'freedom', 'legitimacy', 'structural-integrity'];
@@ -81,7 +82,7 @@ export function mount(root, state, ctx, dispatch) {
         : `${Math.round(flow.generation)} kW available`;
 
       for (const [id, meter] of stockMeters) {
-        const amount = s.resources.stocks[id] ?? 0;
+        const amount = total(s, id);
         const days = daysOfSupply(s, c, id);
         const def = c.catalog.stocks.byId[id];
         let band = 'ok';

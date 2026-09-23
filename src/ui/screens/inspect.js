@@ -140,6 +140,10 @@ export function mount(root, state, ctx, dispatch) {
   };
 }
 
+function list(ids = []) {
+  return ids.join(', ');
+}
+
 function selectedInstance(state) {
   const { instanceId } = selection.get();
   return instanceId ? state.buildings.find((b) => b.instanceId === instanceId) ?? null : null;
@@ -151,10 +155,8 @@ function statusOf(instance, def, state, ctx) {
   if (faction && state.population.strikes.some((s) => s.faction === faction)) return ['On strike', 'critical'];
   if (instance.brokenDown) return ['Broken down — waiting for repairs', 'critical'];
   if (instance.powered === false) return ['Dark — no power', 'critical'];
-  if (instance.starved) {
-    const missing = (def.consumes ?? []).filter((c) => (state.resources.stocks[c.id] ?? Infinity) < c.qty).map((c) => c.id);
-    return [`Starved of ${missing.join(', ') || 'its inputs'}`, 'critical'];
-  }
+  if (instance.starved) return [`Waiting for ${list(instance.missing) || 'its inputs'} — none in its store`, 'critical'];
+  if (instance.blocked) return [`Store full of ${list(instance.full)} — waiting for a porter to collect`, 'warn'];
   if ((instance.waterShare ?? 1) < 1) return ['Short of water', 'warn'];
   if (def.staffing && instance.staffing < def.staffing) return [`Short-handed: ${instance.staffing} of ${def.staffing} crews`, 'warn'];
   if (recipesFor(def.id, ctx).length && !instance.job) return ['Idle — nothing needed, or no inputs', 'warn'];

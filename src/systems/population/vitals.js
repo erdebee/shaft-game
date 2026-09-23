@@ -5,7 +5,10 @@
  * roster.js for the few who are tracked by name.
  *
  * Each tick:
- *   1. EAT      per-capita food from the shared stock; a shortfall is hunger
+ *   1. EAT      at the canteens: each working canteen feeds up to its
+ *               `serves` from its own larder. Whoever no canteen feeds, and
+ *               whoever a canteen's empty larder cannot, goes hungry — food
+ *               in the storehouse is not food on the table
  *   2. NEEDS    a snapshot of how well every need was met this tick — food,
  *               water, water quality, air, a home, a lit home. Read by health
  *               below, by the meters, and by the dashboard.
@@ -25,6 +28,8 @@
 import { approach, clamp } from '../../utils/math.js';
 import { residentsByLevel, housingCapacity } from './housing.js';
 import { cohortFactor } from './demography.js';
+import { workScale } from '../buildings/buildingRegistry.js';
+import { take } from '../resources/stores.js';
 
 const CAUSES = ['starvation', 'thirst', 'suffocation', 'illness'];
 
@@ -41,10 +46,10 @@ export function tick(state, ctx) {
   const cfg = ctx.config.population;
 
   // --- 1. eat ---------------------------------------------------------------
-  const demand = pop.headcount * cfg.foodPerCapitaPerTick * cohortFactor(state, ctx, 'foodMultiplier');
-  const eaten = Math.min(demand, state.resources.stocks.food ?? 0);
-  state.resources.stocks.food = (state.resources.stocks.food ?? 0) - eaten;
-  const foodShare = demand > 0 ? eaten / demand : 1;
+  const perHead = cfg.foodPerCapitaPerTick * cohortFactor(state, ctx, 'foodMultiplier');
+  const demand = pop.headcount * perHead;
+  const eaten = eatAtCanteens(state, ctx, perHead);
+  const foodShare = demand > 0 ? Math.min(1, eaten / demand) : 1;
   if (foodShare < 1) ctx.emit('population:hungry', { share: foodShare, shortfall: demand - eaten });
 
   // --- 2. needs -------------------------------------------------------------
@@ -98,6 +103,36 @@ export function tick(state, ctx) {
     ctx.emit('population:day', { ...pop.vitalStats, headcount: pop.headcount, health: pop.health });
     pop.vitalStats = emptyStats();
   }
+}
+
+/**
+ * Feed people at the canteens. Each can seat up to its `serves` (scaled by
+ * how well it is crewed and lit), and no more than it has food for. People
+ * spread over the canteens in proportion to what each can serve — nobody
+ * queues at an empty counter while the next canteen has a full larder — so a
+ * well-supplied canteen draws more diners, and every larder drains in step
+ * with what reaches it. Records how many each canteen fed, for the inspector.
+ * Returns the food eaten.
+ */
+function eatAtCanteens(state, ctx, perHead) {
+  const canteens = [];
+  for (const instance of state.buildings) {
+    const def = ctx.catalog.buildings.byId[instance.buildingId];
+    if (!def?.serves) continue;
+    const seats = def.serves * workScale(instance, def, ctx);
+    const larder = perHead > 0 ? (instance.stock?.food ?? 0) / perHead : Infinity;
+    canteens.push({ instance, servable: Math.max(0, Math.min(seats, larder)) });
+  }
+
+  const servable = canteens.reduce((n, c) => n + c.servable, 0);
+  const share = servable > 0 ? Math.min(1, state.population.headcount / servable) : 0;
+  let eaten = 0;
+  for (const { instance, servable: can } of canteens) {
+    const meal = take(instance, 'food', can * share * perHead);
+    instance.fed = perHead > 0 ? meal / perHead : 0;
+    eaten += meal;
+  }
+  return eaten;
 }
 
 /** Share of the population too sick to work: none while health is good. */

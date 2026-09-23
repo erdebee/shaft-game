@@ -24,6 +24,7 @@
 import { clamp } from '../../utils/math.js';
 import { outputScale } from '../buildings/buildingRegistry.js';
 import { residentsByLevel } from '../population/housing.js';
+import { put } from '../resources/stores.js';
 
 const CATALYST = 'scrubber-catalyst';
 
@@ -134,6 +135,10 @@ function deliverCatalyst(state, ctx) {
   const { catalystDeliveryIntervalTicks: every, catalystDeliveryQty: qty } = ctx.config.air;
   if (!every || !qty || state.clock.tick % every !== 0) return;
   if (state.resources.cutSupplies.includes(CATALYST)) return;
-  state.resources.stocks[CATALYST] = (state.resources.stocks[CATALYST] ?? 0) + qty;
-  ctx.emit('supply:delivered', { id: CATALYST, qty });
+  // It comes down through the Exit and waits there, like everything that
+  // comes from outside; someone has to carry it to the scrubbers.
+  const exit = state.buildings.find((b) => ctx.catalog.buildings.byId[b.buildingId]?.receivesDeliveries);
+  if (!exit) return;
+  const landed = put(exit, ctx.catalog.buildings.byId[exit.buildingId], ctx, CATALYST, qty);
+  if (landed > 0) ctx.emit('supply:delivered', { id: CATALYST, qty: landed, level: exit.level });
 }

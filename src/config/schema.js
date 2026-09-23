@@ -65,7 +65,14 @@ export const TUNABLES = {
   'structure.excavationCostCurveExponent': N(1, 4),
   'structure.collapseRiskThreshold': METER,
 
+  'stores.inputBufferTicks': TICKS,
+  'stores.outputBufferTicks': TICKS,
+  'stores.batchesBuffered': N(1, 100),
+
   'haulage.porterTicksPerLevel': N(0, 100),
+  'haulage.porterCapacity': N(1, 100000),
+  'haulage.porterRestAt': RATE,
+  'haulage.porterRestedAt': RATE,
   'haulage.fatiguePerLevelHauled': RATE,
   'haulage.shiftChangeCongestionMultiplier': N(1, 10),
 

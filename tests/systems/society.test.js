@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { runWith, ticks, instanceOf } from '../helpers/sim.js';
+import { runWith, ticks, instanceOf, KITCHEN, FED_KEEP } from '../helpers/sim.js';
 import { on } from '../../src/core/eventBus.js';
 import { dispatch } from '../../src/core/commands.js';
 import { meterTarget, workRate } from '../../src/systems/society/meters.js';
@@ -14,7 +14,7 @@ import { outputScale } from '../../src/systems/buildings/buildingRegistry.js';
 import { collectModifiers } from '../../src/core/effects.js';
 
 const CALM = { 'water.potablePerCapitaPerTick': 0, 'air.contaminantPerCapitaPerTick': 0 };
-const FED = { food: 1e6 };
+
 
 /** Collect one event's payloads while `fn` runs. */
 function capture(event, fn) {
@@ -26,7 +26,7 @@ function capture(event, fn) {
 }
 
 test('a meter drifts toward its target, and a one-shot bump fades', async () => {
-  const run = await runWith([], { stocks: FED, tunables: CALM });
+  const run = await runWith(KITCHEN, { keep: FED_KEEP, tunables: CALM });
   const def = run.ctx.catalog.meters.byId.morale;
   run.state.meters.morale = 100;
   ticks(run, 2000);
@@ -36,8 +36,13 @@ test('a meter drifts toward its target, and a one-shot bump fades', async () => 
 });
 
 test('hunger drags morale down', async () => {
-  const fed = await runWith([], { stocks: FED, tunables: CALM });
-  const hungry = await runWith([], { stocks: { food: 0 }, tunables: CALM });
+  // A few hundred people with homes, so hunger is the only thing between them.
+  const fed = await runWith([...KITCHEN, ['simple-suite', 20]], { keep: FED_KEEP, tunables: CALM });
+  const hungry = await runWith([...KITCHEN, ['simple-suite', 20]], { keep: { fuel: 100 }, tunables: CALM });
+  for (const run of [fed, hungry]) {
+    run.state.population.headcount = 300;
+    for (const c of run.state.buildings) if (c.buildingId === 'canteen') delete c.stock?.food;
+  }
   // Long enough for both to settle, not just to drift at full rate.
   ticks(fed, 1000);
   ticks(hungry, 1000);
@@ -46,7 +51,7 @@ test('hunger drags morale down', async () => {
 });
 
 test('structural integrity accumulates: a working dig face wears the rock', async () => {
-  const run = await runWith([['main-generator', 38], ['dig-face', 40]], { stocks: { ...FED, fuel: 500 }, tunables: CALM });
+  const run = await runWith([['main-generator', 38], ['dig-face', 40]], { keep: FED_KEEP, tunables: CALM });
   const start = run.state.meters['structural-integrity'];
   ticks(run, 100);
   assert.ok(run.state.meters['structural-integrity'] < start - 1);
@@ -54,7 +59,7 @@ test('structural integrity accumulates: a working dig face wears the rock', asyn
 
 test('low productivity slows every building', async () => {
   // A salvage post needs no water, so nothing but the work rate varies.
-  const run = await runWith([['main-generator', 38], ['salvage-post', 13]], { stocks: { ...FED, fuel: 500 }, tunables: CALM });
+  const run = await runWith([['main-generator', 38], ['salvage-post', 13]], { keep: FED_KEEP, tunables: CALM });
   ticks(run, 1);
   const bay = instanceOf(run, 'salvage-post');
   const def = run.ctx.catalog.buildings.byId['salvage-post'];
@@ -79,7 +84,7 @@ function sour(run) {
 }
 
 test('a satisfied faction warns as discontent rises; strikes come from the least satisfied', async () => {
-  const run = await runWith([['main-generator', 38], ['hydroponics-bay', 13]], { stocks: { ...FED, fuel: 500 }, tunables: CALM });
+  const run = await runWith([['main-generator', 38], ['hydroponics-bay', 13]], { keep: FED_KEEP, tunables: CALM });
   const { unrest } = run.ctx.config;
   const sat = run.state.population.factionSatisfaction;
   // Freeze the factions where the test wants them by making them the only
@@ -105,7 +110,7 @@ test('a satisfied faction warns as discontent rises; strikes come from the least
 });
 
 test('crossing the demands line raises the demand once', async () => {
-  const run = await runWith([], { stocks: FED, tunables: CALM });
+  const run = await runWith(KITCHEN, { keep: FED_KEEP, tunables: CALM });
   const { demandsThreshold } = run.ctx.config.unrest;
   run.state.meters.discontent = demandsThreshold - 0.01;
   const demands = capture('unrest:demands', () => {
@@ -115,7 +120,7 @@ test('crossing the demands line raises the demand once', async () => {
 });
 
 test('riots wreck buildings and tear down what they wreck, never the fixed structure', async () => {
-  const run = await runWith([['shaft-exit', 1], ['school', 10], ['canteen', 26]], { stocks: FED, tunables: CALM });
+  const run = await runWith([...KITCHEN, ['shaft-exit', 1], ['school', 10]], { keep: FED_KEEP, tunables: CALM });
   const { riotThreshold } = run.ctx.config.unrest;
   run.state.maintenance.crewTarget = 0; // nobody patching up behind the rioters
   const demolished = capture('unrest:demolished', () => {
@@ -126,13 +131,13 @@ test('riots wreck buildings and tear down what they wreck, never the fixed struc
 
   // A building placed after a demolition gets an id nobody has used.
   const used = new Set(run.state.buildings.map((b) => b.instanceId).concat(demolished.map((d) => d.instanceId)));
-  dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId: 'school', level: 11 });
+  dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId: 'school', level: 11, inherited: true });
   assert.ok(!used.has(run.state.buildings.at(-1).instanceId));
 });
 
 test('the deeply discontent leave through the Exit — if there is one', async () => {
-  const withExit = await runWith([['shaft-exit', 1]], { stocks: FED, tunables: CALM });
-  const without = await runWith([], { stocks: FED, tunables: CALM });
+  const withExit = await runWith([...KITCHEN, ['shaft-exit', 1]], { keep: FED_KEEP, tunables: CALM });
+  const without = await runWith(KITCHEN, { keep: FED_KEEP, tunables: CALM });
   for (const run of [withExit, without]) {
     for (let i = 0; i < 30; i++) { run.state.meters.discontent = 95; ticks(run, 1); }
   }

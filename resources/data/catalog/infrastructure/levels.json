@@ -37,7 +37,8 @@
       "power": 4,
       "mechanical": 6,
       "habitation": null,
-      "administration": 4
+      "administration": 4,
+      "logistics": null
     }
   },
 

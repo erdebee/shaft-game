@@ -13,6 +13,7 @@ import { createClock, configureClock } from './clock.js';
 import { createStreams } from './streams.js';
 import { applyRecorded } from './commands.js';
 import { loadDataset } from '../config/contentLoader.js';
+import { fillInputs, putInStorehouses } from '../systems/resources/stores.js';
 
 import * as power from '../systems/power/priorityLadder.js';
 import * as resources from '../systems/resources/index.js';
@@ -20,7 +21,6 @@ import * as water from '../systems/water/greywaterLoop.js';
 import * as airQuality from '../systems/airQuality/perLevelAir.js';
 import * as haulage from '../systems/haulage/haulageMethods.js';
 import * as buildings from '../systems/buildings/buildingRegistry.js';
-import * as roster from '../systems/population/roster.js';
 import * as population from '../systems/population/index.js';
 import * as society from '../systems/society/index.js';
 
@@ -57,13 +57,6 @@ export async function createRun({
   const ctx = createContext({ dataset: data, streams, cursors: liveCursors, outbox: [] });
   const engine = createEngine(gameState, createSystems(), ctx);
 
-  // Deterministic opening setup belongs HERE, not in main.js. Anything that
-  // shapes a run and is not a command has to be reproducible from
-  // dataset + seed alone, or replay diverges — starting stores come from the
-  // shaft profile (see gameState.initialStocks) and the roster is seeded from
-  // the 'names' stream. Restoring a save skips it: those people already exist.
-  if (!state) roster.seedRoster(gameState, ctx);
-
   return { engine, state: gameState, ctx, dataset: data, cursors: liveCursors };
 }
 
@@ -79,6 +72,51 @@ export function placeOpening(state, ctx, dispatch) {
   for (const instance of state.buildings) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     dispatch(state, ctx, { type: 'player:assignStaff', instanceId: instance.instanceId, count: def.staffing ?? 0 });
+  }
+  stockOpening(state, ctx);
+  hireOpeningPorters(state, ctx, dispatch);
+}
+
+/**
+ * The porters the Shaft opens with, each hired at their station and given
+ * their route, through the same commands the player uses. Stops name
+ * [buildingId, level, nth]; a stop that names nothing placed is an error in
+ * the data, and says so.
+ */
+function hireOpeningPorters(state, ctx, dispatch) {
+  const find = ([buildingId, level, nth = 0]) => {
+    const found = state.buildings.filter((b) => b.buildingId === buildingId && b.level === level)[nth];
+    if (!found) throw new Error(`opening: no ${buildingId} #${nth} on level ${level}`);
+    return found.instanceId;
+  };
+  for (const entry of ctx.shaft.openingPorters ?? []) {
+    const before = state.population.workers.length;
+    dispatch(state, ctx, { type: 'player:hirePorter', instanceId: find(entry.station), inherited: true });
+    const porter = state.population.workers[before];
+    if (!porter) throw new Error(`opening: station ${entry.station.join(' ')} had no bed free`);
+    const stops = entry.route.map((stop) => ({
+      instanceId: find(stop.at),
+      action: stop.pickup ? 'pickup' : 'dropoff',
+      goodId: stop.pickup ?? stop.dropoff,
+      qty: stop.qty ?? 'all',
+    }));
+    dispatch(state, ctx, { type: 'player:setRoute', workerId: porter.id, stops });
+    if (porter.route.length !== stops.length) throw new Error(`opening: porter ${before} has a malformed route`);
+  }
+}
+
+/**
+ * The stores the player inherits: every building's input store full, and the
+ * profile's startingStocks in the depots and storehouses, nearest the top
+ * first. Deterministic from dataset alone, so it replays; what will not fit
+ * is not there.
+ */
+export function stockOpening(state, ctx) {
+  for (const instance of state.buildings) {
+    fillInputs(instance, ctx.catalog.buildings.byId[instance.buildingId], ctx);
+  }
+  for (const [id, qty] of Object.entries(ctx.shaft.startingStocks ?? {})) {
+    putInStorehouses(state, ctx, id, qty, 1);
   }
 }
 

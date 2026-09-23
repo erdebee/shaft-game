@@ -29,6 +29,7 @@ import { on } from '../src/core/eventBus.js';
 import { loadDataset } from '../src/config/contentLoader.js';
 import { daysOfSupply } from '../src/core/selectors.js';
 import { residentsByLevel } from '../src/systems/population/housing.js';
+import { totals } from '../src/systems/resources/stores.js';
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '../resources/data');
 const readJson = async (rel) => JSON.parse(readFileSync(join(DATA, rel), 'utf8'));
@@ -85,7 +86,7 @@ function header() {
 
 function row(day) {
   const pop = state.population;
-  const s = state.resources.stocks;
+  const s = totals(state);
   const m = state.meters;
   const power = state.resources.flows.power;
   const lost = dayReport
@@ -97,12 +98,12 @@ function row(day) {
     pad(day, 3),
     pad(`${Math.round(pop.headcount)}(-${Math.round(lost)})`, 11),
     pad(pop.health.toFixed(0), 4),
-    pad(`${Math.round(s.food)}(${Number.isFinite(foodDays) ? foodDays.toFixed(1) : '∞'})`, 11),
+    pad(`${Math.round(s.food ?? 0)}(${Number.isFinite(foodDays) ? foodDays.toFixed(1) : '∞'})`, 11),
     pad(pop.needs.water.toFixed(2), 4),
     pad(`${Math.round(pop.needs.air)}/${Math.round(inhabited)}`, 7),
     pad(`${Math.round(power.generation)}/${Math.round(power.demand)} ${power.brownedOut.length}d`, 13),
-    pad(Math.round(s.fuel), 4),
-    pad(Math.round(s['basic-parts']), 4),
+    pad(Math.round(s.fuel ?? 0), 4),
+    pad(Math.round(s['basic-parts'] ?? 0), 4),
     pad(Math.round(m.morale), 3), pad(Math.round(m.trust), 3), pad(Math.round(m.stability), 3),
     pad(Math.round(m.productivity), 3), pad(Math.round(m.discontent), 3),
     pad(`${Math.round(pop.labour.pool)}/${pop.labour.wanted}`, 9),

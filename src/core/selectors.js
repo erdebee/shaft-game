@@ -1,3 +1,5 @@
+import { total } from '../systems/resources/stores.js';
+
 /**
  * selectors.js
  * Pure derived reads over game state. No mutation, no side effects, no RNG.
@@ -7,9 +9,13 @@
  * arithmetic testable without constructing a whole engine.
  */
 
-/** A resource amount, wherever that resource is kept. */
+/**
+ * A good's amount across the whole Shaft — every building's store and every
+ * porter's load. Goods are local (systems/resources/stores.js); this is the
+ * sum a planner reads, not a pile anyone can draw from.
+ */
 export function stockAmount(state, id) {
-  return state.resources.stocks[id] ?? 0;
+  return total(state, id);
 }
 
 export function meterValue(state, id) {

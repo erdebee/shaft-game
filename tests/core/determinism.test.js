@@ -38,7 +38,7 @@ const dataset = await loadDataset({ readJson, chapter: 1, profile: 'default' });
 const LAYOUT = [
   ['main-generator', 38], ['junction', 30], ['hydroponics-bay', 13],
   ['hydroponics-bay', 14], ['canteen', 26], ['simple-suite', 24],
-  ['workshop', 36], ['scrubber-bank', 20], ['deep-pump', 40],
+  ['workshop', 36], ['scrubber-bank', 20], ['deep-pump', 40], ['porter-station', 20],
 ];
 
 async function newRun(seed = 4242) {
@@ -50,6 +50,20 @@ async function newRun(seed = 4242) {
     const def = dataset.catalog.buildings.byId[instance.buildingId];
     dispatch(run.state, run.ctx, {
       type: 'player:assignStaff', instanceId: instance.instanceId, count: def.staffing ?? 0,
+    });
+  }
+  // Porters on a food run, so the determinism checks cover goods moving
+  // between local stores as well as the systems that fill and empty them.
+  const at = (id) => run.state.buildings.find((b) => b.buildingId === id).instanceId;
+  for (let i = 0; i < 3; i++) dispatch(run.state, run.ctx, { type: 'player:hirePorter', instanceId: at('porter-station'), inherited: true });
+  for (const porter of run.state.population.workers) {
+    dispatch(run.state, run.ctx, {
+      type: 'player:setRoute',
+      workerId: porter.id,
+      stops: [
+        { instanceId: at('hydroponics-bay'), action: 'pickup', goodId: 'food', qty: 'all' },
+        { instanceId: at('canteen'), action: 'dropoff', goodId: 'food', qty: 'all' },
+      ],
     });
   }
   return run;

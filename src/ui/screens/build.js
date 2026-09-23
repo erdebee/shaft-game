@@ -12,8 +12,9 @@
 import * as selection from '../selection.js';
 import { placement, buildCost, depthBandOf } from '../../core/commands.js';
 import { el, button } from '../components/dom.js';
+import { inStorehouses } from '../../systems/resources/stores.js';
 
-const ZONES = ['habitation', 'cultivation', 'water', 'air', 'power', 'mechanical', 'administration'];
+const ZONES = ['habitation', 'cultivation', 'water', 'air', 'power', 'mechanical', 'logistics', 'administration'];
 
 const REASONS = {
   'wrong-depth': 'wrong depth',
@@ -96,7 +97,7 @@ export function mount(root, state, ctx, dispatch) {
 
       // Affordability changes as stores move, so it is part of the key — but
       // rounded to whole units, or the list would rebuild every tick.
-      const stores = materials.map((id) => Math.floor(currentState.resources.stocks[id] ?? 0)).join(',');
+      const stores = materials.map((id) => Math.floor(inStorehouses(currentState, currentCtx, id))).join(',');
       const key = `${level}|${placed.map((b) => b.instanceId).join(',')}|${stores}`;
       if (key !== signature) {
         signature = key;

@@ -34,7 +34,8 @@
       "catalog/buildings/power.json",
       "catalog/buildings/mechanical.json",
       "catalog/buildings/habitation.json",
-      "catalog/buildings/administration.json"
+      "catalog/buildings/administration.json",
+      "catalog/buildings/logistics.json"
     ],
     "networks": ["catalog/infrastructure/networks.json"],
     "haulage": ["catalog/infrastructure/haulage.json"],

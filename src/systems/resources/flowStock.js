@@ -10,6 +10,7 @@
  */
 
 import { workScale } from '../buildings/buildingRegistry.js';
+import { isGood, amount, room, put, take } from './stores.js';
 
 export function createStock(id, { capacity, initial = 0 }) {
   return { id, capacity, amount: initial };
@@ -54,19 +55,20 @@ export function settle(stock, inflows = [], demands = []) {
 
 /**
  * The resources system. Production and consumption for every placed building,
- * scaled by condition and staffing.
+ * scaled by condition and staffing — out of and into the building's OWN store
+ * (stores.js). Nothing here reaches a pile somewhere else in the Shaft: what
+ * is not in the building's store has to be carried there.
  *
  * Consumption is checked before production commits, so a building missing an
- * input produces nothing rather than producing from thin air — and that
- * missing input is reported, which is what makes a supply chain break legible.
- *
- * A building that went without is marked `starved`, which outputScale reads
+ * input produces nothing rather than producing from thin air. It is marked
+ * `starved`, with the goods it lacks in `missing`, which outputScale reads
  * next tick: a generator with no fuel stops generating, a scrubber with no
- * carbon stops scrubbing. The flag is this system's to write, and it is
- * decided from workScale, never from itself.
+ * carbon stops scrubbing. A building whose output store is full makes only
+ * what fits, and is marked `blocked`, with the goods in `full`: nobody has
+ * come to collect. Both flags are this system's to write, decided from
+ * workScale, never from themselves.
  */
 export function tick(state, ctx) {
-  const stocks = state.resources.stocks;
   const shortfalls = {};
 
   for (const instance of state.buildings) {
@@ -74,41 +76,49 @@ export function tick(state, ctx) {
     if (!def) continue;
 
     // Flow resources (power, water, air) are settled by their own systems.
-    const inputs = (def.consumes ?? []).filter((c) => isStock(ctx, c.id));
-    const outputs = (def.produces ?? []).filter((p) => isStock(ctx, p.id));
+    const inputs = (def.consumes ?? []).filter((c) => isGood(ctx, c.id));
+    const outputs = (def.produces ?? []).filter((p) => isGood(ctx, p.id));
     if (inputs.length === 0 && outputs.length === 0) continue;
 
     // An idle building needs nothing, so it cannot be short of anything.
-    const scale = workScale(instance, def, ctx);
-    if (scale <= 0) {
-      instance.starved = false;
+    const work = workScale(instance, def, ctx);
+    if (work <= 0) {
+      setWaiting(instance, [], []);
       continue;
+    }
+
+    // Output room first: a building with nowhere to put its produce works
+    // only as hard as the room it has.
+    let scale = work;
+    const full = [];
+    for (const output of outputs) {
+      const space = room(instance, def, ctx, output.id);
+      const wanted = output.qty * work;
+      if (space < wanted) {
+        full.push(output.id);
+        scale = Math.min(scale, wanted > 0 ? work * (space / wanted) : 0);
+      }
     }
 
     const multiplier = (id) => ctx.modifiers.multiply[`consumption:${id}`] ?? 1;
+    const missing = inputs
+      .filter((input) => state.resources.cutSupplies.includes(input.id) ||
+        amount(instance, input.id) < input.qty * scale * multiplier(input.id))
+      .map((input) => input.id);
 
-    const affordable = inputs.every((input) => {
-      if (state.resources.cutSupplies.includes(input.id)) return false;
-      return (stocks[input.id] ?? 0) >= input.qty * scale * multiplier(input.id);
-    });
-
-    instance.starved = !affordable;
-    if (!affordable) {
+    setWaiting(instance, missing, full);
+    if (missing.length > 0) {
       for (const input of inputs) {
         const need = input.qty * scale * multiplier(input.id);
-        if ((stocks[input.id] ?? 0) < need) {
-          shortfalls[input.id] = (shortfalls[input.id] ?? 0) + (need - (stocks[input.id] ?? 0));
-        }
+        const short = need - amount(instance, input.id);
+        if (short > 0) shortfalls[input.id] = (shortfalls[input.id] ?? 0) + short;
       }
       continue;
     }
+    if (scale <= 0) continue;
 
-    for (const input of inputs) {
-      stocks[input.id] -= input.qty * scale * multiplier(input.id);
-    }
-    for (const output of outputs) {
-      stocks[output.id] = (stocks[output.id] ?? 0) + output.qty * scale;
-    }
+    for (const input of inputs) take(instance, input.id, input.qty * scale * multiplier(input.id));
+    for (const output of outputs) put(instance, def, ctx, output.id, output.qty * scale);
   }
 
   applySpoilage(state, ctx);
@@ -118,20 +128,26 @@ export function tick(state, ctx) {
   }
 }
 
-function isStock(ctx, id) {
-  return Boolean(
-    ctx.catalog.stocks.byId[id] ||
-    ctx.catalog.components.byId[id] ||
-    ctx.catalog.minerals.byId[id],
-  );
+/**
+ * Record why a building is waiting, and say so once when it starts. Shared by
+ * every system that runs buildings off their stores.
+ */
+export function setWaiting(instance, missing, full) {
+  instance.starved = missing.length > 0;
+  instance.missing = missing;
+  instance.full = full;
+  instance.blocked = full.length > 0;
 }
 
+/** Food rots wherever it is kept, slower where food processing works. */
 function applySpoilage(state, ctx) {
   for (const id of ctx.catalog.stocks.ids) {
     const def = ctx.catalog.stocks.byId[id];
     const rate = (def.spoilagePerTick ?? 0) * (ctx.modifiers.multiply[`spoilage:${id}`] ?? 1);
     if (rate <= 0) continue;
-    const amount = state.resources.stocks[id] ?? 0;
-    if (amount > 0) state.resources.stocks[id] = amount * (1 - rate);
+    for (const holder of [...state.buildings, ...state.population.workers]) {
+      const store = holder.stock ?? holder.carrying;
+      if (store?.[id] > 0) store[id] *= 1 - rate;
+    }
   }
 }

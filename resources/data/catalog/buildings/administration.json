@@ -68,6 +68,8 @@
     },
     {
       "id": "shaft-exit",
+      "receivesDeliveries": true,
+      "storeCapacity": { "scrubber-catalyst": 200 },
       "name": "The Exit",
       "zone": "administration",
       "slots": 4,

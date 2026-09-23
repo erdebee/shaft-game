@@ -4,15 +4,18 @@
  * catalog/resources/recipes.json; each names the building that runs it, its
  * inputs and outputs, its power draw and how many ticks a batch takes.
  *
- * A recipe building works in BATCHES. Starting a batch takes its inputs out of
- * stock at once; the batch then advances by the building's output scale each
- * tick (so an understaffed or worn smelter is slow, and a browned-out one
- * stalls), and its outputs land when it completes. Batches are what give a
+ * A recipe building works in BATCHES, out of its own store (stores.js).
+ * Starting a batch takes its inputs out of that store at once; the batch then
+ * advances by the building's output scale each tick (so an understaffed or
+ * worn smelter is slow, and a browned-out one stalls), and its outputs land in
+ * the store when it completes — or wait, finished, while the store is full
+ * (`blocked`) until a porter collects. Batches are what give a
  * recipe its `ticks`, and they stop a building flipping between recipes every
  * tick when two stocks are equally short.
  *
  * Which recipe runs next: the one the player pinned on the instance, or else
- * the affordable recipe whose output is furthest below its reserve (the
+ * the affordable recipe whose output is furthest below its reserve across
+ * the whole Shaft (the
  * `reserve` on its stock or component definition, weighted by its
  * `reservePriority`). When every output is at reserve the building idles, and
  * an idle recipe building draws no power.
@@ -22,7 +25,9 @@
  * Chapter 2 — do not add a self-production path without a narrative decision.
  */
 
-import { outputScale } from '../buildings/buildingRegistry.js';
+import { workScale } from '../buildings/buildingRegistry.js';
+import { amount, put, take, room, total } from './stores.js';
+import { setWaiting } from './flowStock.js';
 
 export function tick(state, ctx) {
   for (const instance of state.buildings) {
@@ -31,26 +36,41 @@ export function tick(state, ctx) {
     const recipes = recipesFor(def.id, ctx);
     if (recipes.length === 0) continue;
 
-    const scale = outputScale(instance, def, ctx);
-    if (scale <= 0) continue;
+    // workScale, not outputScale: this system decides `starved` for recipe
+    // buildings, so it must not read it — a starved smelter has to keep
+    // checking its bunker, or it would never notice the coal arrive.
+    const scale = workScale(instance, def, ctx) * (instance.waterShare ?? 1);
+    if (scale <= 0) {
+      setWaiting(instance, [], []);
+      continue;
+    }
 
-    if (!instance.job) startNext(state, ctx, instance, recipes);
-    if (!instance.job) continue;
+    if (!instance.job) startNext(state, ctx, instance, def, recipes);
+    if (!instance.job) {
+      setWaiting(instance, waitingFor(state, ctx, instance, recipes), []);
+      continue;
+    }
 
     const recipe = ctx.catalog.recipes.byId[instance.job.recipeId];
-    instance.job.progress += scale;
-    if (instance.job.progress < recipe.ticks) continue;
-
-    const efficiency = recipe.efficiencyTunable ? tunable(ctx, recipe.efficiencyTunable) : 1;
-    for (const output of recipe.outputs) {
-      state.resources.stocks[output.id] = (state.resources.stocks[output.id] ?? 0) + output.qty * efficiency;
+    if (instance.job.progress < recipe.ticks) instance.job.progress += scale;
+    if (instance.job.progress < recipe.ticks) {
+      setWaiting(instance, [], []);
+      continue;
     }
+
+    // Done — but the batch only leaves the building if all of it fits.
+    const efficiency = recipe.efficiencyTunable ? tunable(ctx, recipe.efficiencyTunable) : 1;
+    const full = recipe.outputs.filter((o) => room(instance, def, ctx, o.id) < o.qty * efficiency).map((o) => o.id);
+    setWaiting(instance, [], full);
+    if (full.length > 0) continue;
+
+    for (const output of recipe.outputs) put(instance, def, ctx, output.id, output.qty * efficiency);
     instance.job = null;
     ctx.emit('recipe:completed', { instanceId: instance.instanceId, recipeId: recipe.id });
 
     // Straight on to the next batch, so a busy smelter never idles a tick
     // between one and the next.
-    startNext(state, ctx, instance, recipes);
+    startNext(state, ctx, instance, def, recipes);
   }
 }
 
@@ -79,21 +99,35 @@ export function need(state, ctx, recipe) {
   for (const output of recipe.outputs) {
     const def = definitionOf(ctx, output.id);
     if (!def?.reserve) continue;
-    const stock = state.resources.stocks[output.id] ?? 0;
+    const stock = total(state, output.id);
     const shortfall = Math.max(0, 1 - stock / def.reserve);
     most = Math.max(most, shortfall * (def.reservePriority ?? 1));
   }
   return most;
 }
 
-function startNext(state, ctx, instance, recipes) {
+function startNext(state, ctx, instance, def, recipes) {
   const recipe = chooseRecipe(state, ctx, instance, recipes);
   if (!recipe) return;
 
-  for (const input of recipe.inputs) {
-    state.resources.stocks[input.id] -= input.qty;
-  }
+  for (const input of recipe.inputs) take(instance, input.id, input.qty);
   instance.job = { recipeId: recipe.id, progress: 0 };
+}
+
+/**
+ * Why an idle recipe building is idle. Nothing, if every output is at reserve
+ * — that is rest, not starvation. Otherwise the inputs it lacks for the
+ * recipes it would run.
+ */
+function waitingFor(state, ctx, instance, recipes) {
+  const wanted = instance.recipeId
+    ? recipes.filter((r) => r.id === instance.recipeId)
+    : recipes.filter((r) => need(state, ctx, r) > 0);
+  const missing = new Set();
+  for (const r of wanted) {
+    for (const input of r.inputs) if (amount(instance, input.id) < input.qty) missing.add(input.id);
+  }
+  return [...missing];
 }
 
 /**
@@ -103,13 +137,13 @@ function startNext(state, ctx, instance, recipes) {
 function chooseRecipe(state, ctx, instance, recipes) {
   if (instance.recipeId) {
     const pinned = recipes.find((r) => r.id === instance.recipeId);
-    return pinned && affordable(state, pinned) ? pinned : null;
+    return pinned && affordable(state, instance, pinned) ? pinned : null;
   }
 
   let best = null;
   let bestNeed = 0;
   for (const recipe of recipes) {
-    if (!affordable(state, recipe)) continue;
+    if (!affordable(state, instance, recipe)) continue;
     const n = need(state, ctx, recipe);
     if (n > bestNeed) {
       best = recipe;
@@ -119,10 +153,11 @@ function chooseRecipe(state, ctx, instance, recipes) {
   return best;
 }
 
-function affordable(state, recipe) {
+/** Whether the building's own store holds a whole batch's inputs. */
+function affordable(state, instance, recipe) {
   return recipe.inputs.every((input) =>
     !state.resources.cutSupplies.includes(input.id) &&
-    (state.resources.stocks[input.id] ?? 0) >= input.qty);
+    amount(instance, input.id) >= input.qty);
 }
 
 function definitionOf(ctx, id) {

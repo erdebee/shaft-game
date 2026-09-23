@@ -52,10 +52,20 @@
     "collapseRiskThreshold": 35
   },
 
+  "stores": {
+    "_note": "How much a building keeps on hand of what it uses and what it makes, when its catalogue entry does not say (storeCapacity). See systems/resources/stores.js.",
+    "inputBufferTicks": 120,
+    "outputBufferTicks": 120,
+    "batchesBuffered": 6
+  },
+
   "haulage": {
     "porterTicksPerLevel": 2,
     "fatiguePerLevelHauled": 0.01,
-    "shiftChangeCongestionMultiplier": 1.6
+    "shiftChangeCongestionMultiplier": 1.6,
+    "porterCapacity": 600,
+    "porterRestAt": 0.95,
+    "porterRestedAt": 0.2
   },
 
   "buildings": {

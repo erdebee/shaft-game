@@ -18,6 +18,10 @@ import { applyEffects } from './effects.js';
 import { evaluate } from './predicates.js';
 import { createInstance } from '../systems/buildings/buildingRegistry.js';
 import { emit as busEmit } from './eventBus.js';
+import { inStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
+import { hire } from '../systems/population/roster.js';
+import { labourPool } from '../systems/population/staffing.js';
+import { validRoute } from '../systems/haulage/haulageMethods.js';
 
 const HANDLERS = {
   /** Pause, resume, or change speed. The only command available from tick 0. */
@@ -53,7 +57,8 @@ const HANDLERS = {
       ctx.emit('build:refused', { buildingId: cmd.buildingId, level: cmd.level, reason: check.reason });
       return;
     }
-    for (const c of check.cost) state.resources.stocks[c.id] -= c.qty;
+    // Materials come out of the common stores, nearest the site first.
+    for (const c of check.cost) takeFromStorehouses(state, ctx, c.id, c.qty, cmd.level);
 
     state.buildings.push(createInstance(def, ctx, {
       instanceId: nextInstanceId(state),
@@ -88,6 +93,48 @@ const HANDLERS = {
       if (!recipe || recipe.building !== instance.buildingId) return;
     }
     instance.recipeId = cmd.recipeId;
+  },
+
+  /**
+   * Hire a porter at a station, if it has a bed free and the labour pool has
+   * someone to spare. They start there, with no route.
+   */
+  'player:hirePorter': (state, ctx, cmd) => {
+    const station = state.buildings.find((b) => b.instanceId === cmd.instanceId);
+    const beds = ctx.catalog.buildings.byId[station?.buildingId]?.porterStation?.porters ?? 0;
+    if (!station || beds === 0) return;
+    const living = state.population.workers.filter((w) => w.stationId === station.instanceId).length;
+    if (living >= beds) {
+      ctx.emit('haulage:refused', { reason: 'station-full', instanceId: station.instanceId });
+      return;
+    }
+    if (!cmd.inherited && labourPool(state, ctx) < 1) {
+      ctx.emit('haulage:refused', { reason: 'no-labour', instanceId: station.instanceId });
+      return;
+    }
+    const porter = hire(state, ctx, 'porter', station.level, station.instanceId);
+    log(state, `${porter.name} hired as a porter at the station on level ${station.level}`);
+  },
+
+  /**
+   * Let a porter go. They return to the labour pool; whatever they were
+   * carrying is left where they stand, and lost.
+   */
+  'player:dismissPorter': (state, ctx, cmd) => {
+    const porter = state.population.workers.find((w) => w.id === cmd.workerId && w.job === 'porter');
+    if (!porter) return;
+    state.population.workers = state.population.workers.filter((w) => w !== porter);
+    state.haulage.trips = state.haulage.trips.filter((t) => t.workerId !== porter.id);
+    log(state, `${porter.name} dismissed from portering`);
+  },
+
+  /** Give a porter a route: stops they walk in order, then loop. */
+  'player:setRoute': (state, ctx, cmd) => {
+    const porter = state.population.workers.find((w) => w.id === cmd.workerId && w.job === 'porter');
+    const stops = porter ? validRoute(state, ctx, cmd.stops) : null;
+    if (!stops) return;
+    porter.route = stops;
+    porter.stop = Math.min(porter.stop ?? 0, Math.max(0, stops.length - 1));
   },
 
   /** How many crews go round repairing, ahead of every building's staff. */
@@ -143,8 +190,8 @@ function nextInstanceId(state) {
  * puts it at that level's far end — which is where the Exit has always been.
  *
  * Cost: the building's `buildCost`, or its repairCost times
- * buildings.buildCostFromRepair. The Shaft the player inherits is free
- * (`inherited`).
+ * buildings.buildCostFromRepair, paid from the depots and storehouses. The
+ * Shaft the player inherits is free (`inherited`).
  */
 export function placement(state, ctx, buildingId, levelIndex, { inherited = false } = {}) {
   const def = ctx.catalog.buildings.byId[buildingId];
@@ -184,7 +231,7 @@ export function placement(state, ctx, buildingId, levelIndex, { inherited = fals
   }
   if (slot === null) return { ok: false, slot: null, cost, reason: 'no-room' };
 
-  const affordable = cost.every((c) => (state.resources.stocks[c.id] ?? 0) >= c.qty);
+  const affordable = cost.every((c) => inStorehouses(state, ctx, c.id) >= c.qty);
   if (!affordable) return { ok: false, slot, cost, reason: 'cost' };
   return { ok: true, slot, cost, reason: null };
 }
