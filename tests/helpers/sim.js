@@ -27,7 +27,7 @@ export const dataset = await loadDataset({ readJson, chapter: 1, profile: 'defau
 export async function runWith(layout, { stocks = {}, tunables = {}, staffed = true, seed = 4242 } = {}) {
   const run = await createRun({ dataset: withTunables(tunables), seed, chapter: 1, readJson });
   for (const [buildingId, level] of layout) {
-    dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level });
+    dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level, inherited: true });
   }
   if (staffed) {
     for (const instance of run.state.buildings) {

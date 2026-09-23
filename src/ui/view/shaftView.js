@@ -26,6 +26,7 @@ import {
 import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
 import { createFigureLayer, renderFigures } from './figures.js';
 import { SPEEDS } from '../../core/clock.js';
+import * as selection from '../selection.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -112,9 +113,45 @@ export function createShaftView(root, state, ctx, art) {
     view.lastFrame = now;
 
     syncBuildings(view, currentState, currentCtx);
+    syncSelection(view, currentState);
     syncSeams(view, currentState);
     syncLevels(view, currentState);
     renderFigures(view.figureLayer, currentState, currentCtx, tick, alpha, view.viewport, view.art);
+  }
+}
+
+/**
+ * Outline what the player has picked: the selected building, or the whole
+ * selected level when it is a level they are building on.
+ */
+function syncSelection(view, state) {
+  const { instanceId, level } = selection.get();
+  if (!view.levelMarker) {
+    view.levelMarker = document.createElementNS(SVG_NS, 'rect');
+    view.levelMarker.setAttribute('class', 'level-selected');
+    view.buildingMarker = document.createElementNS(SVG_NS, 'rect');
+    view.buildingMarker.setAttribute('class', 'building-selected');
+    view.layers.overlays.append(view.levelMarker, view.buildingMarker);
+  }
+
+  // A demolished selection leaves nothing to outline.
+  const instance = instanceId ? state.buildings.find((b) => b.instanceId === instanceId) : null;
+  view.buildingMarker.style.display = instance ? '' : 'none';
+  if (instance) {
+    const r = roomRect(instance, state.buildings);
+    view.buildingMarker.setAttribute('x', String(r.x + 0.5));
+    view.buildingMarker.setAttribute('y', String(r.y + 0.5));
+    view.buildingMarker.setAttribute('width', String(r.width - 1));
+    view.buildingMarker.setAttribute('height', String(r.height - 1));
+  }
+
+  const showLevel = !instanceId && level !== null;
+  view.levelMarker.style.display = showLevel ? '' : 'none';
+  if (showLevel) {
+    view.levelMarker.setAttribute('x', String(BUILD_X));
+    view.levelMarker.setAttribute('y', String(levelY(level)));
+    view.levelMarker.setAttribute('width', String(SHAFT_WIDTH - BUILD_X));
+    view.levelMarker.setAttribute('height', String(LEVEL_HEIGHT));
   }
 }
 
@@ -291,6 +328,7 @@ function createBuildingNode(view, ctx, instance) {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', `building zone-${def.zone}`);
   g.dataset.instance = instance.instanceId;
+  g.dataset.level = String(instance.level);
   g.dataset.building = def.id;
 
   if (art) {
@@ -463,6 +501,18 @@ function attachInteraction(view, state, ctx) {
     pan(view.viewport, 0);
     panX(view.viewport, 0);
   });
-  svg.addEventListener('pointerup', () => { dragging = null; });
+  svg.addEventListener('pointerup', (event) => {
+    // A press that barely moved is a click: pick what is under it. Anything
+    // further was a drag, and a drag only pans.
+    const moved = dragging && Math.hypot(event.clientX - dragging.x, event.clientY - dragging.y);
+    dragging = null;
+    if (moved === null || moved > 4) return;
+    // Pointer capture retargets pointerup to the svg itself, so what was
+    // clicked has to be found at the pointer, not read off the event.
+    const node = document.elementFromPoint(event.clientX, event.clientY)?.closest?.('.building');
+    const level = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect());
+    if (node) selection.select({ instanceId: node.dataset.instance, level: Number(node.dataset.level) });
+    else if (level >= 1 && level <= state.levels.length) selection.select({ level });
+  });
   svg.addEventListener('pointercancel', () => { dragging = null; });
 }

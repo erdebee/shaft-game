@@ -76,6 +76,7 @@ export const TUNABLES = {
   'buildings.repairThreshold': RATE,
   'buildings.maintenanceCrewsStart': N(0, 100),
   'buildings.wearMultiplier': N(0, 10),
+  'buildings.buildCostFromRepair': N(0, 100),
 
   'mining.baseYieldPerTick': N(0, 100),
   'mining.depletionPerExtractionTick': RATE,

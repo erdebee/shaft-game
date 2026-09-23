@@ -17,6 +17,7 @@ import { SPEEDS } from './clock.js';
 import { applyEffects } from './effects.js';
 import { evaluate } from './predicates.js';
 import { createInstance } from '../systems/buildings/buildingRegistry.js';
+import { emit as busEmit } from './eventBus.js';
 
 const HANDLERS = {
   /** Pause, resume, or change speed. The only command available from tick 0. */
@@ -47,18 +48,46 @@ const HANDLERS = {
     const def = ctx.catalog.buildings.byId[cmd.buildingId];
     if (!def) throw new Error(`commands: unknown building "${cmd.buildingId}"`);
 
-    const level = state.levels.find((l) => l.index === cmd.level);
-    if (!level) return;
-
-    const slot = firstFreeSlot(state, ctx, def, level);
-    if (slot === null) return;
+    const check = placement(state, ctx, cmd.buildingId, cmd.level, { inherited: cmd.inherited === true });
+    if (!check.ok) {
+      ctx.emit('build:refused', { buildingId: cmd.buildingId, level: cmd.level, reason: check.reason });
+      return;
+    }
+    for (const c of check.cost) state.resources.stocks[c.id] -= c.qty;
 
     state.buildings.push(createInstance(def, ctx, {
       instanceId: nextInstanceId(state),
       level: cmd.level,
-      slot,
+      slot: check.slot,
     }));
     log(state, `${def.name} built on level ${cmd.level}`);
+  },
+
+  /**
+   * Tear a building down. Nothing is refunded: what went into it is spent.
+   * The Shaft's fixed structure cannot be demolished.
+   */
+  'player:demolish': (state, ctx, cmd) => {
+    const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
+    if (!instance) return;
+    const def = ctx.catalog.buildings.byId[instance.buildingId];
+    if (def?.fixed) return;
+    state.buildings = state.buildings.filter((b) => b !== instance);
+    log(state, `${def?.name ?? instance.buildingId} demolished on level ${instance.level}`);
+  },
+
+  /**
+   * Pin a recipe building to one recipe, or null to let it choose by reserve
+   * (systems/resources/componentChain.js). The batch in hand finishes first.
+   */
+  'player:setRecipe': (state, ctx, cmd) => {
+    const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
+    if (!instance) return;
+    if (cmd.recipeId !== null) {
+      const recipe = ctx.catalog.recipes.byId[cmd.recipeId];
+      if (!recipe || recipe.building !== instance.buildingId) return;
+    }
+    instance.recipeId = cmd.recipeId;
   },
 
   /** How many crews go round repairing, ahead of every building's staff. */
@@ -103,21 +132,32 @@ function nextInstanceId(state) {
 }
 
 /**
- * A run of free slots wide enough for this building, or null if it cannot be
- * placed. Returning a slot index rather than a boolean is what lets the view
- * lay buildings out side by side instead of stacking them.
+ * Whether a building can go on a level, and where, and what it costs.
+ * Returns { ok, slot, cost, reason } — reason is one of 'no-level',
+ * 'wrong-depth', 'fixed', 'zone-full', 'no-room', 'cost', or null when ok.
+ * The build menu shows the reason; placeBuilding refuses on it.
  *
- * Leftmost by default. A building with a `fixed` block is part of the Shaft as
- * built rather than something the player fits in: it goes on the level its
- * catalogue entry names and nowhere else, and `align: "right"` puts it at that
- * level's far end — which is where the Exit has always been.
+ * Slot: leftmost free run by default. A building with a `fixed` block is part
+ * of the Shaft as built rather than something the player fits in: it goes on
+ * the level its catalogue entry names and nowhere else, and `align: "right"`
+ * puts it at that level's far end — which is where the Exit has always been.
+ *
+ * Cost: the building's `buildCost`, or its repairCost times
+ * buildings.buildCostFromRepair. The Shaft the player inherits is free
+ * (`inherited`).
  */
-function firstFreeSlot(state, ctx, def, level) {
-  const band = depthBandOf(ctx, level.index);
-  if (def.levelConstraint && def.levelConstraint !== band) return null;
-  if (def.fixed && def.fixed.level !== level.index) return null;
+export function placement(state, ctx, buildingId, levelIndex, { inherited = false } = {}) {
+  const def = ctx.catalog.buildings.byId[buildingId];
+  if (!def) throw new Error(`commands: unknown building "${buildingId}"`);
+  const cost = inherited ? [] : buildCost(ctx, def);
+  const level = state.levels.find((l) => l.index === levelIndex);
+  if (!level) return { ok: false, slot: null, cost, reason: 'no-level' };
+  if (def.fixed && def.fixed.level !== levelIndex) return { ok: false, slot: null, cost, reason: 'fixed' };
+  if (def.levelConstraint && def.levelConstraint !== depthBandOf(ctx, levelIndex)) {
+    return { ok: false, slot: null, cost, reason: 'wrong-depth' };
+  }
 
-  const placed = state.buildings.filter((b) => b.level === level.index);
+  const placed = state.buildings.filter((b) => b.level === levelIndex);
   const width = def.slots ?? 1;
 
   const allowance = ctx.tables?.levels?.levelTemplate?.zoneAllowances?.[def.zone];
@@ -126,23 +166,34 @@ function firstFreeSlot(state, ctx, def, level) {
       .map((b) => ctx.catalog.buildings.byId[b.buildingId])
       .filter((d) => d?.zone === def.zone)
       .reduce((n, d) => n + (d.slots ?? 1), 0);
-    if (inZone + width > allowance) return null;
+    if (inZone + width > allowance) return { ok: false, slot: null, cost, reason: 'zone-full' };
   }
 
   const occupied = new Set();
   for (const b of placed) {
     for (let i = 0; i < (b.slots ?? 1); i++) occupied.add((b.slot ?? 0) + i);
   }
-
+  let slot = null;
   const last = level.buildSlots - width;
   const fromRight = def.fixed?.align === 'right';
-  for (let n = 0; n <= last; n++) {
+  for (let n = 0; n <= last && slot === null; n++) {
     const start = fromRight ? last - n : n;
     let free = true;
     for (let i = 0; i < width; i++) if (occupied.has(start + i)) { free = false; break; }
-    if (free) return start;
+    if (free) slot = start;
   }
-  return null;
+  if (slot === null) return { ok: false, slot: null, cost, reason: 'no-room' };
+
+  const affordable = cost.every((c) => (state.resources.stocks[c.id] ?? 0) >= c.qty);
+  if (!affordable) return { ok: false, slot, cost, reason: 'cost' };
+  return { ok: true, slot, cost, reason: null };
+}
+
+/** What a building costs to put up, in materials. */
+export function buildCost(ctx, def) {
+  if (def.buildCost) return def.buildCost;
+  const k = ctx.config.buildings.buildCostFromRepair;
+  return (def.repairCost ?? []).map((c) => ({ id: c.id, qty: Math.ceil(c.qty * k) }));
 }
 
 /** Which depth band a level falls in, from the levels lookup table. */
@@ -170,10 +221,20 @@ export function dispatch(state, ctx, command) {
 
   const handler = HANDLERS[command.type];
   if (!handler) throw new Error(`commands: unknown command "${command.type}"`);
-  handler(state, ctx, stamped);
+  const live = commandContext(state, ctx);
+  handler(state, live, stamped);
 
-  ctx.emit('command:applied', stamped);
+  live.emit('command:applied', stamped);
   return stamped;
+}
+
+/**
+ * A command runs between ticks, outside the engine's pipeline, so nothing
+ * will ever drain the per-tick outbox it would otherwise emit into. Its
+ * events (a refused build, say) go straight to the bus instead.
+ */
+function commandContext(state, ctx) {
+  return { ...ctx, emit: (event, payload) => busEmit(event, { ...payload, tick: state.clock.tick }) };
 }
 
 /**
@@ -183,7 +244,7 @@ export function dispatch(state, ctx, command) {
 export function applyRecorded(state, ctx, command) {
   const handler = HANDLERS[command.type];
   if (!handler) throw new Error(`commands: unknown command "${command.type}"`);
-  handler(state, ctx, command);
+  handler(state, commandContext(state, ctx), command);
 }
 
 export function knownCommands() {

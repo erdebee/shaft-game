@@ -151,7 +151,7 @@
       "powerDraw": 20,
       "staffing": 3,
       "wearPerTick": 0.0012,
-      "consumes": [{ "id": "paper", "qty": 0.5 }],
+      "consumes": [{ "id": "paper", "qty": 0.05 }],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 1 }, { "id": "wood", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },

@@ -14,11 +14,14 @@ import { on } from './core/eventBus.js';
 
 import * as router from './ui/router.js';
 import * as dashboard from './ui/screens/dashboard.js';
+import * as build from './ui/screens/build.js';
+import * as inspect from './ui/screens/inspect.js';
+import * as selection from './ui/selection.js';
 import { createShaftView } from './ui/view/shaftView.js';
 import { loadRoomArt } from './ui/view/roomArt.js';
 import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
-import { append as logAppend } from './ui/components/logPanel.js';
+import * as logPanel from './ui/components/logPanel.js';
 
 async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   // createRun owns everything deterministic: dataset, state, streams, systems,
@@ -62,9 +65,43 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   const levels = state.buildings.map((b) => b.level).sort((a, b) => a - b);
   if (levels.length) focusLevel(shaftView.viewport, levels[Math.floor(levels.length / 2)]);
 
-  router.attach(panel, { state, ctx, dispatch });
-  router.register('dashboard', dashboard);
-  router.go('dashboard');
+  // The panel: a tab bar, the active screen, and the log, which stays in view
+  // whichever tab is open.
+  const tabBar = document.createElement('nav');
+  tabBar.className = 'tabs';
+  tabBar.setAttribute('aria-label', 'Panels');
+  const screenHost = document.createElement('div');
+  screenHost.className = 'screen';
+  const record = document.createElement('section');
+  record.className = 'card record';
+  record.innerHTML = '<h2>Record</h2>';
+  logPanel.mount(record);
+  panel.append(tabBar, screenHost, record);
+
+  router.attach(screenHost, { state, ctx, dispatch });
+  const tabs = [['dashboard', 'Status', dashboard], ['build', 'Build', build], ['inspect', 'Inspect', inspect]];
+  const tabButtons = new Map();
+  for (const [name, label, screen] of tabs) {
+    router.register(name, screen);
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.textContent = label;
+    tab.addEventListener('click', () => show(name));
+    tabBar.appendChild(tab);
+    tabButtons.set(name, tab);
+  }
+  const show = (name) => {
+    if (router.current() !== name) router.go(name);
+    for (const [n, tab] of tabButtons) tab.setAttribute('aria-pressed', String(n === name));
+  };
+  show('dashboard');
+
+  // Clicking the shaft picks something: a room opens it in Inspect, an empty
+  // stretch of a level opens Build there.
+  selection.subscribe(({ instanceId, level }) => {
+    if (instanceId) show('inspect');
+    else if (level !== null) show('build');
+  });
 
   wireLog(state, ctx);
 
@@ -72,6 +109,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   engine.onFrame = (currentState) => {
     timeControls.update(currentState);
     router.update(currentState, ctx);
+    logPanel.update(currentState);
   };
 
   // One tick before the first frame, so the view opens on a settled sim
@@ -91,8 +129,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
 function wireLog(state, ctx) {
   const record = (message, kind = 'info') => {
     const entry = { tick: state.clock.tick, message, kind };
+    // The log panel renders from state.log each frame, like every other panel.
     state.log.push(entry);
-    logAppend(entry);
   };
 
   /**
@@ -151,6 +189,11 @@ function wireLog(state, ctx) {
   on('unrest:demands', () => record('The people are demanding change', 'critical'));
   on('unrest:riot', ({ buildingId, level }) => record(`Rioters wrecked the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
   on('unrest:demolished', ({ buildingId, level }) => record(`Rioters tore down the ${building(buildingId).toLowerCase()} on level ${level}`, 'critical'));
+
+  on('build:refused', ({ buildingId, level, reason }) => {
+    const why = { cost: 'the stores cannot pay for it', 'no-room': 'there is no room', 'wrong-depth': 'it cannot go at that depth', 'zone-full': 'that zone is full there', fixed: 'it is fixed in place' }[reason] ?? reason;
+    record(`Cannot build a ${building(buildingId).toLowerCase()} on level ${level}: ${why}`, 'warn');
+  });
 
   on('maintenance:stalled', ({ id, tick }) => {
     if (!onset(`repairs:${id}`, tick)) return;

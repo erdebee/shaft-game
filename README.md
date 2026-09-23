@@ -5,11 +5,12 @@ settlement governed by layered deception. The player manages physical
 infrastructure and writes the law that governs it — and discovers, chapter by
 chapter, who is actually in charge.
 
-**Status:** first vertical slice runs. The clock, the layered data loader, the
-effect and predicate interpreters, power distribution, haulage with named
-porters, and the animated SVG cross-section all work end to end. Everything
-else — the other seven systems, governance, dilemmas, revelation staging,
-chapter drivers — is still stubs.
+**Status:** the core loop is closed. Power, mining and refining, water, per-level
+air, haulage, the population's body (food, health, deaths, births, labour),
+maintenance, the meters and discontent (strikes, demands, riots, departures)
+all run, and the player can build, crew, pin recipes and demolish from the
+panel. Governance, dilemmas, revelation staging and the chapter drivers are
+still stubs.
 
 ## Running it
 
@@ -179,14 +180,14 @@ if one ever does. Changing this is a narrative decision, not a balance tweak.
 The pipeline is proven, so each remaining system slots into a known shape:
 export `tick(state, ctx)`, write only your own domain, emit through `ctx.emit`.
 
-1. **The remaining systems**, in `SYSTEM_ORDER`: water (`greywaterLoop`), air
-   (`perLevelAir`), minerals and the component chain, then population proper
-   (consumption, morale, unrest, the birth lottery). Air is the interesting one
-   — it is tracked per level and consumes the catalyst.
-2. **Balance.** Every number in `config/base.json` is a first-pass placeholder.
-   Right now demand exceeds generation and food runs down: the sim is correct
-   and the values are not. This is the first job that needs playtesting rather
-   than code.
+1. **Playtest the opening.** A first balance pass exists (`npm run sim`):
+   untouched, the Shaft holds for about 30 days while the vats run out of
+   scrap and the generator's repairs stall on electrical components, then
+   famine, strikes, demands and riots. Whether that is the right difficulty
+   is a playtest question, not a code one.
+2. **The demands dilemma.** `unrest:demands` is raised when discontent
+   crosses its line; the prompt that answers it (pass a law, or promise
+   improvement by a deadline) is the first job for the dilemma engine.
 3. **Governance**, starting with `statuteEngine.compile` so law cards produce
    real standing modifiers, then the amendment window and precedent.
 4. **Dilemmas.** The content, the interpreters and the hard-pause path all

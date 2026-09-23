@@ -44,7 +44,7 @@ const LAYOUT = [
 async function newRun(seed = 4242) {
   const run = await createRun({ dataset, seed, chapter: 1, readJson });
   for (const [buildingId, level] of LAYOUT) {
-    dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level });
+    dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level, inherited: true });
   }
   for (const instance of run.state.buildings) {
     const def = dataset.catalog.buildings.byId[instance.buildingId];

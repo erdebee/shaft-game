@@ -74,7 +74,7 @@ export async function createRun({
  */
 export function placeOpening(state, ctx, dispatch) {
   for (const [buildingId, level] of ctx.shaft.opening ?? []) {
-    dispatch(state, ctx, { type: 'player:placeBuilding', buildingId, level });
+    dispatch(state, ctx, { type: 'player:placeBuilding', buildingId, level, inherited: true });
   }
   for (const instance of state.buildings) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
