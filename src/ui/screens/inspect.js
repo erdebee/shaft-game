@@ -1,8 +1,10 @@
 /**
  * inspect.js
  * The selected building: what it is, whether it is working and — if not —
- * why, and the three things the player can do about it: crew it, point it at
- * a recipe, or tear it down.
+ * why, what is in its store, and what the player can do about it: crew it,
+ * point it at a recipe, or tear it down. A porter station also lists its
+ * porters, hires new ones and opens their routes; while a route is open this
+ * tab is the route editor instead (routeEditor.js).
  *
  * The frame is built when the selection changes; per frame only the readouts
  * are refreshed.
@@ -14,6 +16,8 @@ import { render as renderMeter } from '../components/resourceMeter.js';
 import { recipesFor } from '../../systems/resources/componentChain.js';
 import { factionOf } from '../../systems/population/staffing.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
+import { amount, capacity, inputsOf, outputsOf, isStorage } from '../../systems/resources/stores.js';
+import * as routeEditor from './routeEditor.js';
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -22,6 +26,7 @@ export function mount(root, state, ctx, dispatch) {
 
   let shownId = undefined;
   let refresh = () => {};
+  let editor = null;
 
   function build(instance, currentCtx) {
     host.replaceChildren();
@@ -63,6 +68,19 @@ export function mount(root, state, ctx, dispatch) {
 
     const facts = el('div', 'inspect-facts');
     host.appendChild(facts);
+
+    // What is in the building's own store, and how full.
+    const storeCard = el('div', 'inspect-store');
+    host.appendChild(storeCard);
+    const storeKey = { value: null };
+
+    // A porter station: its porters, and the hiring.
+    let station = null;
+    if (def.porterStation) {
+      station = el('div', 'inspect-station');
+      host.appendChild(station);
+    }
+    const stationKey = { value: null };
 
     // Recipe: for buildings that run them.
     const recipes = recipesFor(def.id, currentCtx);
@@ -119,6 +137,9 @@ export function mount(root, state, ctx, dispatch) {
       if (current.repairing) lines.push('On the repair list');
       facts.replaceChildren(...lines.map((line) => el('div', 'meter-label', line)));
 
+      renderStore(storeCard, storeKey, current, def, ctxNow);
+      if (station) renderStation(station, stationKey, currentState, ctxNow, current, def, dispatch);
+
       if (batch) {
         const job = current.job;
         const recipe = job && ctxNow.catalog.recipes.byId[job.recipeId];
@@ -129,6 +150,20 @@ export function mount(root, state, ctx, dispatch) {
 
   return {
     update(currentState, currentCtx) {
+      const { editing } = selection.get();
+      if (editing) {
+        if (editor?.workerId !== editing) {
+          editor?.destroy();
+          editor = { workerId: editing, ...routeEditor.mount(host, currentState, currentCtx, dispatch, editing) };
+          shownId = undefined;
+        }
+        editor.update();
+        return;
+      }
+      if (editor) {
+        editor.destroy();
+        editor = null;
+      }
       const instance = selectedInstance(currentState);
       const id = instance?.instanceId ?? null;
       if (id !== shownId) {
@@ -138,6 +173,73 @@ export function mount(root, state, ctx, dispatch) {
       refresh(currentState, currentCtx);
     },
   };
+}
+
+/**
+ * The building's store: every good it holds or has a place for, with a bar
+ * against what it can hold, marked in (it uses it) or out (it makes it).
+ */
+function renderStore(root, key, instance, def, ctx) {
+  const inputs = inputsOf(def, ctx);
+  const outputs = outputsOf(def, ctx);
+  const ids = new Set([...inputs, ...outputs, ...Object.keys(def.storeCapacity ?? {}), ...Object.keys(instance.stock ?? {})]);
+  if (ids.size === 0) {
+    if (key.value !== '') { root.replaceChildren(); key.value = ''; }
+    return;
+  }
+  const sig = [...ids].join(',');
+  if (key.value !== sig) {
+    key.value = sig;
+    root.replaceChildren(el('h3', 'build-zone', isStorage(def) ? `Store · holds ${def.storage.capacity}` : 'Store'));
+    root.meters = new Map([...ids].map((id) => {
+      const tag = inputs.has(id) ? 'in' : outputs.has(id) ? 'out' : 'held';
+      return [id, renderMeter(root, { label: `${id} · ${tag}` })];
+    }));
+  }
+  const held = Object.values(instance.stock ?? {}).reduce((a, b) => a + b, 0);
+  for (const [id, meter] of root.meters) {
+    const cap = isStorage(def) ? def.storage.capacity : capacity(instance, def, ctx, id);
+    const qty = amount(instance, id);
+    const out = outputs.has(id);
+    const fill = cap > 0 ? qty / cap : 0;
+    const bandOf = out ? (fill >= 0.999 ? 'critical' : fill > 0.8 ? 'warn' : 'ok') : (qty <= 1e-6 && inputs.has(id) ? 'critical' : fill < 0.2 && inputs.has(id) ? 'warn' : 'ok');
+    meter.update(qty, isStorage(def) ? Math.max(held, 1) : cap, bandOf, `${Math.round(qty)} / ${Math.round(cap)}`);
+  }
+}
+
+/** A station's porters, each with what they are doing, and the hiring. */
+function renderStation(root, key, state, ctx, instance, def, dispatch) {
+  const living = state.population.workers.filter((w) => w.stationId === instance.instanceId);
+  const beds = def.porterStation.porters;
+  const sig = living.map((w) => w.id).join(',');
+  if (key.value !== sig) {
+    key.value = sig;
+    root.replaceChildren();
+    const head = el('div', 'inspect-row');
+    root.count = el('span', 'meter-label');
+    head.append(root.count, button('Hire porter', 'Hire a porter from the labour pool', () => dispatch({ type: 'player:hirePorter', instanceId: instance.instanceId }), 'text-button'));
+    root.appendChild(head);
+    root.rows = living.map((w) => {
+      const row = el('div', 'porter-row');
+      const name = el('span', 'porter-name', w.name);
+      const doing = el('span', 'meter-label porter-doing');
+      let armed = false;
+      const dismiss = button('Dismiss', `Dismiss ${w.name}`, () => {
+        if (!armed) {
+          armed = true;
+          dismiss.textContent = 'Sure?';
+          setTimeout(() => { armed = false; dismiss.textContent = 'Dismiss'; }, 3000);
+          return;
+        }
+        dispatch({ type: 'player:dismissPorter', workerId: w.id });
+      }, 'text-button danger');
+      row.append(name, button('Route', `Edit ${w.name}'s route`, () => selection.editRoute(w.id), 'text-button'), dismiss, doing);
+      root.appendChild(row);
+      return { w, doing };
+    });
+  }
+  root.count.textContent = `Porters ${living.length} of ${beds}`;
+  for (const { w, doing } of root.rows) doing.textContent = routeEditor.describe(state, ctx, w);
 }
 
 function list(ids = []) {

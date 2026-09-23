@@ -50,6 +50,15 @@ export function rolesForBuilding(def, ctx) {
  */
 const FIGURE_SPEED_LIMIT = SPEEDS.FAST;
 
+/** Porters standing in their station — resting or waiting — up to three. */
+function idlePorters(state, station) {
+  let n = 0;
+  for (const w of state.population.workers) {
+    if (w.stationId === station.instanceId && w.tripId === null && w.level === station.level) n++;
+  }
+  return Math.min(n, 3);
+}
+
 /** How many ambient worker figures to draw for an instance. */
 export function workerFigureCount(instance, buildingDef) {
   const staffed = Math.min(instance.staffing ?? 0, buildingDef.staffing ?? 0);
@@ -214,10 +223,11 @@ function renderSpriteWorkers(layer, state, ctx, viewport, art) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
 
-    const count = workerFigureCount(instance, def);
+    // A porter station shows the porters waiting in it, not a crew.
+    const count = def.porterStation ? idlePorters(state, instance) : workerFigureCount(instance, def);
     if (count === 0) continue;
 
-    const roles = rolesForBuilding(def, ctx);
+    const roles = def.porterStation ? ['porter'] : rolesForBuilding(def, ctx);
     const rect = roomRect(instance, state.buildings);
     const room = art.rooms.get(def.id);
     const floorY = room?.floorY;

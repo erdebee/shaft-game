@@ -51,7 +51,7 @@ export function tick(state, ctx) {
         ctx.emit('mining:seamExhausted', { id: vein.id, level: instance.level });
       }
     }
-    setWaiting(instance, [], full);
+    setWaiting(instance, [], full, ctx);
   }
 }
 

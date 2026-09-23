@@ -83,7 +83,7 @@ export function tick(state, ctx) {
     // An idle building needs nothing, so it cannot be short of anything.
     const work = workScale(instance, def, ctx);
     if (work <= 0) {
-      setWaiting(instance, [], []);
+      setWaiting(instance, [], [], ctx);
       continue;
     }
 
@@ -106,7 +106,7 @@ export function tick(state, ctx) {
         amount(instance, input.id) < input.qty * scale * multiplier(input.id))
       .map((input) => input.id);
 
-    setWaiting(instance, missing, full);
+    setWaiting(instance, missing, full, ctx);
     if (missing.length > 0) {
       for (const input of inputs) {
         const need = input.qty * scale * multiplier(input.id);
@@ -129,14 +129,20 @@ export function tick(state, ctx) {
 }
 
 /**
- * Record why a building is waiting, and say so once when it starts. Shared by
- * every system that runs buildings off their stores.
+ * Record why a building is waiting, and say so once when it starts: a
+ * building:starved or building:blocked event on the tick it begins, not every
+ * tick it lasts. Shared by every system that runs buildings off their stores.
  */
-export function setWaiting(instance, missing, full) {
+export function setWaiting(instance, missing, full, ctx) {
+  const wasStarved = instance.starved === true;
+  const wasBlocked = instance.blocked === true;
   instance.starved = missing.length > 0;
   instance.missing = missing;
   instance.full = full;
   instance.blocked = full.length > 0;
+  const where = { instanceId: instance.instanceId, buildingId: instance.buildingId, level: instance.level };
+  if (instance.starved && !wasStarved) ctx?.emit('building:starved', { ...where, missing });
+  if (instance.blocked && !wasBlocked) ctx?.emit('building:blocked', { ...where, full });
 }
 
 /** Food rots wherever it is kept, slower where food processing works. */

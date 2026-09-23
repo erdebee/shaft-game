@@ -41,27 +41,27 @@ export function tick(state, ctx) {
     // checking its bunker, or it would never notice the coal arrive.
     const scale = workScale(instance, def, ctx) * (instance.waterShare ?? 1);
     if (scale <= 0) {
-      setWaiting(instance, [], []);
+      setWaiting(instance, [], [], ctx);
       continue;
     }
 
     if (!instance.job) startNext(state, ctx, instance, def, recipes);
     if (!instance.job) {
-      setWaiting(instance, waitingFor(state, ctx, instance, recipes), []);
+      setWaiting(instance, waitingFor(state, ctx, instance, recipes), [], ctx);
       continue;
     }
 
     const recipe = ctx.catalog.recipes.byId[instance.job.recipeId];
     if (instance.job.progress < recipe.ticks) instance.job.progress += scale;
     if (instance.job.progress < recipe.ticks) {
-      setWaiting(instance, [], []);
+      setWaiting(instance, [], [], ctx);
       continue;
     }
 
     // Done — but the batch only leaves the building if all of it fits.
     const efficiency = recipe.efficiencyTunable ? tunable(ctx, recipe.efficiencyTunable) : 1;
     const full = recipe.outputs.filter((o) => room(instance, def, ctx, o.id) < o.qty * efficiency).map((o) => o.id);
-    setWaiting(instance, [], full);
+    setWaiting(instance, [], full, ctx);
     if (full.length > 0) continue;
 
     for (const output of recipe.outputs) put(instance, def, ctx, output.id, output.qty * efficiency);

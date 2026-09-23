@@ -12,6 +12,7 @@ import { el, button, card } from '../components/dom.js';
 import { daysOfSupply } from '../../core/selectors.js';
 import { unhoused, residentsByLevel } from '../../systems/population/housing.js';
 import { total } from '../../systems/resources/stores.js';
+import * as selection from '../selection.js';
 
 const WATCHED_STOCKS = ['food', 'fuel', 'activated-carbon', 'scrubber-catalyst', 'basic-parts', 'paper', 'wood'];
 const METERS = ['morale', 'trust', 'stability', 'productivity', 'discontent', 'freedom', 'legitimacy', 'structural-integrity'];
@@ -24,6 +25,14 @@ export function mount(root, state, ctx, dispatch) {
   const powerMeter = renderMeter(power, { label: 'Load', unit: 'kW' });
   const powerNote = el('div', 'meter-label');
   power.appendChild(powerNote);
+
+  // --- waiting -----------------------------------------------------------
+  // Rooms held up by the porters: short of an input, or full of an output.
+  // Each row opens the room in Inspect.
+  const waiting = card(root, 'Waiting for porters');
+  const waitingList = el('div', 'waiting-list');
+  waiting.appendChild(waitingList);
+  let waitingKey = null;
 
   // --- stores ------------------------------------------------------------
   const stores = card(root, 'Stores');
@@ -80,6 +89,19 @@ export function mount(root, state, ctx, dispatch) {
       powerNote.textContent = flow.brownedOut.length
         ? `${flow.brownedOut.length} browned out · ${Math.round(flow.generation)} of ${Math.round(flow.demand)} kW`
         : `${Math.round(flow.generation)} kW available`;
+
+      const held = s.buildings.filter((b) => (b.starved || b.blocked) && b.powered !== false && !b.brokenDown);
+      const key = held.map((b) => `${b.instanceId}:${b.missing}:${b.full}`).join('|');
+      if (key !== waitingKey) {
+        waitingKey = key;
+        waitingList.replaceChildren(...(held.length ? held.slice(0, 10).map((b) => {
+          const name = c.catalog.buildings.byId[b.buildingId]?.name ?? b.buildingId;
+          const why = b.starved ? `needs ${b.missing.join(', ')}` : `full of ${b.full.join(', ')}`;
+          const row = button(`L${b.level} ${name} — ${why}`, `Inspect the ${name} on level ${b.level}`, () => selection.select({ instanceId: b.instanceId, level: b.level }), `waiting-row ${b.starved ? 'starved' : 'blocked'}`);
+          return row;
+        }) : [el('div', 'meter-label', 'Nothing is waiting.')]));
+        if (held.length > 10) waitingList.appendChild(el('div', 'meter-label', `and ${held.length - 10} more`));
+      }
 
       for (const [id, meter] of stockMeters) {
         const amount = total(s, id);

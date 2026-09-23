@@ -307,3 +307,69 @@ body {
   stroke-width: 1;
   pointer-events: none;
 }
+
+/* ---- Waiting badges and route markers ---- */
+
+.badge { display: none; pointer-events: none; }
+.badge rect { stroke: var(--rock); stroke-width: 1; }
+.badge text { font: 700 8px var(--font-mono); text-anchor: middle; fill: var(--rock); }
+.badge-starved rect { fill: var(--critical); }
+.badge-starved text { fill: var(--sign-ink); }
+.badge-blocked rect { fill: var(--warn); }
+.building.starved .badge-starved,
+.building.blocked .badge-blocked { display: inline; }
+
+.route-markers { pointer-events: none; }
+.route-marker rect { stroke: var(--rock); stroke-width: 1; }
+.route-marker text { font: 700 8px var(--font-mono); text-anchor: middle; }
+.route-pickup rect { fill: var(--amber); }
+.route-pickup text { fill: var(--rock); }
+.route-dropoff rect { fill: var(--terminal-lit); }
+.route-dropoff text { fill: var(--rock); }
+
+/* ---- Routes and stores in the panel ---- */
+
+.route-list { list-style: none; margin: var(--space-2) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); counter-reset: stop; }
+.route-stop {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel-raised);
+  border: var(--border);
+  counter-increment: stop;
+}
+.route-stop.next { border-color: var(--amber-dim); }
+.route-where::before { content: counter(stop) ". "; color: var(--amber); }
+.route-where { font-size: var(--size-sm); }
+.route-controls { display: flex; gap: var(--space-1); }
+.route-controls .icon-button { min-width: 1.5rem; padding: 0 var(--space-1); }
+.route-stop .inspect-select { font-size: var(--size-xs); }
+.route-qty {
+  width: 4rem;
+  background: var(--panel-raised);
+  border: var(--border);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--size-xs);
+}
+.route-held { grid-column: 1 / -1; }
+.inspect-store, .inspect-station { margin: var(--space-2) 0; }
+.porter-row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-1); align-items: center; margin-bottom: var(--space-1); }
+.porter-name { font-size: var(--size-sm); }
+.porter-doing { grid-column: 1 / -1; }
+
+.waiting-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.waiting-row {
+  text-align: left;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel-raised);
+  border: var(--border);
+  font: inherit;
+  font-size: var(--size-xs);
+  cursor: pointer;
+}
+.waiting-row.starved { color: var(--critical); }
+.waiting-row.blocked { color: var(--warn); }
+.waiting-row:hover { border-color: var(--amber); }
+.waiting-row:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }

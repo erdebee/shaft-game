@@ -97,9 +97,10 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   show('dashboard');
 
   // Clicking the shaft picks something: a room opens it in Inspect, an empty
-  // stretch of a level opens Build there.
-  selection.subscribe(({ instanceId, level }) => {
-    if (instanceId) show('inspect');
+  // stretch of a level opens Build there. While a porter's route is open, a
+  // click adds a stop instead, and the editor stays in view.
+  selection.subscribe(({ instanceId, level, editing }) => {
+    if (editing || instanceId) show('inspect');
     else if (level !== null) show('build');
   });
 
@@ -157,11 +158,6 @@ function wireLog(state, ctx) {
     record(`${buildingId} broke down on level ${level}`, 'warn');
   });
 
-  on('resource:shortfall', ({ id, qty, tick }) => {
-    if (!onset(`stock:${id}`, tick)) return;
-    record(`Short of ${id} by ${qty.toFixed(1)}`, 'warn');
-  });
-
   on('water:shortfall', ({ peopleShare, tick }) => {
     if (!onset('water', tick)) return;
     record(peopleShare < 1 ? 'Water rationed: people are going thirsty' : 'Water rationed: buildings on short supply', 'critical');
@@ -193,6 +189,29 @@ function wireLog(state, ctx) {
   on('build:refused', ({ buildingId, level, reason }) => {
     const why = { cost: 'the stores cannot pay for it', 'no-room': 'there is no room', 'wrong-depth': 'it cannot go at that depth', 'zone-full': 'that zone is full there', fixed: 'it is fixed in place' }[reason] ?? reason;
     record(`Cannot build a ${building(buildingId).toLowerCase()} on level ${level}: ${why}`, 'warn');
+  });
+
+  // A larder that a porter tops up every few ticks goes empty and full again
+  // all day; say so once a day per building, not every time. The Waiting card
+  // on Status carries the live picture.
+  const quietFor = ctx.config.clock.ticksPerShift * ctx.config.clock.shiftsPerDay;
+  const lastSaid = new Map();
+  const once = (key, tick) => {
+    const last = lastSaid.get(key);
+    if (last !== undefined && tick - last < quietFor) return false;
+    lastSaid.set(key, tick);
+    return true;
+  };
+  on('building:starved', ({ instanceId, buildingId, level, missing, tick }) => {
+    if (!once(`starved:${instanceId}`, tick)) return;
+    record(`The ${building(buildingId).toLowerCase()} on level ${level} is waiting for ${missing.join(', ')}`, 'warn');
+  });
+  on('building:blocked', ({ instanceId, buildingId, level, full, tick }) => {
+    if (!once(`blocked:${instanceId}`, tick)) return;
+    record(`The ${building(buildingId).toLowerCase()} on level ${level} is full of ${full.join(', ')}: nobody is collecting`, 'warn');
+  });
+  on('haulage:refused', ({ reason }) => {
+    record(reason === 'station-full' ? 'The station has no bed for another porter' : 'Nobody in the labour pool to hire', 'warn');
   });
 
   on('maintenance:stalled', ({ id, tick }) => {

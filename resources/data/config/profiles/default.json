@@ -554,6 +554,13 @@
           },
           {
             "at": [
+              "dig-face",
+              40
+            ],
+            "pickup": "gold-ore"
+          },
+          {
+            "at": [
               "smelter",
               37
             ],
@@ -621,6 +628,13 @@
               35
             ],
             "dropoff": "silica-sand"
+          },
+          {
+            "at": [
+              "storehouse",
+              35
+            ],
+            "dropoff": "gold-ore"
           }
         ]
       },

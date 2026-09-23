@@ -145,6 +145,8 @@ function syncSelection(view, state) {
     view.buildingMarker.setAttribute('height', String(r.height - 1));
   }
 
+  syncRouteMarkers(view, state);
+
   const showLevel = !instanceId && level !== null;
   view.levelMarker.style.display = showLevel ? '' : 'none';
   if (showLevel) {
@@ -153,6 +155,44 @@ function syncSelection(view, state) {
     view.levelMarker.setAttribute('width', String(SHAFT_WIDTH - BUILD_X));
     view.levelMarker.setAttribute('height', String(LEVEL_HEIGHT));
   }
+}
+
+/**
+ * While a porter's route is open, number its stops on the rooms they visit,
+ * so the loop can be read in the shaft rather than only in the panel.
+ */
+function syncRouteMarkers(view, state) {
+  const { editing } = selection.get();
+  const porter = editing ? state.population.workers.find((w) => w.id === editing) : null;
+  const key = porter ? JSON.stringify([porter.route, state.buildings.length]) : '';
+  if (key === view.routeKey) return;
+  view.routeKey = key;
+  view.routeGroup?.remove();
+  view.routeGroup = document.createElementNS(SVG_NS, 'g');
+  view.routeGroup.setAttribute('class', 'route-markers');
+  view.layers.overlays.appendChild(view.routeGroup);
+  if (!porter) return;
+
+  const perRoom = new Map();
+  porter.route.forEach((stop, i) => {
+    const instance = state.buildings.find((b) => b.instanceId === stop.instanceId);
+    if (!instance) return;
+    const n = perRoom.get(instance.instanceId) ?? 0;
+    perRoom.set(instance.instanceId, n + 1);
+    const r = roomRect(instance, state.buildings);
+    const marker = document.createElementNS(SVG_NS, 'g');
+    marker.setAttribute('class', `route-marker route-${stop.action}`);
+    marker.setAttribute('transform', `translate(${r.x + 3 + n * 13} ${r.y + 3})`);
+    const box = document.createElementNS(SVG_NS, 'rect');
+    box.setAttribute('width', '12');
+    box.setAttribute('height', '11');
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', '6');
+    text.setAttribute('y', '8.5');
+    text.textContent = String(i + 1);
+    marker.append(box, text);
+    view.routeGroup.appendChild(marker);
+  });
 }
 
 function group(parent, className) {
@@ -317,6 +357,10 @@ function syncBuildings(view, state, ctx) {
       target.classList.toggle('broken', instance.brokenDown === true);
       if (node.flicker) target.classList.toggle('flicker', dipped);
     }
+    // Waiting for a porter: short of an input, or full of an output. A badge
+    // on the room says so, and the inspector says which goods.
+    node.classList.toggle('starved', instance.starved === true && instance.powered !== false && !instance.brokenDown);
+    node.classList.toggle('blocked', instance.blocked === true && !instance.starved);
   }
 }
 
@@ -370,6 +414,23 @@ function createBuildingNode(view, ctx, instance) {
   const title = document.createElementNS(SVG_NS, 'title');
   title.textContent = `${def.name}, level ${instance.level}`;
   g.appendChild(title);
+
+  // Top-right corner badges, shown by the per-frame classes above: `!` when
+  // the room is waiting for goods, a stack when its store is full.
+  for (const [kind, glyph] of [['starved', '!'], ['blocked', '≡']]) {
+    const badge = document.createElementNS(SVG_NS, 'g');
+    badge.setAttribute('class', `badge badge-${kind}`);
+    badge.setAttribute('transform', `translate(${width - 13} 3)`);
+    const box = document.createElementNS(SVG_NS, 'rect');
+    box.setAttribute('width', '10');
+    box.setAttribute('height', '10');
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', '5');
+    text.setAttribute('y', '8.5');
+    text.textContent = glyph;
+    badge.append(box, text);
+    g.appendChild(badge);
+  }
 
   view.layers.buildings.appendChild(g);
   return g;
