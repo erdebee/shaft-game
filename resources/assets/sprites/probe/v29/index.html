@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logistics rooms</title>
+<style>
+  :root { --bg:#0e0b10; --panel:#17121a; --edge:#2c2430; --ink:#e6d8c0; --dim:#a8988e; --amber:#f2b25a; --teal:#86b6a2; --bad:#d9785f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.6 ui-monospace,"SF Mono",Menlo,monospace; }
+  main { max-width:1500px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:18px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:0 0 6px; }
+  h2 { font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber); margin:44px 0 8px; padding-top:14px; border-top:1px solid var(--edge); }
+  h3 { font-size:12px; color:var(--teal); margin:22px 0 6px; }
+  p, li { max-width:100ch; color:var(--dim); } b { color:var(--ink); } code { color:var(--teal); } a { color:var(--teal); }
+  .summary { background:var(--panel); border:1px solid var(--edge); border-left:3px solid var(--amber); padding:14px 18px; margin:18px 0; max-width:1200px; }
+  .bar { position:sticky; top:0; z-index:5; display:flex; gap:18px; flex-wrap:wrap; align-items:center;
+         background:var(--panel); border:1px solid var(--edge); padding:10px 14px; margin:18px 0 28px; }
+  .bar label { color:var(--dim); font-size:12px; }
+  button { font:inherit; font-size:12px; background:#221b26; color:var(--dim); border:1px solid var(--edge); padding:3px 10px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--amber); border-color:var(--amber); color:#1a1208; }
+  figure { margin:0; }
+  figcaption { font-size:11px; color:var(--dim); margin-top:6px; max-width:34ch; }
+  figcaption b { color:var(--ink); }
+  img { image-rendering:pixelated; display:block; max-width:none; }
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .wrap { overflow-x:auto; padding-bottom:6px; }
+  table { border-collapse:collapse; font-size:12px; margin:8px 0; max-width:1200px; }
+  th,td { border-bottom:1px solid var(--edge); padding:5px 10px; text-align:left; vertical-align:top; color:var(--dim); }
+  th { color:var(--ink); font-weight:600; }
+  td.ok { color:var(--teal); } td.no { color:var(--bad); }
+  .pick { outline:2px solid var(--amber); outline-offset:3px; }
+  .floor { position:relative; }
+  .floor::after { content:''; position:absolute; left:0; right:0; border-top:1px dashed rgba(242,178,90,.75); pointer-events:none; }
+</style>
+<body>
+<main>
+<h1>Logistics rooms — depot, storehouse, porter station</h1>
+<p>The three buildings the logistics work added to <code>resources/data/catalog/buildings/logistics.json</code>.
+None had art, so the game drew a grey placeholder block where they stand. Produced by the §2.4 workflow:
+blockout guide, pixflux over it, then <code>edit_image</code> for the power states and a computed dim frame.</p>
+
+<div class="summary">
+  <b>Picked and shipped: depot D, storehouse B, porter station A.</b> All three now have their four state
+  renders, are listed in <code>manifest.json</code> with a <code>floorY</code>, and draw in the game —
+  the grey placeholder is gone. The tries they were picked from are kept below, because what is wrong
+  with the rejects is why the guides look the way they do.
+</div>
+
+<div class="bar">
+  <label>Zoom</label><span id="zooms"></span>
+  <label>Floor line</label><span id="floors"></span>
+</div>
+
+<h2>The three rooms, as they ship</h2>
+<p>on / off / broken / dim. The off and broken states were batched — the two 128-px rooms go in one
+<code>edit_image</code> call per state and the 64-px depot in its own, four calls for six renders. The dim
+frames are computed from each room's own on and off (§2.5), so their palettes are unchanged:
+<b>44, 31 and 42 colours before and after</b>.</p>
+<div class="wrap" id="finals"></div>
+
+<h2>The floor line</h2>
+<p>Checked by standing a real figure in each render at three candidate rows rather than by reading the
+pixels. <b>depot 91, storehouse 91, porter station 93</b> — those are the numbers in the manifest.</p>
+<div class="wrap"><div class="row" id="floorcheck"></div></div>
+
+<h2>Depot — 1 slot, 64 px</h2>
+<p><i>“A cage of shelves off the landing. Small, cheap, and wherever it is needed.”</i> Holds 1500 of any
+mix of goods; no staff.</p>
+<div class="wrap"><div class="row" id="depot"></div></div>
+
+<h2>Storehouse — 2 slots, 128 px</h2>
+<p><i>“The Shaft's common store.”</i> 8000 capacity; repair crews and builders draw their materials from
+it, nearest first.</p>
+<div class="wrap"><div class="row" id="storehouse"></div></div>
+
+<h2>Porter station — 2 slots, 128 px</h2>
+<p><i>“Where porters are hired, where they rest, and where they wait when nobody has told them what to
+carry.”</i> Houses 8 porters. <b>The renderer stands up to three idle porters in it on the floor line</b>, so the
+floor in front of the bench is deliberately clear in both of these.</p>
+<div class="wrap"><div class="row" id="porter"></div></div>
+
+<h2>Why the depot kept coming back as a bookcase</h2>
+<p>The first depot blockout drew the cage as a field of evenly spaced vertical bars across loaded shelves.
+Three seeds at three strengths — 135, 165 and 150 — all came back as <b>a barred bookcase</b>: A even added
+an ornamental Greek-key border, and C filled the shelves with book spines and bottles.</p>
+<p><b>The bars were doing it.</b> A grille over a loaded shelf slices every crate into narrow vertical strips,
+and a narrow vertical strip on a shelf is a book spine — there is nothing else it can be at this size. No
+amount of “absolutely no books, no bookshelf, no library” in the prompt out-argues the shape that is
+actually drawn in the guide.</p>
+<p>D fixes the guide instead of the prompt: the cage is now two corner posts and two rails, no bar field,
+and the goods are drawn big enough that nothing on a shelf can read as a spine. One try, and the freight
+came back as freight. That note is now in <code>tools/roomGuide.mjs</code> above the layout, so the bars do
+not come back.</p>
+<div class="wrap"><div class="row" id="lesson"></div></div>
+
+<h2>The blockout guides</h2>
+<p>What each render was generated over — <code>node tools/roomGuide.mjs &lt;width&gt; room &lt;id&gt; --lit</code>,
+free, and the thing that actually holds the envelope.</p>
+<div class="wrap"><div class="row" id="guides"></div></div>
+
+<h2>What is still open</h2>
+<ul>
+  <li><b>No foreground cuts</b> for any of the three, and none are wanted: nothing in them is something a
+  person stands behind.</li>
+  <li>The porter station has a framed panel on the right that reads a little like a mirror or a window.
+  §5 bans windows outright; this one is small, dark and clearly framed, so I left it. Say the word and it
+  inpaints out in one pass.</li>
+  <li>The storehouse reads a little warmer and lighter than the rest of the Shaft. If it stands out once
+  you have looked at it in place, that is a relight, not a re-roll.</li>
+  <li>The opening layout places a porter station on level 18 and a storehouse plus a porter station on
+  level 35. <b>No depot is placed yet</b> — its art is ready whenever the layout wants one.</li>
+</ul>
+
+<script>
+const SHOTS = {
+  depot: [
+    ['depot-d', 'D — seed 29008, strength 150', 'The reworked guide. Stencilled crates, a sack bundle, a barrel: freight, not books. 44 colours.', true],
+    ['depot-a', 'A — seed 29003, strength 135', 'A barred bookcase with an ornamental border. 19 colours, and far too dark.', false],
+    ['depot-b', 'B — seed 29004, strength 165', 'Better cage, but the shelves are nearly bare and what is on them is still spines.', false],
+    ['depot-c', 'C — seed 29007, strength 150', 'Fullest of the three, and the most obviously a library. Bottles on the bottom shelf.', false],
+  ],
+  storehouse: [
+    ['storehouse-b', 'B — seed 29005', 'Two bays of steel racking, three shelves each, crates and sacks and drums, a stepladder. Flat, and the floor line is clean. 31 colours.', true],
+    ['storehouse-a', 'A — seed 29001', 'Reads as a storehouse but floats: a big dark void above the racking and a bright metal ledge for a floor. 56 colours.', false],
+  ],
+  porter: [
+    ['porter-station-a', 'A — seed 29002', 'Duty board, hung harnesses, lockers, bench, hand cart, urn — the whole brief, and it reads at a glance. 42 colours.', true],
+    ['porter-station-b', 'B — seed 29006', 'Sparser, and the hanging harnesses came back as odd red shapes. The board shrank to a notice.', false],
+  ],
+};
+const GUIDES = [
+  ['guide-depot', 'depot', '64 px. Two posts and two rails — the bar field is gone.'],
+  ['guide-storehouse', 'storehouse', '128 px. Three bays, two shelves, aisle floor stacked.'],
+  ['guide-porter-station', 'porter-station', '128 px. Board, hooks, lockers, bench, cart, urn.'],
+];
+const FLOOR = { 'depot-d': 91, 'storehouse-b': 91, 'porter-station-a': 93 };
+const ROOMS = ['depot', 'storehouse', 'porter-station'];
+const STATES = ['on', 'off', 'broken', 'dim'];
+
+let zoom = 3, showFloor = false;
+const el = (t, c) => { const n = document.createElement(t); if (c) n.className = c; return n; };
+
+function shot(file, title, note, pick) {
+  const fig = el('figure');
+  const box = el('div', 'floor');
+  const img = el('img');
+  img.src = `${file}.png`;
+  img.onload = () => {
+    img.style.width = img.naturalWidth * zoom + 'px';
+    if (showFloor && FLOOR[file]) {
+      box.style.setProperty('--y', FLOOR[file] * zoom + 'px');
+      box.querySelector('.line').style.top = FLOOR[file] * zoom + 'px';
+    }
+  };
+  if (pick) img.classList.add('pick');
+  box.append(img);
+  if (showFloor && FLOOR[file]) {
+    const line = el('div', 'line');
+    line.style.cssText = 'position:absolute;left:0;right:0;border-top:1px dashed rgba(242,178,90,.9);pointer-events:none;';
+    box.append(line);
+  }
+  fig.append(box);
+  const cap = el('figcaption');
+  cap.innerHTML = `<b>${title}</b><br>${note}`;
+  fig.append(cap);
+  return fig;
+}
+
+function draw() {
+  for (const [id, list] of Object.entries(SHOTS)) {
+    const host = document.getElementById(id);
+    host.textContent = '';
+    for (const [file, title, note, pick] of list) host.append(shot(file, title, note, pick));
+  }
+  const lesson = document.getElementById('lesson');
+  lesson.textContent = '';
+  lesson.append(shot('depot-c', 'C — the bars', 'Crates sliced into spines by the grille.', false));
+  lesson.append(shot('depot-d', 'D — no bars', 'Same shelves, same prompt intent, freight.', true));
+
+  const finals = document.getElementById('finals');
+  finals.textContent = '';
+  for (const room of ROOMS) {
+    const strip = el('div', 'row');
+    for (const st of STATES) strip.append(shot(`final-${room}-${st}`, `${room} — ${st}`, '', false));
+    finals.append(strip);
+  }
+
+  const check = document.getElementById('floorcheck');
+  check.textContent = '';
+  for (const [file, row] of Object.entries(FLOOR)) {
+    check.append(shot(file, `${file} — floor ${row}`, 'Turn the floor line on to see where the feet land.', false));
+  }
+
+  const guides = document.getElementById('guides');
+  guides.textContent = '';
+  for (const [file, title, note] of GUIDES) guides.append(shot(file, title, note, false));
+}
+
+function toggles(host, values, current, onPick, fmt) {
+  host.textContent = '';
+  for (const v of values) {
+    const b = el('button');
+    b.textContent = fmt ? fmt(v) : v;
+    b.setAttribute('aria-pressed', String(v === current()));
+    b.onclick = () => {
+      onPick(v);
+      [...host.children].forEach((c, i) => c.setAttribute('aria-pressed', String(values[i] === current())));
+      draw();
+    };
+    host.append(b);
+  }
+}
+
+toggles(document.getElementById('zooms'), [1, 2, 3, 4, 6], () => zoom, (v) => { zoom = v; }, (v) => v + '×');
+toggles(document.getElementById('floors'), [false, true], () => showFloor, (v) => { showFloor = v; }, (v) => (v ? 'show' : 'hide'));
+draw();
+</script>
+</main>
+</body>
+</html>

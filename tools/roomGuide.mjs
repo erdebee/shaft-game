@@ -79,6 +79,17 @@ const chairRow = (x0, count, step, seatY, colour) => Array.from({ length: count 
   ];
 }).flat();
 
+/**
+ * A run of vertical bars: a mesh cage front, drawn as evenly spaced uprights.
+ * Written as a function because a depot is mostly its cage, and listing
+ * fourteen 1-px rects by hand would bury the shelves behind it.
+ */
+const grille = (x0, x1, step, y0, y1, colour) => {
+  const bars = [];
+  for (let x = x0; x <= x1; x += step) bars.push(['rect', x, y0, x + 1, y1, colour]);
+  return bars;
+};
+
 const LAYOUTS = {
   'main-generator': [
     ['rect', 8, 12, 183, 15, P.taupe],              // ceiling pipe run
@@ -872,6 +883,96 @@ const LAYOUTS = {
     ['rect', 348, 66, 372, 70, P.sand],             // a small bench at the far end
     ['rect', 350, 71, 352, 87, P.sand],
     ['rect', 368, 71, 370, 87, P.sand],
+  ],
+
+  /**
+   * Depot: a cage of shelves off the landing. One slot, so the mesh front is
+   * what has to read at a glance — the goods behind it are shapes, not detail.
+   */
+  /**
+   * Depot: a cage of shelves off the landing. One slot.
+   *
+   * NO field of bars. A grille of evenly spaced uprights over loaded shelves
+   * is a barred bookcase to the model, and three seeds at three strengths all
+   * came back as one (probe/v29): the bars slice the crates into book spines.
+   * The cage is two posts and two rails, and the goods are drawn big enough
+   * that nothing on a shelf can read as a spine.
+   */
+  depot: [
+    ['rect', 10, 14, 54, 18, P.ink],                // head rail
+    ['rect', 10, 18, 54, 87, P.plum],               // the recess
+    ['rect', 12, 30, 52, 34, P.taupe],              // upper shelf
+    ['rect', 12, 54, 52, 58, P.taupe],              // lower shelf
+    ['rect', 14, 19, 34, 30, P.sand],               // one big crate
+    ['rect', 36, 21, 51, 30, P.terracotta],         // and another
+    ['rect', 14, 40, 32, 54, P.mauve],              // sacks, slumped
+    ['rect', 34, 38, 51, 54, P.sand],               // crate stack
+    ['rect', 14, 66, 30, 87, P.rust],               // drum on the floor
+    ['rect', 32, 70, 52, 87, P.sand],               // crates beside it
+    ['rect', 10, 18, 13, 87, P.ink],                // cage post, left
+    ['rect', 51, 18, 54, 87, P.ink],                // cage post, right
+    ['rect', 10, 58, 54, 61, P.ink],                // cage mid rail
+    ['circle', 32, 12, 2, P.amber],                 // lamp
+  ],
+
+  /**
+   * Storehouse: the Shaft's common store. Two slots of racking, floor to
+   * ceiling, with the aisle floor stacked as well — it should read as full.
+   */
+  storehouse: [
+    ['rect', 10, 12, 118, 16, P.ink],               // gantry over the racking
+    ['rect', 10, 16, 118, 87, P.plum],              // the recess
+    ['rect', 12, 16, 15, 87, P.mauve],              // racking uprights
+    ['rect', 60, 16, 63, 87, P.mauve],
+    ['rect', 112, 16, 115, 87, P.mauve],
+    ['rect', 12, 36, 115, 40, P.taupe],             // shelves
+    ['rect', 12, 60, 115, 64, P.taupe],
+    ['rect', 18, 20, 38, 36, P.sand],               // crates and sacks, upper
+    ['rect', 40, 25, 56, 36, P.terracotta],
+    ['rect', 68, 19, 90, 36, P.mauve],
+    ['rect', 94, 23, 110, 36, P.rust],
+    ['rect', 18, 44, 34, 60, P.teal],               // and lower
+    ['rect', 38, 47, 56, 60, P.sand],
+    ['rect', 68, 43, 88, 60, P.sand],
+    ['rect', 92, 49, 110, 60, P.terracotta],
+    ['rect', 16, 69, 44, 87, P.sand],               // pallet stack on the floor
+    ['rect', 48, 75, 60, 87, P.rust],               // barrels
+    ['rect', 68, 71, 96, 87, P.mauve],              // sacks
+    ['rect', 100, 67, 114, 87, P.teal],             // drums
+    ['rect', 64, 42, 67, 60, P.ink],                // ladder against the upright
+    ['rect', 30, 44, 44, 56, P.cream],              // tally board, low on a post
+    ['circle', 32, 10, 3, P.amber],                 // lamps
+    ['circle', 96, 10, 3, P.amber],
+  ],
+
+  /**
+   * Porter station: where porters are hired, rest, and wait for a route. Read
+   * left to right it is the duty board, the harnesses they wear, the bench
+   * they wait on, and the cart they push.
+   */
+  'porter-station': [
+    ['rect', 10, 12, 118, 16, P.ink],               // hook rail along the wall
+    ['rect', 10, 16, 118, 87, P.plum],              // the recess
+    ['rect', 14, 19, 44, 41, P.ink],                // chalk duty board
+    ['rect', 17, 23, 41, 25, P.cream],              // chalked routes
+    ['rect', 17, 29, 35, 31, P.cream],
+    ['rect', 17, 35, 39, 37, P.cream],
+    ['rect', 52, 16, 56, 35, P.rust],               // harnesses on their hooks
+    ['rect', 62, 16, 66, 39, P.terracotta],
+    ['rect', 72, 16, 76, 33, P.rust],
+    ['circle', 88, 27, 8, P.mauve],                 // coiled hauling rope
+    ['rect', 100, 19, 116, 45, P.teal],             // lockers
+    ['rect', 100, 31, 116, 32, P.tealDeep],
+    ['rect', 12, 62, 70, 66, P.taupe],              // the waiting bench
+    ['rect', 16, 66, 20, 81, P.mauve],
+    ['rect', 62, 66, 66, 81, P.mauve],
+    ['rect', 78, 59, 104, 74, P.sand],              // a hand cart, parked
+    ['rect', 78, 47, 81, 59, P.mauve],              // its handle
+    ['circle', 84, 80, 6, P.ink],                   // its wheels
+    ['circle', 100, 80, 6, P.ink],
+    ['rect', 108, 57, 118, 73, P.rust],             // tea urn on a stand
+    ['circle', 30, 10, 3, P.amber],                 // lamps
+    ['circle', 94, 10, 3, P.amber],
   ],
 };
 
