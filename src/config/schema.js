@@ -75,6 +75,9 @@ export const TUNABLES = {
   'haulage.porterRestedAt': RATE,
   'haulage.fatiguePerLevelHauled': RATE,
   'haulage.shiftChangeCongestionMultiplier': N(1, 10),
+  'haulage.floorTicksPerSlot': N(0, 100),
+  'haulage.handleTicks': N(0, 1000),
+  'haulage.handlePerTick': N(1, 100000),
 
   'buildings.conditionStart': RATE,
   'buildings.degradedEfficiencyMultiplier': RATE,

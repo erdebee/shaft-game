@@ -13,7 +13,7 @@
  */
 
 import {
-  tripPosition, stairWalk, roomRect, workerSlot, visualJitter,
+  tripPosition, stairWalk, roomRect, workerSlot, visualJitter, simTime, levelY, floorX, FLOOR_Y,
 } from './interpolate.js';
 import { isLevelVisible } from './viewport.js';
 import { SPEEDS } from '../../core/clock.js';
@@ -54,7 +54,7 @@ const FIGURE_SPEED_LIMIT = SPEEDS.FAST;
 function idlePorters(state, station) {
   let n = 0;
   for (const w of state.population.workers) {
-    if (w.stationId === station.instanceId && w.tripId === null && w.level === station.level) n++;
+    if (w.job === 'porter' && w.tripId === null && w.at === station.instanceId && !w.handling) n++;
   }
   return Math.min(n, 3);
 }
@@ -89,7 +89,7 @@ export function createFigureLayer(parent) {
   group.setAttribute('class', 'figure-layer');
   parent.appendChild(group);
 
-  return { group, porters: [], workers: [], parent };
+  return { group, porters: [], workers: [], bubbles: [], parent };
 }
 
 // ---- Pixel figures ---------------------------------------------------------
@@ -176,37 +176,206 @@ function placeSprite(entry, clip, x, y, facing) {
  * Reads state; never writes it.
  */
 export function renderFigures(layer, state, ctx, tick, alpha, viewport, art) {
-  renderSpritePorters(layer, state, tick, alpha, viewport, art.figures);
+  const rooms = roomPlaces(state, ctx, art);
+  renderSpritePorters(layer, state, tick, alpha, viewport, art, rooms);
   renderSpriteWorkers(layer, state, ctx, viewport, art);
 }
 
-/** Porters on the stairwell, walking their trip. */
-function renderSpritePorters(layer, state, tick, alpha, viewport, figures) {
+/**
+ * Every room's rectangle and floor row, by instance id, for this frame. A
+ * porter walking a floor stands on the floor of whichever room it is passing,
+ * and on the level's own floor row over the gaps and the stairhead.
+ */
+function roomPlaces(state, ctx, art) {
+  const places = new Map();
+  for (const b of state.buildings) {
+    const rect = roomRect(b, state.buildings);
+    const floorY = art.rooms.get(b.buildingId)?.floorY ?? FLOOR_Y;
+    places.set(b.instanceId, { rect, floorY, level: b.level });
+  }
+  return places;
+}
+
+function floorAt(rooms, level, x) {
+  for (const { rect, floorY, level: l } of rooms.values()) {
+    if (l === level && x >= rect.x && x < rect.x + rect.width) return rect.y + floorY;
+  }
+  return levelY(level) + FLOOR_Y;
+}
+
+/**
+ * Where a porter stands at a room: its middle, give or take a step hashed from
+ * the porter, so two porters at one room do not stand in one body. The walk
+ * ends at the same point, so arriving and standing never jump.
+ */
+function standX(rooms, porterId, instanceId) {
+  const place = rooms.get(instanceId);
+  if (!place) return null;
+  const spread = Math.min(12, place.rect.width / 4);
+  return place.rect.x + place.rect.width / 2 + (visualJitter(`${porterId}:stand`) - 0.5) * 2 * spread;
+}
+
+/**
+ * Porters: walking their trip (along a floor, then the stairwell, then a floor),
+ * or standing at a room loading and unloading. Porters waiting at their station
+ * are drawn with the station's crew, in renderSpriteWorkers.
+ */
+function renderSpritePorters(layer, state, tick, alpha, viewport, art, rooms) {
   const thinned = state.clock.speed > FIGURE_SPEED_LIMIT;
-  const trips = thinned ? [] : state.haulage.trips.filter((t) => t.method === 'stairwell');
-  const clips = figures.get('porter');
-  const pool = ensureSpritePool(layer, layer.porters, trips.length, 'figure figure-porter');
+  const clips = art.figures.get('porter');
+  const placements = [];
+  const bubbles = [];
 
-  trips.forEach((trip, i) => {
-    const entry = pool[i];
-    const pos = tripPosition(trip, tick, alpha);
-    if (!isLevelVisible(viewport, Math.round(pos.level))) {
-      hide(entry.node);
-      return;
+  if (!thinned && clips) {
+    for (const trip of state.haulage.trips) {
+      if (trip.method !== 'stairwell') continue;
+      const xOf = (id, pos) => (id ? standX(rooms, trip.workerId, id) : null) ?? floorX(pos);
+      const pos = tripPosition(trip, tick, alpha, xOf);
+      if (!isLevelVisible(viewport, Math.round(pos.level))) continue;
+      const clip = clips.walk ?? clips.still;
+      if (pos.onFloor) {
+        placements.push({ clip, x: pos.x, y: floorAt(rooms, pos.level, pos.x), facing: pos.facing, key: trip.id });
+      } else {
+        // Trips that start on the same tick share a position, so a stable
+        // offset hashed from the trip id spreads them out. ALONG the stair, not
+        // across it: a lateral offset would hang them over the drop, while a
+        // few steps ahead or behind keeps every one of them on the treads. The
+        // offset fades out at the ends of the flight, where the porter steps
+        // on or off the floor, so the hand-over never jumps.
+        const ease = Math.sin(Math.PI * (pos.legProgress ?? 0.5));
+        const step = stairWalk(pos.y + (visualJitter(trip.id) - 0.5) * 10 * ease, pos.descending);
+        placements.push({ clip, x: step.x, y: step.y, facing: step.facing, key: trip.id });
+      }
     }
-    show(entry.node);
-    const clip = clips.walk ?? clips.still;
-    setClip(entry, clip, 'porter');
-    // Trips that start on the same tick share a position, so a stable offset
-    // hashed from the trip id spreads them out. ALONG the stair, not across
-    // it: a lateral offset would hang them over the drop, while a few steps
-    // ahead or behind keeps every one of them on the treads.
-    const step = stairWalk(pos.y + (visualJitter(trip.id) - 0.5) * 10, pos.descending);
-    placeSprite(entry, clip, step.x, step.y, step.facing);
-    entry.strip.style.setProperty('--phase', `${(visualJitter(`${trip.id}:p`) * -1.2).toFixed(2)}s`);
-  });
 
-  for (let i = trips.length; i < pool.length; i++) hide(pool[i].node);
+    for (const porter of state.population.workers) {
+      const job = porter.handling;
+      if (porter.job !== 'porter' || porter.tripId !== null || !job) continue;
+      const place = rooms.get(job.instanceId);
+      if (!place || !isLevelVisible(viewport, place.level)) continue;
+      const clip = clips.idle ?? clips.still;
+      const x = standX(rooms, porter.id, job.instanceId);
+      const y = place.rect.y + place.floorY;
+      placements.push({ clip, x, y, facing: visualJitter(`${porter.id}:face`) < 0.5 ? -1 : 1, key: porter.id });
+
+      const span = Math.max(1e-9, job.untilTick - job.startTick);
+      const t = Math.min(1, Math.max(0, (simTime(tick, alpha) - job.startTick) / span));
+      bubbles.push({ x, y: y - clip.height - 3, t, job, key: `${porter.id}:${job.startTick}` });
+    }
+  }
+
+  const pool = ensureSpritePool(layer, layer.porters, placements.length, 'figure figure-porter');
+  placements.forEach((spot, i) => {
+    const entry = pool[i];
+    show(entry.node);
+    setClip(entry, spot.clip, 'porter');
+    placeSprite(entry, spot.clip, spot.x, spot.y, spot.facing);
+    entry.strip.style.setProperty('--phase', `${(visualJitter(`${spot.key}:p`) * -1.2).toFixed(2)}s`);
+  });
+  for (let i = placements.length; i < pool.length; i++) hide(pool[i].node);
+
+  renderBubbles(layer, bubbles, art.icons);
+}
+
+// ---- Load bubbles ----------------------------------------------------------
+
+/** Rise over a bubble's life, and when in it the bubble starts to fade. */
+const BUBBLE_RISE = 10;
+const BUBBLE_FADE_FROM = 0.65;
+
+/**
+ * The 5 x 5 sign beside a bubble's icon, as pixel rects: + for what a porter
+ * takes on, − for what they put down.
+ */
+const SIGN_RECTS = {
+  pickup: [[0, 2, 5, 1], [2, 0, 1, 5]],
+  dropoff: [[0, 2, 5, 1]],
+};
+
+/**
+ * A pooled bubble: a dark plate, a sign, and the good's icon — or, for a good
+ * with no icon yet, a short text label in its place.
+ */
+function ensureBubblePool(layer, count) {
+  const pool = layer.bubbles;
+  while (pool.length < count) {
+    const node = document.createElementNS(SVG_NS, 'g');
+    node.setAttribute('class', 'load-bubble');
+    const plate = document.createElementNS(SVG_NS, 'rect');
+    plate.setAttribute('class', 'load-bubble-plate');
+    plate.setAttribute('height', '20');
+    plate.setAttribute('y', '-10');
+    const sign = document.createElementNS(SVG_NS, 'g');
+    const icon = document.createElementNS(SVG_NS, 'image');
+    icon.setAttribute('width', '16');
+    icon.setAttribute('height', '16');
+    icon.setAttribute('y', '-8');
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('class', 'load-bubble-label');
+    label.setAttribute('y', '3');
+    node.append(plate, sign, icon, label);
+    hide(node);
+    layer.group.appendChild(node);
+    pool.push({ node, plate, sign, icon, label, key: null });
+  }
+  return pool;
+}
+
+/** Set a bubble's contents. Only when the load it shows changes. */
+function fillBubble(entry, job, icons) {
+  const key = `${job.action}:${job.goodId}`;
+  if (entry.key === key) return;
+  entry.key = key;
+
+  const icon = icons?.get(job.goodId);
+  const inner = icon ? 16 : Math.max(12, job.goodId.length * 4);
+  const width = 2 + 5 + 2 + inner + 2;
+  entry.plate.setAttribute('x', String(-width / 2));
+  entry.plate.setAttribute('width', String(width));
+
+  entry.sign.replaceChildren();
+  entry.sign.setAttribute('class', `load-bubble-sign ${job.action === 'pickup' ? 'plus' : 'minus'}`);
+  entry.sign.setAttribute('transform', `translate(${-width / 2 + 2} -2)`);
+  for (const [x, y, w, h] of SIGN_RECTS[job.action] ?? []) {
+    const r = document.createElementNS(SVG_NS, 'rect');
+    r.setAttribute('x', String(x));
+    r.setAttribute('y', String(y));
+    r.setAttribute('width', String(w));
+    r.setAttribute('height', String(h));
+    entry.sign.appendChild(r);
+  }
+
+  const left = -width / 2 + 9;
+  if (icon) {
+    entry.icon.setAttribute('href', icon.href);
+    entry.icon.setAttribute('x', String(left));
+    entry.icon.style.display = '';
+    entry.label.style.display = 'none';
+  } else {
+    entry.icon.style.display = 'none';
+    entry.label.style.display = '';
+    entry.label.setAttribute('x', String(left));
+    entry.label.textContent = job.goodId;
+  }
+}
+
+/**
+ * One bubble over each porter loading or unloading: it rises off their head
+ * over the time the work takes and fades as it finishes. Its life is sim time,
+ * so it freezes with the clock like everything else here.
+ */
+function renderBubbles(layer, bubbles, icons) {
+  const pool = ensureBubblePool(layer, bubbles.length);
+  bubbles.forEach((b, i) => {
+    const entry = pool[i];
+    show(entry.node);
+    fillBubble(entry, b.job, icons);
+    const rise = Math.round(b.t * BUBBLE_RISE);
+    entry.node.setAttribute('transform', `translate(${Math.round(b.x)} ${Math.round(b.y - 10 - rise)})`);
+    const fade = b.t < BUBBLE_FADE_FROM ? 1 : 1 - (b.t - BUBBLE_FADE_FROM) / (1 - BUBBLE_FADE_FROM);
+    entry.node.style.opacity = fade.toFixed(2);
+  });
+  for (let i = bubbles.length; i < pool.length; i++) hide(pool[i].node);
 }
 
 /**

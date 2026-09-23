@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   roomRect, stairAt, stairWalk, tripPosition, workerSlot,
-  SHAFT_WIDTH, SEAM, BUILD_X, LEVEL_HEIGHT, STAIR_WIDTH, FLOOR_Y, levelFloorY,
+  SHAFT_WIDTH, SEAM, BUILD_X, LEVEL_HEIGHT, STAIR_WIDTH, FLOOR_Y, levelFloorY, floorX, STAIRHEAD_X,
 } from '../../src/ui/view/interpolate.js';
 import { createViewport, fitToElement, zoom, viewBoxOf } from '../../src/ui/view/viewport.js';
 
@@ -104,4 +104,36 @@ test('a room that names seats stands its people on them, and everything else spr
   // A room without one is untouched: two people, one at each end of the span.
   const spread = [0, 1].map((i) => workerSlot(rect, i, 2, 93).x);
   assert.deepEqual(spread, [rect.x + 14, rect.x + rect.width - 14]);
+});
+
+test('a porter walks the floor to the stairhead, takes the stair, and walks the floor to the room', () => {
+  const trip = {
+    method: 'stairwell', fromLevel: 3, toLevel: 5, startTick: 0, arriveTick: 6,
+    legs: [
+      { kind: 'floor', level: 3, from: 2.5, to: 0, fromId: 'a', toId: null, ticks: 1 },
+      { kind: 'stair', from: 3, to: 5, ticks: 2 },
+      { kind: 'floor', level: 5, from: 0, to: 4, fromId: null, toId: 'b', ticks: 1.5 },
+    ],
+  };
+  const xOf = (id, pos) => (id === 'a' ? 300 : id === 'b' ? 420 : floorX(pos));
+
+  const start = tripPosition(trip, 0, 0, xOf);
+  assert.equal(start.onFloor, true);
+  assert.equal(start.x, 300);
+  assert.equal(start.y, levelFloorY(3));
+  assert.equal(start.facing, -1, 'walking back to the stairs');
+
+  // The legs meet: stepping off the floor onto the stair, and off the stair
+  // onto the next floor, happens at the stairhead.
+  const span = 4.5;
+  const offFloor = tripPosition(trip, (1 / span) * 6 - 1e-6, 0, xOf);
+  assert.ok(Math.abs(offFloor.x - STAIRHEAD_X) < 0.1);
+  const onStair = tripPosition(trip, (1 / span) * 6 + 1e-6, 0, xOf);
+  assert.equal(onStair.onFloor, false);
+  assert.ok(Math.abs(onStair.x - STAIRHEAD_X) < 0.5, 'the stair starts where the floor walk ended');
+
+  const end = tripPosition(trip, 6, 0, xOf);
+  assert.equal(end.x, 420, 'arrives at the room');
+  assert.equal(end.y, levelFloorY(5));
+  assert.equal(end.facing, 1);
 });

@@ -133,6 +133,8 @@ export function describe(state, ctx, porter) {
   const trip = state.haulage.trips.find((t) => t.id === porter.tripId);
   switch (porterStatus(state, porter)) {
     case 'walking': return `Walking to level ${trip?.toLevel ?? '?'}${hands}`;
+    case 'loading': return `Loading ${Math.round(porter.handling.qty)} ${porter.handling.goodId}${hands}`;
+    case 'unloading': return `Unloading ${Math.round(porter.handling.qty)} ${porter.handling.goodId}${hands}`;
     case 'resting': return `Resting (worn out ${Math.round(porter.fatigue * 100)}%)${hands}`;
     case 'idle': return `Waiting at the station — no route${hands}`;
     default: return `At level ${porter.level}, stop ${porter.stop + 1} of ${porter.route.length}${hands} · load ${Math.round(load(porter))}/${ctx.config.haulage.porterCapacity}`;

@@ -65,7 +65,11 @@
     "shiftChangeCongestionMultiplier": 1.6,
     "porterCapacity": 600,
     "porterRestAt": 0.95,
-    "porterRestedAt": 0.2
+    "porterRestedAt": 0.2,
+    "_floorNote": "Walking along a floor, from the stairhead to a room's middle, in ticks per 64-px slot. Loading or unloading takes handleTicks, plus a tick for every handlePerTick units moved.",
+    "floorTicksPerSlot": 0.35,
+    "handleTicks": 0.5,
+    "handlePerTick": 600
   },
 
   "buildings": {

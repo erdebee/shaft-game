@@ -183,6 +183,16 @@ body {
    the origin. See figures.js. */
 .figure { pointer-events: none; }
 
+/* What a porter is loading (+) or unloading (−), rising off their head. A
+   plate, a 5 x 5 pixel sign, and the good's 16 x 16 icon (figures.js). */
+.load-bubble { pointer-events: none; }
+.load-bubble-plate { fill: var(--panel); fill-opacity: 0.85; stroke: var(--panel-edge); stroke-width: 1; shape-rendering: crispEdges; }
+.load-bubble-sign rect { shape-rendering: crispEdges; }
+.load-bubble-sign.plus rect  { fill: var(--terminal-lit); }
+.load-bubble-sign.minus rect { fill: var(--sodium); }
+.load-bubble image { image-rendering: pixelated; }
+.load-bubble-label { fill: var(--ink); font: 6px var(--font-mono); }
+
 /* ---- Animation ----
    Two kinds, two mechanisms:
      sim-time motion  driven from JS with tick + alpha, not here

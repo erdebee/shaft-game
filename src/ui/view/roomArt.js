@@ -68,9 +68,13 @@ export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
     figures.set(role.role, clips);
   }
 
+  // Goods icons, by catalogue id (16 x 16): what the porters' bubbles show.
+  const icons = new Map((manifest.icons ?? []).map((i) => [i.id, { href: ASSET_ROOT + i.path, w: i.w ?? 16, h: i.h ?? 16 }]));
+
   return {
     rooms,
     figures,
+    icons,
     stairwell: stair
       ? { href: href(stair), fg: href(stairFg), signPlate: stair.signPlate, ...stair.tile }
       : null,

@@ -59,10 +59,10 @@ test('a porter carries no more than one load, and a set quantity caps a stop', a
     { instanceId: from.instanceId, action: 'pickup', goodId: 'coal', qty: 'all' },
     { instanceId: to.instanceId, action: 'dropoff', goodId: 'coal', qty: 50 },
   ]);
-  ticks(run, 1);
+  while (!porter.carrying.coal) ticks(run, 1); // along the floor to the depot
   assert.equal(porter.carrying.coal, load);
-  ticks(run, 4);
-  assert.ok(to.stock.coal <= 50 + 1e-9, 'only 50 per visit is left');
+  while (!to.stock?.coal) ticks(run, 1);
+  assert.equal(to.stock.coal, 50, 'only 50 per visit is left');
 });
 
 test('a drop-off leaves only what the building has room for', async () => {
@@ -79,6 +79,36 @@ test('a drop-off leaves only what the building has room for', async () => {
   const room = run.ctx.config.stores.inputBufferTicks * 0.2;
   assert.ok(generator.stock.fuel <= room + 1e-9);
   assert.ok(porter.carrying.fuel > 0, 'the rest stays in hand');
+});
+
+test('a porter walks the floor to the room, and takes time to load and unload', async () => {
+  const { run, station, porter } = await withPorter([['depot', 20], ['depot', 24]]);
+  const [from, to] = run.state.buildings.filter((b) => b.buildingId === 'depot');
+  from.stock = { scrap: 600 };
+  route(run, porter, [
+    { instanceId: from.instanceId, action: 'pickup', goodId: 'scrap', qty: 'all' },
+    { instanceId: to.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all' },
+  ]);
+  ticks(run, 1);
+  const across = run.state.haulage.trips[0];
+  assert.deepEqual(across.legs.map((l) => l.kind), ['floor'], 'same level: along the floor only');
+  assert.equal(across.legs[0].fromId, station.instanceId);
+  assert.equal(across.toId, from.instanceId);
+
+  while (porterStatus(run.state, porter) !== 'loading') ticks(run, 1);
+  assert.equal(porter.at, from.instanceId);
+  assert.equal(porter.handling.goodId, 'scrap');
+  assert.equal(porter.handling.qty, 600);
+  const held = porter.handling.untilTick - run.state.clock.tick;
+  assert.ok(held >= 1, 'loading takes time');
+  ticks(run, held);
+  assert.equal(porterStatus(run.state, porter), 'walking', 'on the way once loaded');
+  const down = run.state.haulage.trips.find((t) => t.workerId === porter.id);
+  assert.deepEqual(down.legs.map((l) => l.kind), ['floor', 'stair', 'floor'], 'to the stairs, down, and along');
+
+  while (porterStatus(run.state, porter) !== 'unloading') ticks(run, 1);
+  assert.equal(porter.at, to.instanceId);
+  assert.equal(to.stock.scrap, 600);
 });
 
 test('a stop at a demolished building is skipped', async () => {

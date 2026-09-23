@@ -80,14 +80,43 @@ export function tripProgress(trip, tick, alpha) {
  * The x-coordinate is where the two visuals diverge: a porter on the stairwell
  * follows the drawn stair, an elevator car runs dead straight up its shaft.
  * Same interpolation, same trip record, different column.
+ *
+ * A porter's trip is made of LEGS (haulage/haulageMethods.js): along a floor,
+ * down or up the stair, along another floor. Each leg carries its own length
+ * in ticks; they are scaled to the trip's whole-tick window, so the walk
+ * arrives exactly when the simulation says it does. `xOf(id, pos)` turns a
+ * leg's end — a room, or the stairhead when `id` is null — into shaft x; the
+ * default spaces rooms evenly, which the view refines with the real room
+ * rectangles.
  */
-export function tripPosition(trip, tick, alpha) {
+export function tripPosition(trip, tick, alpha, xOf = (id, pos) => floorX(pos)) {
   const p = tripProgress(trip, tick, alpha);
-  const y = lerp(levelFloorY(trip.fromLevel), levelFloorY(trip.toLevel), p);
   const descending = trip.toLevel > trip.fromLevel;
 
+  if (trip.legs?.length) {
+    const { leg, f } = legAt(trip.legs, p);
+    if (leg.kind === 'floor') {
+      const x0 = xOf(leg.fromId, leg.from);
+      const x1 = xOf(leg.toId, leg.to);
+      return {
+        x: lerp(x0, x1, f),
+        y: levelFloorY(leg.level),
+        facing: x1 < x0 ? -1 : 1,
+        progress: p,
+        legProgress: f,
+        onFloor: true,
+        descending,
+        level: leg.level,
+      };
+    }
+    const y = lerp(levelFloorY(leg.from), levelFloorY(leg.to), f);
+    return { ...stairWalk(y, leg.to > leg.from), progress: p, legProgress: f, onFloor: false, descending: leg.to > leg.from, level: levelAt(y) };
+  }
+
+  const y = lerp(levelFloorY(trip.fromLevel), levelFloorY(trip.toLevel), p);
+
   if (trip.method === 'stairwell') {
-    return { ...stairWalk(y, descending), progress: p, descending, level: levelAt(y) };
+    return { ...stairWalk(y, descending), progress: p, legProgress: p, onFloor: false, descending, level: levelAt(y) };
   }
 
   // There is no lift column (spec §1), so a lift trip has no screen column of
@@ -99,6 +128,35 @@ export function tripPosition(trip, tick, alpha) {
     descending,
     level: levelAt(y),
   };
+}
+
+/** The leg a trip is on at overall progress `p`, and how far along it. */
+function legAt(legs, p) {
+  const span = legs.reduce((sum, leg) => sum + leg.ticks, 0);
+  if (span <= 0) return { leg: legs.at(-1), f: 1 };
+  let at = p * span;
+  for (const leg of legs) {
+    if (at <= leg.ticks || leg === legs.at(-1)) return { leg, f: leg.ticks > 0 ? clamp(at / leg.ticks, 0, 1) : 1 };
+    at -= leg.ticks;
+  }
+  return { leg: legs.at(-1), f: 1 };
+}
+
+/**
+ * Where the stairhead is: the foot of the lower flight, on the level's floor
+ * row (STAIR_PATH below). A porter steps off the stair here and walks along
+ * the floor to a room.
+ */
+export const STAIRHEAD_X = 79;
+
+/**
+ * Shaft x of a floor position, in slots from the stairhead (the unit the
+ * simulation measures floors in). An even spacing that ignores seams, so a
+ * few pixels out on a crowded level: the view passes real room rectangles
+ * where it has them.
+ */
+export function floorX(pos) {
+  return pos <= 0 ? STAIRHEAD_X : BUILD_X + SEAM + pos * SLOT_WIDTH;
 }
 
 /**

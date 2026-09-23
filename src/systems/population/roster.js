@@ -51,6 +51,8 @@ export function hire(state, ctx, job, level = 1, stationId = null) {
     route: [],      // porters: the stops they walk, in order (haulage/haulageMethods.js)
     stop: 0,        // porters: the next stop on the route
     carrying: {},   // porters: goods in hand, by id
+    at: stationId,  // porters: the room they stand in (null: on the stairs)
+    handling: null, // porters: the load they are moving at a stop, and until when
     resting: false,
   };
   state.population.workers.push(worker);
