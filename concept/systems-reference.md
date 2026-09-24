@@ -134,12 +134,14 @@ need intermediate hubs.
 - **Battery banks** cabled to a junction back up that junction and no other, and charge from the surplus
 
 ### Water network
-- Source at the bottom (deep pump); pipes carry it up to **cisterns**, which store it and supply every room and resident within reach
+- **A loop, like the air.** Cisterns supply the rooms and residents around them; what they use drains down the sewer to the **reclamation plant**; the plant's recovered water goes to a **deep pump** it is piped to; and the pump pushes it back up the mains to the cisterns. Pumps drive the loop: without one, nothing on the mains moves, and a plant piped to no pump wastes what it recovers
+- The pump tops the loop up with fresh groundwater for what reclamation loses, as much as it can draw and the aquifer gives
+- Cisterns store water and supply every room and resident within reach; the **cultivation rooms** (not the seed vault) are the exception, piped for their water and drained by their own drains
 - **Pumping upward costs power proportional to lift height**, so water cost scales with how high people live, making vertical layout an economic decision
 - A **purifier** on the mains cleans the reclaimed water passing through it
 
 ### Sewer
-- What a cistern's area uses comes back as greywater and drains **downhill only**, cistern to cistern, to the **reclamation plant**, which returns it to its mains at a loss
+- What a cistern's area uses comes back as greywater and drains **downhill only**, cistern to cistern, to the **reclamation plant**, which recovers it at a loss for the pumps to send round again
 - Sewage no drain can carry is dumped where it was made and fouls that level's air
 
 ### Air network

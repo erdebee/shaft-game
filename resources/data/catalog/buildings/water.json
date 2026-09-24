@@ -13,11 +13,12 @@
       "wearPerTick": 0.003,
       "consumes": [],
       "produces": [{ "id": "water", "qty": 50 }],
+      "liftPerTick": 220,
       "airLoad": 0.3,
       "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "electrical-components", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.5, "breakdown": 0.2 },
       "effects": [],
-      "_note": "Highest wear rate in the game. It runs constantly and it is at the bottom of the Shaft, where the water is."
+      "_note": "Highest wear rate in the game. It runs constantly and it is at the bottom of the Shaft, where the water is. It drives the water loop: it pushes up to liftPerTick into the mains it is piped to — the reclamation plant's recovered water first, and fresh groundwater (up to produces) for the rest. Without a pump, nothing on the mains moves."
     },
     {
       "id": "purifier",
@@ -52,7 +53,7 @@
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
       "airLoad": 1,
       "effects": [{ "op": "reclamation.enable", "target": "water", "value": 1 }],
-      "_note": "Recovers the greywater the sewer drains bring it, at water.reclamationEfficiency, into whatever water mains it is piped to. Without it, every litre must be pumped fresh from the bottom."
+      "_note": "Recovers the greywater the sewer drains bring it, at water.reclamationEfficiency. What it recovers only goes back into the mains through a pump it is piped to; without one, it is wasted. Without the plant, every litre must be pumped fresh from the bottom."
     },
     {
       "id": "cistern",

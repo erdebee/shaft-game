@@ -25,10 +25,9 @@
       "carries": "water",
       "link": "pipe",
       "connects": [
+        { "from": "reclamation-plant", "to": "deep-pump" },
         { "from": "deep-pump", "to": "cistern" },
         { "from": "deep-pump", "to": "purifier" },
-        { "from": "reclamation-plant", "to": "cistern" },
-        { "from": "reclamation-plant", "to": "purifier" },
         { "from": "purifier", "to": "cistern" },
         { "from": "cistern", "to": "cistern" },
         { "from": "cistern", "to": "hydroponics-bay" },
@@ -49,7 +48,7 @@
       "hubs": ["cistern"],
       "linkCost": [{ "id": "steel-billet", "qtyPerLevel": 0.5 }],
       "maxSpanLevels": 12,
-      "description": "Pumps and the reclamation plant feed cisterns by pipe; each cistern stores water and supplies every room and resident within its reach — except the cultivation rooms, which take their water only by pipe, from a cistern or from the next room along. A purifier on the mains cleans the reclaimed water that passes through it.",
+      "description": "The water's loop, fresh half. Pumps drive it: a pump pushes the reclamation plant's recovered water, and fresh groundwater for what is lost, up the mains to the cisterns; each cistern stores water and supplies every room and resident within its reach — except the cultivation rooms, which take their water only by pipe, from a cistern or from the next room along. A purifier on the mains cleans the reclaimed water that passes through it.",
       "_note": "Pumping upward costs power proportional to lift height, so water costs more the higher people live."
     },
     {
@@ -84,7 +83,7 @@
       "flowsDownhill": true,
       "linkCost": [{ "id": "concrete", "qtyPerLevel": 0.5 }],
       "maxSpanLevels": 12,
-      "description": "What a cistern's rooms and residents use comes back dirty. Drains carry it downhill only, cistern to cistern, to a reclamation plant — the cultivation rooms, piped for their water, drain by their own drains too; sewage with nowhere to go is dumped where it was made and fouls that level's air.",
+      "description": "The water's loop, dirty half. What a cistern's rooms and residents use comes back dirty. Drains carry it downhill only, cistern to cistern, to a reclamation plant — the cultivation rooms, piped for their water, drain by their own drains too; sewage with nowhere to go is dumped where it was made and fouls that level's air.",
       "_note": "Gravity is the whole design: a drain never carries anything up, so the plant belongs at the bottom."
     },
     {

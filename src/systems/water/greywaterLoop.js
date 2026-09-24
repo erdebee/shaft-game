@@ -31,7 +31,7 @@ import { approach, clamp } from '../../utils/math.js';
 import { workScale, outputScale } from '../buildings/buildingRegistry.js';
 import { residentsByLevel } from '../population/housing.js';
 import { cohortFactor } from '../population/demography.js';
-import { graphOf, hubFor, downhillFrom, isHub, VIRTUAL } from '../infrastructure/networkGraph.js';
+import { graphOf, hubFor, downhillFrom, isHub, pathTo, VIRTUAL } from '../infrastructure/networkGraph.js';
 
 const MAINS = 'water-mains';
 const SEWER = 'sewer';
@@ -58,6 +58,8 @@ export function initialWater() {
     sewage: {},    // by reclamation plant instanceId: greywater waiting for it
     lift: {},      // by pump instanceId: levels it lifts, for its power draw
     spilled: [],   // by level: sewage dumped there this tick
+    stranded: 0,   // recovered water no pump could push back into the mains
+    pipes: {},     // by link id: { flow, to } along the mains and the sewer
     dryLevels: [], // levels with residents no cistern reaches
     unserved: [],  // buildings needing water that no cistern reaches
   };
@@ -83,7 +85,7 @@ export function tick(state, ctx) {
   const partOf = (key) => {
     if (!parts.has(key)) {
       parts.set(key, {
-        key, pumps: [], pumpCapacity: 0, reclaimed: 0, purify: 0,
+        key, pumps: [], groundCapacity: 0, liftCapacity: 0, plants: [], reclaimed: 0, purify: 0,
         cisterns: [], capacity: 0, stored: 0, people: 0, buildings: [], buildingDemand: 0, levels: [],
       });
     }
@@ -97,10 +99,13 @@ export function tick(state, ctx) {
     const produced = (d.produces ?? []).find((p) => p.id === 'water');
     if (produced) {
       part.pumps.push(node);
-      part.pumpCapacity += produced.qty * scale;
+      part.groundCapacity += produced.qty * scale;
+      part.liftCapacity += (d.liftPerTick ?? produced.qty) * scale;
     }
     if ((d.effects ?? []).some((e) => e.op === 'reclamation.enable')) {
-      part.reclaimed += (water.sewage[node.instanceId] ?? 0) * cfg.reclamationEfficiency * clamp(scale, 0, 1);
+      const recovered = (water.sewage[node.instanceId] ?? 0) * cfg.reclamationEfficiency * clamp(scale, 0, 1);
+      part.plants.push({ node, recovered });
+      part.reclaimed += recovered;
     }
     const q = (d.effects ?? []).find((e) => e.op === 'flow.setQuality' && e.target === 'water');
     if (q) part.purify += q.value * scale;
@@ -117,7 +122,7 @@ export function tick(state, ctx) {
   }
   const hasWater = (key) => {
     const p = parts.get(key);
-    return !!p && (p.pumpCapacity > 0 || p.reclaimed > 0 || p.stored > 0);
+    return !!p && (p.liftCapacity > 0 || p.stored > 0);
   };
   const usable = (hub) => !hub.brokenDown;
   const hubCache = new Map();
@@ -191,12 +196,20 @@ export function tick(state, ctx) {
   const peopleShareOf = new Map();
   const qualityOf = new Map();
   const purification = new Map();
+  let stranded = 0;
+  const pushed = []; // per part: { part, returned, lifted } for the pipes' flow
   for (const part of [...parts.values()].sort((a, b) => a.key.localeCompare(b.key))) {
     const demand = part.people + part.buildingDemand;
-    const wanted = demand + (part.capacity - part.stored) - part.reclaimed;
-    const lifted = clamp(wanted, 0, Math.min(part.pumpCapacity, aquifer));
+    const wanted = Math.max(0, demand + (part.capacity - part.stored));
+    // The pumps drive the loop: what the plants recovered goes back up the
+    // mains first, as far as the pumps can push it; fresh groundwater, as
+    // much as they can draw and the aquifer gives, makes up the rest.
+    const returned = Math.min(part.reclaimed, part.liftCapacity, wanted);
+    stranded += part.reclaimed - Math.min(part.reclaimed, part.liftCapacity);
+    const lifted = clamp(wanted - returned, 0, Math.min(part.groundCapacity, part.liftCapacity - returned, aquifer));
     aquifer -= lifted;
-    const available = lifted + part.reclaimed + part.stored;
+    const available = lifted + returned + part.stored;
+    pushed.push({ part, returned, lifted });
 
     const people = Math.min(part.people, available);
     const rest = Math.min(part.buildingDemand, available - people);
@@ -215,8 +228,8 @@ export function tick(state, ctx) {
     const purified = clamp(part.purify, 0, 1);
     purification.set(part.key, purified);
     const reclaimedQuality = cfg.reclaimedQuality + (100 - cfg.reclaimedQuality) * purified;
-    const made = lifted + part.reclaimed;
-    qualityOf.set(part.key, made > 0 ? (lifted * 100 + part.reclaimed * reclaimedQuality) / made : null);
+    const made = lifted + returned;
+    qualityOf.set(part.key, made > 0 ? (lifted * 100 + returned * reclaimedQuality) / made : null);
 
     // How far each pump lifts, on average, to where its water is drunk. Read
     // by powerDemand next tick: water costs more the higher people live.
@@ -224,12 +237,43 @@ export function tick(state, ctx) {
     for (const pump of part.pumps) water.lift[pump.instanceId] = mean === null ? 0 : Math.max(0, pump.level - mean);
 
     pumped += lifted;
-    reclaimed += part.reclaimed;
+    reclaimed += returned;
     toPeople += people;
     toBuildings += rest;
     if (made > 0 && used > 0) {
       deliveredQuality += qualityOf.get(part.key) * used;
       delivered += used;
+    }
+  }
+
+  // --- the flow along the mains, for the view ------------------------------
+  // Each plant sends what it recovered to its nearest pump; each pump's
+  // water goes up to the nearest cistern or piped room that takes it.
+  const pipes = {};
+  const isPump = (n) => (def(n).produces ?? []).some((x) => x.id === 'water');
+  const along = (graph, startId, steps, qty, towardEnd) => {
+    let at = startId;
+    for (const { linkId, to } of steps ?? []) {
+      const link = pipes[linkId] ??= { net: {} };
+      const into = towardEnd ? to : at;
+      link.net[into] = (link.net[into] ?? 0) + qty;
+      at = to;
+    }
+  };
+  for (const { part, returned, lifted } of pushed) {
+    if (!mains.enforced || returned + lifted <= 0) continue;
+    for (const { node, recovered } of part.plants) {
+      if (part.reclaimed > 0) along(mains, node.instanceId, pathTo(mains, node.instanceId, isPump), returned * recovered / part.reclaimed, true);
+    }
+    // What piped rooms took, and what the cisterns took for the rest.
+    const sinks = part.buildings
+      .filter(({ instance }) => piped(instance))
+      .map(({ instance, qty }) => ({ id: instance.instanceId, qty: qty * (instance.waterShare ?? 1) }));
+    const toRooms = sinks.reduce((t, x) => t + x.qty, 0);
+    const toCisterns = Math.max(0, returned + lifted - toRooms);
+    for (const c of part.cisterns) sinks.push({ id: c.instanceId, qty: toCisterns * cisternCapacity(def(c)) / part.capacity });
+    for (const { id, qty } of sinks) {
+      if (qty > 0) along(mains, id, pathTo(mains, id, isPump), qty, false);
     }
   }
 
@@ -256,7 +300,12 @@ export function tick(state, ctx) {
       if (sewer.enforced) spilled[level] += qty;
       return;
     }
-    for (const p of to) sewage[p.instanceId] = (sewage[p.instanceId] ?? 0) + qty / to.length;
+    for (const p of to) {
+      sewage[p.instanceId] = (sewage[p.instanceId] ?? 0) + qty / to.length;
+      if (sewer.enforced && hub !== VIRTUAL) {
+        along(sewer, hub.instanceId, pathTo(sewer, hub.instanceId, (n) => n.instanceId === p.instanceId, { downhill: true }), qty / to.length, true);
+      }
+    }
   };
   for (const { level, qty, hub } of drinkers) drain(hub, level, qty * (peopleShareOf.get(keyOf(hub)) ?? 1));
   for (const { instance, qty, hub } of users) drain(hub, instance.level, qty * (instance.waterShare ?? 1));
@@ -279,6 +328,12 @@ export function tick(state, ctx) {
   water.unserved = unserved;
   water.liftLevels = Math.max(0, ...Object.values(water.lift));
   water.purification = Object.fromEntries(purification);
+  water.stranded = stranded;
+  // Net flow along every pipe and drain: how much, and which end it runs to.
+  water.pipes = Object.fromEntries(Object.entries(pipes).map(([id, { net }]) => {
+    const [[toA, a] = [null, 0], [toB, b] = [null, 0]] = Object.entries(net);
+    return [id, { flow: Math.abs(a - b), to: a >= b ? toA : toB }];
+  }));
 
   const target = delivered > 0 ? deliveredQuality / delivered : water.quality;
   water.quality = approach(water.quality, target, cfg.qualityDriftPerTick);

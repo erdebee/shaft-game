@@ -169,7 +169,7 @@ test('sewage drains downhill to reclamation, and is dumped where no drain goes',
   const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['clinic', 30]];
   const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
   link(run, 'water-mains', 'deep-pump', 'cistern');
-  link(run, 'water-mains', 'reclamation-plant', 'cistern');
+  link(run, 'water-mains', 'reclamation-plant', 'deep-pump');
   ticks(run, 2);
   const water = run.state.resources.flows.water;
   assert.ok(water.spilled[30] > 0, 'no drain: the sewage is dumped on its level');
@@ -180,6 +180,27 @@ test('sewage drains downhill to reclamation, and is dumped where no drain goes',
   assert.equal(water.spilled[30], 0);
   assert.ok(water.greywater > 0);
   assert.ok(water.reclaimed > 0, 'and the plant recovers it');
+});
+
+test('water is a loop: reclaimed water gets back to the mains only through a pump', async () => {
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['clinic', 30]];
+  const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
+  link(run, 'water-mains', 'deep-pump', 'cistern');
+  link(run, 'sewer', 'cistern', 'reclamation-plant');
+  ticks(run, 3);
+  const water = run.state.resources.flows.water;
+  assert.equal(water.reclaimed, 0, 'the plant is piped to no pump');
+  assert.ok(water.stranded > 0, 'so what it recovers is wasted');
+
+  link(run, 'water-mains', 'reclamation-plant', 'deep-pump');
+  ticks(run, 3);
+  assert.ok(water.reclaimed > 0);
+  assert.equal(water.stranded, 0);
+  // And the flow runs round: plant to pump, pump up to the cistern, cistern down the drain.
+  const [pumpToCistern, drain, plantToPump] = run.state.infrastructure.links;
+  assert.equal(water.pipes[plantToPump.id].to, at(run, 'deep-pump', 40).instanceId);
+  assert.equal(water.pipes[pumpToCistern.id].to, at(run, 'cistern', 30).instanceId);
+  assert.equal(water.pipes[drain.id].to, at(run, 'reclamation-plant', 42).instanceId);
 });
 
 test('a drain never carries sewage uphill', async () => {
@@ -205,7 +226,7 @@ test('a cultivation room is watered and drained only by its own pipes', async ()
   const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['hydroponics-bay', 30], ['hydroponics-bay', 31]];
   const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
   link(run, 'water-mains', 'deep-pump', 'cistern');
-  link(run, 'water-mains', 'reclamation-plant', 'cistern');
+  link(run, 'water-mains', 'reclamation-plant', 'deep-pump');
   const bay = (level) => at(run, 'hydroponics-bay', level);
   ticks(run, 2);
   assert.equal(bay(30).waterShare, 0, 'in the cistern\'s reach, but not piped');

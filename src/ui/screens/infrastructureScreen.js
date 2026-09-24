@@ -374,7 +374,8 @@ function statusLines(state, ctx, networkId) {
       break;
     }
     case 'water-mains': {
-      lines.push([`Pumped ${round(water.pumped)} + reclaimed ${round(water.reclaimed)} a tick, for ${round(water.demand)} wanted`, water.peopleShare < 1 ? 'critical' : water.buildingShare < 1 ? 'warn' : 'ok']);
+      lines.push([`Pumps push ${round(water.reclaimed)} reclaimed + ${round(water.pumped)} fresh a tick, for ${round(water.demand)} wanted`, water.peopleShare < 1 ? 'critical' : water.buildingShare < 1 ? 'warn' : 'ok']);
+      if ((water.stranded ?? 0) > 0.5) lines.push([`${round(water.stranded)} a tick reclaimed but wasted: no pump to push it back`, 'warn']);
       lines.push([`Cisterns ${round(water.stored)} of ${round(water.capacity)} · quality ${round(water.quality)}%`, water.quality < ctx.config.population.waterQualitySafe ? 'warn' : 'ok']);
       if (water.peopleShare < 1) lines.push([`People get ${round(water.peopleShare * 100)}% of what they drink`, 'critical']);
       break;
@@ -432,7 +433,7 @@ function readingOf(state, ctx, networkId, node) {
       const cap = cisternCapacity(def);
       if (cap > 0) return `${Math.round(water.cisterns?.[node.instanceId] ?? 0)}/${cap} · ${span}`;
       if (water.sewage?.[node.instanceId] !== undefined) return `${Math.round(water.sewage[node.instanceId])} a tick coming in`;
-      if (water.lift?.[node.instanceId] !== undefined) return `lifts ${Math.round(water.lift[node.instanceId])} levels`;
+      if (water.lift?.[node.instanceId] !== undefined) return `pushing water up ${Math.round(water.lift[node.instanceId])} levels`;
       if ((def.consumes ?? []).some((c) => c.id === 'water')) {
         if (networkId === 'sewer') return (water.spilled?.[node.level] ?? 0) > 0.01 ? 'dumping sewage on its level' : '';
         return `watered ${Math.round((node.waterShare ?? 1) * 100)}%`;

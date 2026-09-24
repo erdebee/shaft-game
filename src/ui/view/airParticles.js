@@ -10,6 +10,8 @@
  *                      particle takes its own line, so a stream is a curtain
  *   through the ducts  from the sucker back along every duct to the
  *                      blowers, through the scrubbers and gardens on the way
+ *   through the pipes  the water's loop, the same way: clean water blue up
+ *                      the mains, sewage brown down the drains
  *
  * Each particle is coloured by how clean its air is at that point: in the
  * rooms, blue as it leaves the blower, browning as it crosses dirty levels,
@@ -66,8 +68,9 @@ export function createAirParticles(parent) {
    * Lay out the streams: one through the rooms per blower-to-sucker path,
    * and one along every duct that moves air.
    *
-   * @param ducts [{ key, points, flow, airQuality }] — each duct's route,
-   *   upstream first, as the network layer draws it
+   * @param ducts [{ key, points, flow, airQuality, across? }] — each duct's
+   *   (or pipe's) route, upstream first, as the network layer draws it, and
+   *   how wide the stream inside it runs (12 by default)
    */
   function build(state, paths, ducts = []) {
     clear();
@@ -111,10 +114,10 @@ export function createAirParticles(parent) {
           quality: () => duct.airQuality,
           phase: (k + visualJitter(`${key}phase`)) / count,
           speed: speedFor(duct.flow) * (0.85 + visualJitter(`${key}speed`) * 0.3),
-          // Inside the duct: it is 24 across, the particles keep off its walls.
-          dx: (visualJitter(`${key}x`) - 0.5) * 12,
-          dy: (visualJitter(`${key}y`) - 0.5) * 12,
-          sway: 2.5,
+          // Inside the duct (24 across) or pipe (16): off its walls.
+          dx: (visualJitter(`${key}x`) - 0.5) * (duct.across ?? 12),
+          dy: (visualJitter(`${key}y`) - 0.5) * (duct.across ?? 12),
+          sway: (duct.across ?? 12) / 5,
           ducted: true,
         }));
       }

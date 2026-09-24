@@ -1195,6 +1195,5 @@ body {
 .air-gauge text { fill: var(--readout-ok); font: 700 8px var(--font-mono); }
 .air-gauge text[data-band="warn"] { fill: var(--readout-warn); }
 .air-gauge text[data-band="critical"] { fill: var(--readout-critical); }
-.net-chevron { fill: none; stroke: var(--net); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .net-preview { fill: none; stroke: var(--critical); stroke-width: 2.5; stroke-dasharray: 4 4; }
 .net-preview[data-ok="true"] { stroke: var(--readout-ok); }

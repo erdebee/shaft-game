@@ -189,6 +189,41 @@ export function downhillFrom(graph, startId) {
 }
 
 /**
+ * The shortest run of links (fewest levels) from one node to the nearest node
+ * `isEnd` accepts, optionally only ever going down. Returns the steps,
+ * [{ linkId, to }] in order, [] when the start is itself an end, or null
+ * when no end can be reached. On an unenforced network there are no links
+ * to follow, so it is always null.
+ */
+export function pathTo(graph, fromId, isEnd, { downhill = false } = {}) {
+  if (!graph.enforced || !graph.byId.has(fromId)) return null;
+  const dist = new Map([[fromId, 0]]);
+  const prev = new Map();
+  const open = new Set([fromId]);
+  while (open.size) {
+    let id = null;
+    for (const k of open) if (id === null || dist.get(k) < dist.get(id)) id = k;
+    open.delete(id);
+    if (isEnd(graph.byId.get(id))) {
+      const steps = [];
+      for (let at = id; prev.has(at); at = prev.get(at).from) steps.unshift({ linkId: prev.get(at).linkId, to: at });
+      return steps;
+    }
+    const here = graph.byId.get(id);
+    for (const { id: next, span, linkId } of graph.neighbours.get(id) ?? []) {
+      if (downhill && graph.byId.get(next).level < here.level) continue;
+      const d = dist.get(id) + Math.max(1, span);
+      if (d < (dist.get(next) ?? Infinity)) {
+        dist.set(next, d);
+        prev.set(next, { from: id, linkId });
+        open.add(next);
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * The hub that serves a level: the nearest `usable` hub whose reach covers
  * it, preferring one in a component `live` says has something to hand out.
  * Ties go to the earlier-built hub. Returns the hub instance, VIRTUAL for an

@@ -3,9 +3,9 @@
  * The open network, drawn on the shaft while the Infrastructure panel has it
  * open (selection.network).
  *
- *   - every link, as a conduit in the network's colour: along the ceiling of
- *     each room it joins to a riser beside the stairwell (a drain dashed,
- *     and marked with the way it runs)
+ *   - every link, in the network's own material: along the ceiling of each
+ *     room it joins to a riser, with what moves in it (air, water, sewage)
+ *     drawn as particles running the way it flows
  *   - every node outlined, hubs tagged — a junction with its priority
  *   - on the air, every room's oxygen and pollution
  *   - what nothing reaches: its room outlined in red, or its level washed red
@@ -91,7 +91,8 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       return;
     }
     const air = AIR_LINES.includes(network);
-    if (air) particles.frame(view.ambient);
+    const piped = network === 'water-mains' || network === 'sewer';
+    if (air || piped) particles.frame(view.ambient);
     const net = readNetwork(state, currentCtx, network);
     // The other air line is drawn too: the two are one loop.
     const other = air ? readNetwork(state, currentCtx, network === FOUL ? FRESH : FOUL) : null;
@@ -110,6 +111,7 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
         Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow / 4)}:${Math.round(l.airQuality / 3)}`),
         (state.resources.flows.air?.paths ?? []).map((p) => `${p.from}>${p.to}:${Math.round(p.flow / 4)}:${Math.round(p.blown.airQuality / 3)}:${Math.round(p.drawn.airQuality / 3)}`),
       ] : null,
+      piped ? Object.entries(state.resources.flows.water?.pipes ?? {}).map(([id, p]) => `${id}:${p.to}:${Math.round(p.flow / 4)}`) : null,
     ]);
     if (key === layerState.key) {
       if (air) updateGauges(state, currentCtx);
@@ -181,21 +183,33 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     return LANES[network].x - (i % (LANES[network].lanes ?? 3)) * LANES[network].step;
   }
 
-  /** Ducts and pipes: tiles along each link's route, joints at the corners. */
+  /**
+   * The water's pipes: tiles along each link's route, joints at the corners,
+   * and the water moving in them as particles — clean and blue up the mains
+   * from the pumps, brown sewage down the drains to the reclamation plant
+   * (flows.water.pipes, settled by systems/water/greywaterLoop.js).
+   */
   function drawPipes(state, currentCtx, net, def, kind) {
     const network = net.graph.networkId;
     const tiles = tilesOf(kind);
+    const pipes = state.resources.flows.water?.pipes ?? {};
+    const streams = [];
     net.links.forEach((link, i) => {
       const route = riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i));
       tileRoute(lines, defs, tiles, route);
-      if (def?.flowsDownhill && route.length > 2) {
-        // A chevron on the riser, pointing the way it drains.
-        const x = route[1].x;
-        const my = (route[1].y + route[2].y) / 2;
-        const chevron = svg(flows, 'path', 'net-chevron');
-        chevron.setAttribute('d', `M${x - 5} ${my - 3}l5 6l5 -6`);
+      const flow = pipes[link.id];
+      if (flow && flow.flow >= 0.5) {
+        const [up, down] = flow.to === link.a.instanceId ? [link.b, link.a] : [link.a, link.b];
+        streams.push({
+          key: link.id,
+          points: riserRoute(port(network, up, state), port(network, down, state), laneOf(network, i)),
+          flow: flow.flow,
+          airQuality: kind === 'sewer' ? 0 : 100,
+          across: 7,
+        });
       }
     });
+    particles.build(state, [], streams);
   }
 
   /**

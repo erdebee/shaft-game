@@ -90,8 +90,8 @@ function liveTest(state, ctx, networkId, graph) {
       case 'power-grid':
         return (d.produces ?? []).some((p) => p.id === 'power') || (power.batteries?.[n.instanceId] ?? 0) > 0;
       case 'water-mains':
+        // Only a pump moves water; a cistern holds what it was sent.
         return (d.produces ?? []).some((p) => p.id === 'water')
-          || (d.effects ?? []).some((e) => e.op === 'reclamation.enable')
           || (water.cisterns?.[n.instanceId] ?? 0) > 0;
       case 'sewer':
         return (d.effects ?? []).some((e) => e.op === 'reclamation.enable');
@@ -129,6 +129,13 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
         }
         if (reach.has(b.level)) continue;
         gaps.push({ level: b.level, instance: b, what: 'no cistern in reach' });
+      }
+      // A plant piped to no pump: what it recovers never gets back.
+      for (const n of graph.nodes) {
+        if (!(def(n).effects ?? []).some((e) => e.op === 'reclamation.enable')) continue;
+        const members = graph.members.get(graph.component.get(n.instanceId)) ?? [];
+        if (members.some((m) => (def(m).produces ?? []).some((p) => p.id === 'water'))) continue;
+        gaps.push({ level: n.level, instance: n, what: 'piped to no pump — its water is wasted' });
       }
       residents.forEach((n, level) => {
         if (level >= 1 && n >= 1 && !reach.has(level)) gaps.push({ level, what: `${Math.round(n)} residents, no cistern in reach` });
