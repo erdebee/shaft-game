@@ -3,6 +3,7 @@
   "buildings": [
     {
       "id": "council-chamber",
+      "system": true,
       "name": "Council chamber",
       "zone": "administration",
       "slots": 2,
@@ -23,6 +24,7 @@
     },
     {
       "id": "archive",
+      "system": true,
       "name": "Archive",
       "zone": "administration",
       "slots": 2,

@@ -54,3 +54,13 @@ test('a recipe can be pinned, and only to its own building', async () => {
   dispatch(run.state, run.ctx, { type: 'player:setRecipe', instanceId: smelter.instanceId, recipeId: null });
   assert.equal(smelter.recipeId, null);
 });
+
+test('a building goes in the slot the player chose, or not at all', async () => {
+  const run = await runWith([['storehouse', 20]], { stocks: { 'basic-parts': 1e4, concrete: 1e4, wood: 1e4 } });
+  dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId: 'school', level: 10, slot: 4 });
+  assert.equal(instanceOf(run, 'school').slot, 4);
+  assert.equal(placement(run.state, run.ctx, 'school', 10, { slot: 5 }).reason, 'occupied');
+  assert.equal(placement(run.state, run.ctx, 'school', 10, { slot: 9 }).reason, 'no-room');
+  assert.equal(placement(run.state, run.ctx, 'school', 10, { slot: 6 }).ok, true);
+  assert.equal(placement(run.state, run.ctx, 'school', 10, { slot: 2 }).ok, true);
+});

@@ -82,6 +82,11 @@
   --readout-warn:     #d99a5e;
   --readout-critical: #d8644a;
 
+  /* The wash over a slot a building cannot go in, while placing one. A true
+     red, not the alarm's brick: it sits over lit room art and has to read as
+     "no" at a glance. */
+  --place-blocked: #e0301e;
+
   /* Bars — a bin's fill level, on the shaft's shortage plates and in the
      inspector. The fill carries the band (green, --warn, --critical); the
      edge is one shade darker than its fill, so a bar keeps its outline on

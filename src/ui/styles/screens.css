@@ -419,10 +419,36 @@ body {
   color: var(--amber-dim);
 }
 .build-list { display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* The categories: a wrapping row of chips, the open one filled. */
+.build-categories { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--space-2); }
+.build-category {
+  padding: 2px var(--space-2);
+  background: transparent;
+  border: var(--border);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: var(--size-xs);
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.build-category:hover { color: var(--ink); border-color: var(--amber-dim); }
+.build-category[aria-selected="true"] { color: var(--rock); background: var(--amber); border-color: var(--amber); }
+.build-category:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.build-hint { margin-bottom: var(--space-2); }
+.build-hint[data-placing="true"] { color: var(--amber); }
+
+/* One building: its render on the left, name and depths, then what it does
+   and what it costs. */
 .build-item {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0 var(--space-2);
+  grid-template-columns: 72px 1fr auto;
+  grid-template-areas:
+    "thumb title why"
+    "thumb facts facts"
+    "thumb cost cost";
+  gap: 2px var(--space-2);
+  align-items: center;
   padding: var(--space-1) var(--space-2);
   text-align: left;
   background: var(--panel-raised);
@@ -432,11 +458,34 @@ body {
   cursor: pointer;
 }
 .build-item:hover:not(:disabled) { border-color: var(--amber); }
-.build-item:disabled { cursor: default; color: var(--ink-faint); }
+.build-item[aria-pressed="true"] { border-color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber); }
+.build-item:disabled { cursor: default; color: var(--ink-faint); background: transparent; border-style: dashed; }
+.build-item:disabled .build-thumb img { opacity: 0.35; filter: grayscale(1); }
+.build-item:disabled .build-facts,
+.build-item:disabled .build-cost { color: var(--ink-faint); }
+.build-item:disabled .build-depth[data-allowed="true"] { color: var(--ink-dim); border-color: var(--panel-edge); }
+.build-item:disabled .build-cost-icon { filter: grayscale(1); opacity: 0.6; }
+.build-thumb { grid-area: thumb; display: flex; align-items: center; justify-content: center; height: 48px; }
+.build-thumb img { max-width: 72px; max-height: 48px; }
+.build-title { grid-area: title; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .build-name { font-size: var(--size-sm); }
-.build-why { color: var(--warn); font-size: var(--size-xs); text-align: right; }
-.build-facts,
-.build-cost { grid-column: 1 / -1; color: var(--ink-dim); font-size: var(--size-xs); }
+.build-why { grid-area: why; color: var(--warn); font-size: var(--size-xs); text-align: right; }
+.build-facts { grid-area: facts; color: var(--ink-dim); font-size: var(--size-xs); }
+.build-cost { grid-area: cost; display: flex; flex-wrap: wrap; gap: 2px var(--space-2); color: var(--ink-dim); font-size: var(--size-xs); }
+.build-cost-item { display: inline-flex; align-items: center; gap: 2px; font-variant-numeric: tabular-nums; }
+.build-cost-item[data-short="true"] { color: var(--readout-critical); }
+.build-cost-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+
+/* Where in the shaft it may go: UP / MID / LOW, lit where it is allowed. */
+.build-depths { display: inline-flex; gap: 2px; }
+.build-depth {
+  padding: 0 3px;
+  font: 9px var(--font-mono);
+  letter-spacing: 0.05em;
+  border: 1px solid var(--panel-edge);
+  color: var(--ink-faint);
+}
+.build-depth[data-allowed="true"] { color: var(--amber); border-color: var(--amber-dim); }
 
 /* ---- Inspect ---- */
 
@@ -555,6 +604,31 @@ body {
   stroke-width: 1;
   pointer-events: none;
 }
+/* The building being put down (placeLayer.js): its render, half there, and
+   a red wash over the same footprint where it cannot go. */
+.shaft.placing { cursor: crosshair; }
+.place-ghost { pointer-events: none; }
+.place-picture { opacity: 0.6; }
+.place-plain { fill: var(--amber); opacity: 0.25; }
+.place-blocked { fill: var(--place-blocked); opacity: 0.45; }
+.place-edge { fill: none; stroke: var(--amber); stroke-width: 1; stroke-dasharray: 3 2; }
+.place-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  max-width: 240px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel);
+  border: 1px solid var(--place-blocked);
+  color: var(--ink);
+  font-size: var(--size-xs);
+  line-height: 1.35;
+  pointer-events: none;
+}
+.place-tip[hidden] { display: none; }
+.place-ghost.blocked .place-edge { stroke: var(--place-blocked); stroke-dasharray: none; }
+
 .level-selected {
   fill: var(--amber);
   opacity: 0.08;

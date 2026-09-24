@@ -11,9 +11,13 @@
  *
  * `follow` names a porter the shaft view keeps centred on, until the player
  * pans the view themselves.
+ *
+ * `placing` names a building the player has picked from the Build tab and is
+ * now putting down: the shaft shows its ghost under the pointer and a click
+ * on a free slot builds it there (src/ui/view/placeLayer.js).
  */
 
-let current = { instanceId: null, level: null, editing: null, follow: null };
+let current = { instanceId: null, level: null, editing: null, follow: null, placing: null };
 const listeners = new Set();
 
 export function get() {
@@ -46,6 +50,15 @@ export function editRoute(workerId, { follow = false } = {}) {
  */
 export function stopFollowing() {
   current = { ...current, follow: null };
+}
+
+/**
+ * Start putting a building down, or stop with null. Quiet, like
+ * stopFollowing: the Build tab and the shaft read it every frame, and a
+ * notify would pull the panel over to whatever was selected before.
+ */
+export function place(buildingId) {
+  current = { ...current, placing: buildingId };
 }
 
 export function subscribe(fn) {

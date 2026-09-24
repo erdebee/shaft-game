@@ -82,7 +82,7 @@ const HANDLERS = {
     const def = ctx.catalog.buildings.byId[cmd.buildingId];
     if (!def) throw new Error(`commands: unknown building "${cmd.buildingId}"`);
 
-    const check = placement(state, ctx, cmd.buildingId, cmd.level, { inherited: cmd.inherited === true });
+    const check = placement(state, ctx, cmd.buildingId, cmd.level, { inherited: cmd.inherited === true, slot: cmd.slot ?? null });
     if (!check.ok) {
       ctx.emit('build:refused', { buildingId: cmd.buildingId, level: cmd.level, reason: check.reason });
       return;
@@ -214,22 +214,29 @@ function nextInstanceId(state) {
  * 'wrong-depth', 'fixed', 'zone-full', 'no-room', 'cost', or null when ok.
  * The build menu shows the reason; placeBuilding refuses on it.
  *
- * Slot: leftmost free run by default. A building with a `fixed` block is part
+ * Slot: leftmost free run by default, or exactly `slot` when the player chose
+ * one in the shaft — refused as 'occupied' if anything stands in that run, or
+ * 'no-room' if the run would overhang the level. A building with a `fixed` block is part
  * of the Shaft as built rather than something the player fits in: it goes on
  * the level its catalogue entry names and nowhere else, and `align: "right"`
  * puts it at that level's far end — which is where the Exit has always been.
+ *
+ * A `system` building — the council chamber, the archive — is part of the
+ * Shaft's government rather than something the player adds: the opening puts
+ * it down (`inherited`), and the player cannot build another.
  *
  * Cost: the building's `buildCost`, or its repairCost times
  * buildings.buildCostFromRepair, paid from the depots and storehouses. The
  * Shaft the player inherits is free (`inherited`).
  */
-export function placement(state, ctx, buildingId, levelIndex, { inherited = false } = {}) {
+export function placement(state, ctx, buildingId, levelIndex, { inherited = false, slot: chosen = null } = {}) {
   const def = ctx.catalog.buildings.byId[buildingId];
   if (!def) throw new Error(`commands: unknown building "${buildingId}"`);
   const cost = inherited ? [] : buildCost(ctx, def);
   const level = state.levels.find((l) => l.index === levelIndex);
   if (!level) return { ok: false, slot: null, cost, reason: 'no-level' };
   if (def.fixed && def.fixed.level !== levelIndex) return { ok: false, slot: null, cost, reason: 'fixed' };
+  if (def.system && !inherited) return { ok: false, slot: null, cost, reason: 'system' };
   if (def.levelConstraint && def.levelConstraint !== depthBandOf(ctx, levelIndex)) {
     return { ok: false, slot: null, cost, reason: 'wrong-depth' };
   }
@@ -253,6 +260,13 @@ export function placement(state, ctx, buildingId, levelIndex, { inherited = fals
   let slot = null;
   const last = level.buildSlots - width;
   const fromRight = def.fixed?.align === 'right';
+  if (chosen !== null) {
+    if (chosen < 0 || chosen > last) return { ok: false, slot: null, cost, reason: 'no-room' };
+    for (let i = 0; i < width; i++) {
+      if (occupied.has(chosen + i)) return { ok: false, slot: null, cost, reason: 'occupied' };
+    }
+    slot = chosen;
+  }
   for (let n = 0; n <= last && slot === null; n++) {
     const start = fromRight ? last - n : n;
     let free = true;

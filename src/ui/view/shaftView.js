@@ -27,6 +27,7 @@ import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
 import { createFigureLayer, renderFigures } from './figures.js';
 import { createShaftScroll } from './shaftScroll.js';
 import { createRouteLayer } from './routeLayer.js';
+import { createPlaceLayer } from './placeLayer.js';
 import { shortages, inputsOf, nameOf } from '../../systems/resources/stores.js';
 import { SPEEDS } from '../../core/clock.js';
 import * as selection from '../selection.js';
@@ -99,6 +100,10 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   // the stair rail, because it is a drawing ON the shaft, not part of it.
   layers.routes = group(svg, 'layer-routes');
 
+  // The building being put down (placeLayer.js): a ghost over everything in
+  // the world, because it is the player's hand, not part of the shaft.
+  layers.placing = group(svg, 'layer-placing');
+
   // Above even that: the shortage popovers. They are the one thing in this
   // view that is not part of the world, and a handrail drawn over a person is
   // correct while a handrail drawn over a room's alarm is not.
@@ -126,6 +131,7 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   root.appendChild(svg);
   view.scroll = createShaftScroll(root, view, state, ctx);
   view.routes = createRouteLayer(view, root, dispatch, ctx);
+  view.place = createPlaceLayer(view, root, dispatch);
 
   // Fit to the HOST, never to the svg: the svg's own width now derives from
   // the viewBox's intrinsic aspect ratio, so measuring it here would feed the
@@ -147,6 +153,7 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   function render(currentState, currentCtx, tick, alpha) {
     // First, because following a porter moves the viewport this frame.
     view.routes.update(currentState, currentCtx, tick, alpha);
+    view.place.update(currentState, currentCtx);
     svg.setAttribute('viewBox', viewBoxOf(view.viewport));
 
     // Ambient CSS loops stop with the simulation, so nobody keeps working
@@ -712,6 +719,7 @@ function attachInteraction(view, state, ctx) {
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
     selection.stopFollowing();
+    view.place.cancelScroll();
     if (event.ctrlKey || event.metaKey) {
       // Continuous: a trackpad pinch arrives as a stream of small ctrl-wheel
       // deltas, a mouse wheel as a few large ones, and both should feel the
@@ -729,6 +737,8 @@ function attachInteraction(view, state, ctx) {
 
   let dragging = null;
   svg.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    view.place.cancelScroll();
     dragging = { x: event.clientX, y: event.clientY, top: view.viewport.topLevel, left: view.viewport.left };
     svg.setPointerCapture(event.pointerId);
   });
@@ -753,6 +763,8 @@ function attachInteraction(view, state, ctx) {
     // A room's shortage plate sits in a layer above the rooms, and its icons
     // take the pointer (for the resource card), so a click on one has to be
     // traced back to the room it belongs to.
+    // While a building is being put down, a click is where it goes.
+    if (selection.get().placing && view.place.pick(state, ctx, event)) return;
     const hit = document.elementFromPoint(event.clientX, event.clientY);
     const plate = hit?.closest?.('.stock-popover');
     const node = hit?.closest?.('.building') ?? (plate ? view.buildingNodes.get(plate.dataset.instance) : null);

@@ -15,13 +15,14 @@ import { on } from './core/eventBus.js';
 import * as router from './ui/router.js';
 import * as dashboard from './ui/screens/dashboard.js';
 import * as build from './ui/screens/build.js';
+import * as infrastructure from './ui/screens/infrastructureScreen.js';
 import * as porters from './ui/screens/porters.js';
 import * as inspect from './ui/screens/inspect.js';
 import * as accord from './ui/screens/accordScreen.js';
 import * as selection from './ui/selection.js';
 import { createShaftView } from './ui/view/shaftView.js';
 import { loadRoomArt } from './ui/view/roomArt.js';
-import { setIcons } from './ui/icons.js';
+import { setIcons, setRooms } from './ui/icons.js';
 import { nameOf } from './systems/resources/stores.js';
 import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
@@ -53,6 +54,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
     loadMusic().catch((err) => { console.warn('Music unavailable:', err); return null; }),
   ]);
   setIcons(roomArt.icons);
+  setRooms(roomArt.rooms);
 
   const app = document.getElementById('app');
   app.replaceChildren();
@@ -106,7 +108,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   router.attach(screenHost, { state, ctx, dispatch });
   const tabs = [
     { label: 'Stats', screens: [['dashboard', 'Stats', dashboard]] },
-    { label: 'Build', screens: [['buildings', 'Buildings', build.buildings], ['infrastructure', 'Infrastructure', build.infrastructure]] },
+    { label: 'Build', screens: [['buildings', 'Buildings', build], ['infrastructure', 'Infrastructure', infrastructure]] },
     { label: 'Porters', screens: [['porters', 'Porters', porters]] },
     { label: 'Accord', screens: [['accord', 'Accord', accord]] },
   ];
@@ -133,6 +135,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   }
   const show = (name) => {
     if (router.current() !== name) router.go(name);
+    // A building in hand belongs to the Buildings tab: leaving it drops it.
+    if (name !== 'buildings') selection.place(null);
     let subs = [];
     for (const entry of tabButtons) {
       const open = entry.tab.screens.some(([n]) => n === name);
@@ -145,12 +149,10 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
     subBar.replaceChildren(...subs.map(([, sub]) => sub));
     subBar.hidden = subs.length === 0;
   };
-  const buildTab = tabs[1];
   show('dashboard');
 
   // Clicking the shaft picks something: a room opens it in Inspect, an empty
-  // stretch of a level opens Build there, on whichever Build tab was open
-  // last. While a porter's route is open the Porters tab holds the editor,
+  // stretch of a level opens the Buildings tab. While a porter's route is open the Porters tab holds the editor,
   // and a click on a room offers to add it as a stop instead; closing the
   // route leaves the player on the Porters tab.
   let wasEditing = null;
@@ -160,7 +162,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
     if (editing) show('porters');
     else if (closed) return;
     else if (instanceId) show('inspect');
-    else if (level !== null) show(lastOf.get(buildTab));
+    else if (level !== null) show('buildings');
   });
 
   wireLog(state, ctx);

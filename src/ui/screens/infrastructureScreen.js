@@ -1,8 +1,15 @@
 /**
  * infrastructureScreen.js
- * Vertical cross-section of the settlement. Levels, buildings, air quality and
- * power state read top to bottom — depth is the primary spatial idea, so the
- * layout should be a column, not a grid.
+ * The Infrastructure tab, under Build. Reserved for a mechanism of its own,
+ * still to be designed; until then it says so rather than borrowing the
+ * Buildings list.
  */
-export function mount(root, state) { /* TODO */ }
-export function update(state) { /* TODO */ }
+
+import { card, el } from '../components/dom.js';
+
+export function mount(root) {
+  root.replaceChildren();
+  const section = card(root, 'Infrastructure');
+  section.appendChild(el('div', 'meter-label', 'Not built yet.'));
+  return {};
+}
