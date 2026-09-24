@@ -811,14 +811,16 @@ body {
 .route-controls .icon-button { min-width: 1.5rem; padding: 0 var(--space-1); }
 .route-what { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .route-stop .inspect-select { font-size: var(--size-xs); }
-.route-qty {
-  width: 4rem;
-  background: var(--panel-raised);
-  border: var(--border);
-  color: var(--ink);
-  font: inherit;
+.route-amount {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--size-xs);
+  color: var(--ink);
 }
+.route-slider { flex: 1 1 auto; min-width: 5rem; accent-color: var(--amber); }
+.route-amount-value { flex: 0 0 auto; min-width: 8.5rem; font-variant-numeric: tabular-nums; }
 .route-held { grid-column: 2 / -1; }
 
 .route-gap {

@@ -5,11 +5,15 @@
  *
  * A porter works a ROUTE the player sets: a loop of stops, each naming a
  * building, an action (pick up or drop off), a good, and a quantity ('all',
- * or a number per visit). The porter walks the stairwell to the stop's level,
- * does what the stop says, and goes on to the next; after the last stop, the
- * first again. A pick-up takes what is there, up to the quantity and the room
- * in the porter's arms; a drop-off leaves what the building has room for and
- * carries the rest on. A stop at a building that is gone is skipped.
+ * or a number per visit, 0 included). A drop-off may also carry a SHARE: the
+ * fraction, 0 to 1, of what the porter holds of that good on arrival that they
+ * leave there — so a route can split one load between several rooms. The
+ * porter walks the stairwell to the stop's level, does what the stop says,
+ * and goes on to the next; after the last stop, the first again. A pick-up
+ * takes what is there, up to the quantity and the room in the porter's arms;
+ * a drop-off leaves its share (all, if it has none), up to the quantity and
+ * what the building has room for, and carries the rest on. A stop at a
+ * building that is gone is skipped.
  *
  * A porter with no route goes back to their station and waits there. A porter
  * worn out (haulage.porterRestAt) walks back to the station to rest, and
@@ -79,8 +83,9 @@ export function porterStatus(state, porter) {
 
 /**
  * Check a route before it is set. Each stop needs a standing building, an
- * action, a physical good, and 'all' or a positive quantity. Returns the
- * cleaned stops, or null if any stop is malformed.
+ * action, a physical good, and 'all' or a quantity of 0 or more; a drop-off's
+ * share, if it has one, is a fraction from 0 to 1. Returns the cleaned stops,
+ * or null if any stop is malformed.
  */
 export function validRoute(state, ctx, stops) {
   if (!Array.isArray(stops)) return null;
@@ -90,8 +95,13 @@ export function validRoute(state, ctx, stops) {
     if (stop.action !== 'pickup' && stop.action !== 'dropoff') return null;
     const good = ctx.catalog.stocks.byId[stop.goodId] || ctx.catalog.minerals.byId[stop.goodId] || ctx.catalog.components.byId[stop.goodId];
     if (!good) return null;
-    if (stop.qty !== 'all' && !(Number.isFinite(stop.qty) && stop.qty > 0)) return null;
-    out.push({ instanceId: stop.instanceId, action: stop.action, goodId: stop.goodId, qty: stop.qty });
+    if (stop.qty !== 'all' && !(Number.isFinite(stop.qty) && stop.qty >= 0)) return null;
+    const clean = { instanceId: stop.instanceId, action: stop.action, goodId: stop.goodId, qty: stop.qty };
+    if (stop.share !== undefined) {
+      if (stop.action !== 'dropoff' || !(Number.isFinite(stop.share) && stop.share >= 0 && stop.share <= 1)) return null;
+      clean.share = stop.share;
+    }
+    out.push(clean);
   }
   return out;
 }
@@ -177,7 +187,7 @@ function work(state, ctx, porter, stop, building) {
     }
   } else {
     const held = porter.carrying[stop.goodId] ?? 0;
-    const given = put(building, def, ctx, stop.goodId, Math.min(limit, held));
+    const given = put(building, def, ctx, stop.goodId, Math.min(limit, held * (stop.share ?? 1)));
     if (given > 0) {
       porter.carrying[stop.goodId] = held - given;
       moved = given;

@@ -3,7 +3,13 @@
  * A porter's route, as a column of stops the player edits in place.
  *
  * Each stop names its building by floor and then by building on that floor,
- * and says what to do there: the action, the good and the quantity. Between
+ * and says what to do there: the action, the good and how much, on a slider.
+ * A pick-up's slider runs from nothing to the most it could ever be — the
+ * smaller of what the building can hold of that good and what the porter can
+ * carry — with the top end meaning "all of it". A drop-off's slider is a
+ * percentage of what the porter is carrying of that good when they arrive,
+ * so one load can be split between several rooms. The porter's load against
+ * what they can carry is shown at the top. Between
  * the stops runs the route itself — a line in the colour that leg has in the
  * shaft and on the minimap (routePlan.segmentColor), flowing the way the
  * porter walks it — and on every gap, and above the first stop, a + that
@@ -21,7 +27,8 @@
 
 import * as selection from '../selection.js';
 import { el, button } from '../components/dom.js';
-import { amount, nameOf } from '../../systems/resources/stores.js';
+import { amount, capacity, nameOf } from '../../systems/resources/stores.js';
+import { render as renderMeter } from '../components/resourceMeter.js';
 import { porterStatus, load } from '../../systems/haulage/haulageMethods.js';
 import {
   segmentColor, insertStop, removeStop, stopFor, goodsFor, builtLevels, buildingsOn,
@@ -35,12 +42,17 @@ export function mount(host, state, ctx, dispatch, workerId) {
   const head = el('div', 'build-head');
   head.append(el('h2', '', `Route · ${who?.name ?? 'porter'}`), button('Done', 'Finish editing the route', () => selection.editRoute(null), 'text-button'));
   const status = el('div', 'inspect-status');
+  host.append(head, status);
+  const carryCap = ctx.config.haulage.porterCapacity;
+  const loadMeter = renderMeter(host, { label: `Carrying · can carry up to ${carryCap}` });
   const hint = el('div', 'meter-label', 'Click a building in the Shaft to add it, or + to add a stop in that place.');
   const list = el('ol', 'route-list');
   const clearAll = button('Clear route', 'Remove every stop', () => setStops([]), 'text-button danger');
-  host.append(head, status, hint, list, clearAll);
+  host.append(hint, list, clearAll);
 
   let signature = null;
+  /** Per stop row: what changes between rebuilds (the next stop, what is held). */
+  let rowRefs = [];
   /**
    * A stop being picked: `insert` a new one before `index`, or re-point the
    * stop at `index` to a building on `level`.
@@ -61,14 +73,14 @@ export function mount(host, state, ctx, dispatch, workerId) {
   function rows() {
     const current = porter();
     list.replaceChildren();
+    rowRefs = [];
     if (!current) return;
     const route = current.route;
-    const next = current.stop % Math.max(1, route.length);
 
     list.appendChild(gap(null, 0));
     route.forEach((stop, i) => {
       if (draft?.insert && draft.index === i) list.appendChild(draftRow(current));
-      list.appendChild(row(current, stop, i, i === next));
+      list.appendChild(row(current, stop, i));
       const last = i === route.length - 1;
       list.appendChild(gap(route.length > 1 ? segmentColor(i) : null, i + 1, last && route.length > 1 ? 'back to stop 1' : ''));
     });
@@ -104,10 +116,9 @@ export function mount(host, state, ctx, dispatch, workerId) {
     return item;
   }
 
-  function row(current, stop, i, isNext) {
+  function row(current, stop, i) {
     const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
     const item = el('li', 'route-stop');
-    item.classList.toggle('next', isNext);
     if (current.route.length > 1) item.style.setProperty('--seg', segmentColor(i));
 
     const num = el('span', 'route-num');
@@ -141,23 +152,22 @@ export function mount(host, state, ctx, dispatch, workerId) {
     good.value = stop.goodId;
     good.setAttribute('aria-label', 'Good');
 
-    const qty = el('input', 'route-qty');
-    qty.type = 'text';
-    qty.inputMode = 'numeric';
-    qty.value = stop.qty === 'all' ? 'all' : String(stop.qty);
-    qty.title = '"all", or how many per visit';
-    qty.setAttribute('aria-label', 'Quantity per visit');
-
-    const change = () => {
-      const n = Number(qty.value);
-      const next = { ...stop, action: action.value, goodId: good.value, qty: qty.value.trim() === 'all' || !(n > 0) ? 'all' : n };
+    const commit = (next) => {
       const stops = [...current.route];
       stops[i] = next;
       setStops(stops);
     };
+    // A new action starts from its whole: pick up all, drop off everything
+    // carried. A new good keeps the amount.
+    const change = () => commit(action.value === stop.action
+      ? { ...stop, goodId: good.value }
+      : { instanceId: stop.instanceId, action: action.value, goodId: good.value, qty: 'all' });
     action.addEventListener('change', change);
     good.addEventListener('change', change);
-    qty.addEventListener('change', change);
+    const howMuch = amountControl(stop, building, (patch) => {
+      const next = { instanceId: stop.instanceId, action: stop.action, goodId: stop.goodId, ...patch };
+      commit(next);
+    });
 
     const move = (d) => {
       const stops = [...current.route];
@@ -170,10 +180,52 @@ export function mount(host, state, ctx, dispatch, workerId) {
     controls.append(button('▲', 'Move stop earlier', () => move(-1)), button('▼', 'Move stop later', () => move(1)));
 
     const what = el('span', 'route-what');
-    what.append(action, good, qty);
-    const held = building ? `here ${Math.round(amount(building, stop.goodId))}` : 'this building is gone';
-    item.append(num, pick, controls, what, el('span', 'meter-label route-held', held));
+    what.append(action, good);
+    const held = el('span', 'meter-label route-held', building ? '' : 'this building is gone');
+    item.append(num, pick, controls, what, howMuch, held);
+    rowRefs.push({ item, i, held, building, goodId: stop.goodId });
     return item;
+  }
+
+  /**
+   * How much a stop moves, as a slider. A pick-up: 0 up to the most it could
+   * ever take here, the top meaning all. A drop-off: the percentage of what
+   * the porter carries of the good on arrival. The readout follows the thumb;
+   * the route changes when it is let go.
+   */
+  function amountControl(stop, building, onCommit) {
+    const wrap = el('label', 'route-amount');
+    const slider = el('input', 'route-slider');
+    slider.type = 'range';
+    const readout = el('span', 'route-amount-value');
+    let show;
+    let patch;
+    if (stop.action === 'dropoff') {
+      slider.min = '0';
+      slider.max = '100';
+      slider.step = '5';
+      slider.value = String(Math.round((stop.share ?? 1) * 100));
+      slider.setAttribute('aria-label', 'Share of what the porter carries to leave here');
+      show = () => { readout.textContent = `leave ${slider.value}% of load`; };
+      patch = () => (slider.value === '100' ? { qty: 'all' } : { qty: 'all', share: Number(slider.value) / 100 });
+    } else {
+      const def = building && ctx.catalog.buildings.byId[building.buildingId];
+      const held = def ? capacity(building, def, ctx, stop.goodId) : 0;
+      const max = Math.max(1, Math.round(held > 0 ? Math.min(held, carryCap) : carryCap));
+      slider.min = '0';
+      slider.max = String(max);
+      slider.step = '1';
+      slider.value = String(stop.qty === 'all' ? max : Math.min(stop.qty, max));
+      slider.setAttribute('aria-label', 'How much to pick up per visit');
+      wrap.title = `At most ${max}: the smaller of what this building holds of it (${Math.round(held)}) and what the porter can carry (${carryCap})`;
+      show = () => { readout.textContent = Number(slider.value) >= max ? `take all · up to ${max}` : `take ${slider.value} of ${max}`; };
+      patch = () => (Number(slider.value) >= max ? { qty: 'all' } : { qty: Number(slider.value) });
+    }
+    show();
+    slider.addEventListener('input', show);
+    slider.addEventListener('change', () => onCommit(patch()));
+    wrap.append(slider, readout);
+    return wrap;
   }
 
   /**
@@ -218,14 +270,22 @@ export function mount(host, state, ctx, dispatch, workerId) {
         list.replaceChildren();
         return;
       }
-      // A select the player has open would close under a rebuild, so the list
-      // is rebuilt only when what it shows has changed.
-      const key = JSON.stringify([current.route, current.stop % Math.max(1, current.route.length), state.buildings.length, draft]);
+      // A select the player has open, or a slider being dragged, would be lost
+      // under a rebuild, so the list is rebuilt only when the route itself
+      // changes. Which stop is next, and what is held, are set in place.
+      const key = JSON.stringify([current.route, state.buildings.length, draft]);
       if (key !== signature) {
         signature = key;
         rows();
       }
+      const next = current.stop % Math.max(1, current.route.length);
+      for (const ref of rowRefs) {
+        ref.item.classList.toggle('next', ref.i === next);
+        if (ref.building) ref.held.textContent = `here ${Math.round(amount(ref.building, ref.goodId))}`;
+      }
       status.textContent = describe(state, ctx, current);
+      const carried = load(current);
+      loadMeter.update(carried, carryCap, carried >= carryCap - 1e-9 ? 'warn' : 'ok', `${Math.round(carried)} / ${carryCap}`);
     },
     destroy() {},
   };

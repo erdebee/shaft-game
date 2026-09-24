@@ -167,3 +167,33 @@ test('a route with a malformed stop is refused whole', async () => {
   route(run, porter, [{ instanceId: 'b999', action: 'pickup', goodId: 'food', qty: 'all' }]);
   assert.equal(porter.route[0].instanceId, depot.instanceId);
 });
+
+test('a drop-off with a share leaves that share of what the porter holds, and carries the rest on', async () => {
+  const { run, porter } = await withPorter([['depot', 20], ['depot', 21], ['depot', 22]]);
+  const [from, half, rest] = run.state.buildings.filter((b) => b.buildingId === 'depot');
+  from.stock = { scrap: 200 };
+  route(run, porter, [
+    { instanceId: from.instanceId, action: 'pickup', goodId: 'scrap', qty: 'all' },
+    { instanceId: half.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all', share: 0.25 },
+    { instanceId: rest.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all' },
+  ]);
+  while (!rest.stock?.scrap) ticks(run, 1);
+  assert.equal(half.stock.scrap, 50, 'a quarter of the 200 carried');
+  assert.equal(rest.stock.scrap, 150, 'the rest goes on to the next stop');
+});
+
+test('a pick-up of 0 takes nothing, and a share is only for drop-offs', async () => {
+  const { run, porter } = await withPorter([['depot', 20]]);
+  const depot = instanceOf(run, 'depot');
+  depot.stock = { scrap: 100 };
+  route(run, porter, [{ instanceId: depot.instanceId, action: 'pickup', goodId: 'scrap', qty: 0 }]);
+  assert.equal(porter.route[0].qty, 0);
+  ticks(run, 30);
+  assert.equal(depot.stock.scrap, 100);
+  assert.equal(porter.carrying.scrap ?? 0, 0);
+
+  route(run, porter, [{ instanceId: depot.instanceId, action: 'pickup', goodId: 'scrap', qty: 'all', share: 0.5 }]);
+  assert.equal(porter.route[0].qty, 0, 'refused: a pick-up has no share');
+  route(run, porter, [{ instanceId: depot.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all', share: 1.5 }]);
+  assert.equal(porter.route[0].action, 'pickup', 'refused: a share is at most 1');
+});
