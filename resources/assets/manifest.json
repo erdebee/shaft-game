@@ -1643,6 +1643,102 @@
     "height": 104,
     "repeat": "vertical"
    }
+  },
+  {
+   "id": "duct-v",
+   "path": "sprites/structure/duct-v.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 24,
+    "height": 32,
+    "repeat": "vertical"
+   }
+  },
+  {
+   "id": "duct-h",
+   "path": "sprites/structure/duct-h.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 32,
+    "height": 24,
+    "repeat": "horizontal"
+   }
+  },
+  {
+   "id": "duct-joint",
+   "path": "sprites/structure/duct-joint.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "size": {
+    "width": 30,
+    "height": 30
+   }
+  },
+  {
+   "id": "sewer-v",
+   "path": "sprites/structure/sewer-v.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 16,
+    "height": 32,
+    "repeat": "vertical"
+   }
+  },
+  {
+   "id": "sewer-h",
+   "path": "sprites/structure/sewer-h.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 32,
+    "height": 16,
+    "repeat": "horizontal"
+   }
+  },
+  {
+   "id": "sewer-joint",
+   "path": "sprites/structure/sewer-joint.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "size": {
+    "width": 20,
+    "height": 20
+   }
+  },
+  {
+   "id": "main-v",
+   "path": "sprites/structure/main-v.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 16,
+    "height": 32,
+    "repeat": "vertical"
+   }
+  },
+  {
+   "id": "main-h",
+   "path": "sprites/structure/main-h.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 32,
+    "height": 16,
+    "repeat": "horizontal"
+   }
+  },
+  {
+   "id": "main-joint",
+   "path": "sprites/structure/main-joint.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "size": {
+    "width": 20,
+    "height": 20
+   }
   }
  ],
  "audio": [

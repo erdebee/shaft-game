@@ -57,35 +57,23 @@
     },
     {
       "id": "duct-network",
-      "name": "Exhaust ducts",
-      "short": "Exhaust",
-      "carries": "air-quality",
+      "name": "Air ducts",
+      "short": "Air",
+      "carries": "air",
       "link": "duct",
       "connects": [
         { "from": "duct-fan", "to": "duct-fan" },
-        { "from": "duct-fan", "to": "scrubber-bank" }
+        { "from": "duct-fan", "to": "scrubber-bank" },
+        { "from": "duct-fan", "to": "oxygen-garden" },
+        { "from": "scrubber-bank", "to": "scrubber-bank" },
+        { "from": "scrubber-bank", "to": "oxygen-garden" },
+        { "from": "oxygen-garden", "to": "oxygen-garden" }
       ],
       "hubs": ["duct-fan"],
       "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
-      "maxSpanLevels": 8,
-      "description": "Duct fans draw foul air off the levels within their reach and send it to the scrubbers they are ducted to. A scrubber with no ducts cleans only its own level.",
-      "_note": "Sealing a level cuts it from every fan. The id is kept from when this was the only duct network."
-    },
-    {
-      "id": "oxygen-ducts",
-      "name": "Fresh-air ducts",
-      "short": "Oxygen",
-      "carries": "oxygen",
-      "link": "duct",
-      "connects": [
-        { "from": "duct-fan", "to": "duct-fan" },
-        { "from": "oxygen-garden", "to": "duct-fan" }
-      ],
-      "hubs": ["duct-fan"],
-      "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
-      "maxSpanLevels": 8,
-      "description": "Oxygen gardens breathe out what everyone else breathes in. Ducted to fans, their oxygen reaches every level the fans serve; unducted, it stays on their own level.",
-      "_note": "The same fans as the exhaust ducts, on a second loop: foul air goes down to the scrubbers, fresh air comes out to the levels."
+      "maxSpanLevels": 10,
+      "description": "Each duct fan either sucks or blows. Air drawn in by the sucking fans travels the ducts to the blowing ones, cleaned by every scrubber and freshened by every oxygen garden it passes, and is blown out onto the levels they reach. Nothing moves unless a group has both. A scrubber or garden off the air's path works on its own level only.",
+      "_note": "Airflow is settled in systems/airQuality/airflow.js. Suck where the air is foul (the Works), route it through the scrubbers and gardens, blow it where people live. Sealing a level cuts it from every fan."
     }
   ]
 }

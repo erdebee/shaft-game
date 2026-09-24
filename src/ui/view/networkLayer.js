@@ -20,6 +20,12 @@
  */
 
 import { roomRect, levelY, ROOM_HEIGHT, BUILD_X, SHAFT_WIDTH } from './interpolate.js';
+import {
+  tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, airflow, plate, sagPath, sagOf, svg,
+} from './conduits.js';
+import { fanMode, SUCK } from '../../systems/airQuality/airflow.js';
+import { graphOf, hubFor } from '../../systems/infrastructure/networkGraph.js';
+import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
 import * as selection from '../selection.js';
 import { readNetwork, colorOf, roleOf } from '../networkStatus.js';
 import { canLink, isNode, isHub, networkDef } from '../../systems/infrastructure/networkGraph.js';
@@ -28,19 +34,29 @@ import { inStorehouses } from '../../systems/resources/stores.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** The reach bars stand in the stairwell's right edge, staggered so they do not hide each other. */
+/** The reach bars stand at the stairwell's left edge, staggered so they do not hide each other. */
 const BAR_W = 4;
 const BAR_STEP = 6;
 
-/** The risers links run down, just inside the stairwell, left of the reach bars. */
-const RISER_X = BUILD_X - 26;
-const RISER_STEP = 7;
+/**
+ * Each network's risers — the lanes its runs drop down, just inside the
+ * stairwell, staggered so overlapping runs stay tellable — and how far below
+ * a room's top its runs hang.
+ */
+const LANES = {
+  'duct-network': { x: BUILD_X - 16, step: 28, y: 13 },
+  'water-mains': { x: BUILD_X - 12, step: 20, y: 9 },
+  sewer: { x: BUILD_X - 12, step: 20, y: 9 },
+  'power-grid': { x: BUILD_X - 8, step: 11, y: 6 },
+};
 
 export function createNetworkLayer(view, root, dispatch, ctx) {
   const layer = svg(view.layers.networks, 'g', 'network-layer');
   const bars = svg(layer, 'g', 'net-bars');
   const washes = svg(layer, 'g', 'net-washes');
+  const defs = svg(layer, 'defs');
   const lines = svg(layer, 'g', 'net-lines');
+  const flows = svg(layer, 'g', 'net-flows');
   const outlines = svg(layer, 'g', 'net-outlines');
   const preview = svg(layer, 'path', 'net-preview');
   preview.style.display = 'none';
@@ -80,7 +96,13 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       net.groups.map((g) => [g.key, g.live, g.nodes.length]),
       [...net.reach.keys()],
       net.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}`),
-      network === 'power-grid' ? state.buildings.map((b) => b.priority ?? '') : null,
+      network === 'power-grid' ? state.buildings.map((b) => `${b.priority ?? ''}${b.powered === false ? 'x' : ''}`).join() : null,
+      network === 'duct-network' ? [
+        state.buildings.map((b) => b.fanMode ?? '').join(),
+        Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow)}:${airBand(l)}`),
+        (state.resources.flows.air?.levelIn ?? []).map(Math.round).join(),
+        (state.resources.flows.air?.levelOut ?? []).map(Math.round).join(),
+      ] : null,
     ]);
     if (key === layerState.key) return;
     layerState.key = key;
@@ -89,7 +111,7 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   }
 
   function draw(state, currentCtx, network, net, linkFrom) {
-    for (const g of [bars, washes, lines, outlines]) g.replaceChildren();
+    for (const g of [defs, bars, washes, lines, flows, outlines]) g.replaceChildren();
     layer.style.setProperty('--net', colorOf(network));
     const def = networkDef(currentCtx, network);
 
@@ -112,38 +134,21 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       const reach = currentCtx.catalog.buildings.byId[hub.buildingId].serviceRadiusLevels ?? 0;
       const top = Math.max(1, hub.level - reach);
       const bottom = Math.min(state.levels.length, hub.level + reach);
-      const x = BUILD_X - BAR_W - 2 - (i % 3) * BAR_STEP;
+      const x = 3 + (i % 3) * BAR_STEP;
       const bar = rect(bars, 'net-reach', x, levelY(top) + 4, BAR_W, levelY(bottom) - levelY(top) + ROOM_HEIGHT - 8);
       bar.dataset.live = String(live.has(net.graph.component.get(hub.instanceId)) && !hub.brokenDown);
       const tick = rect(bars, 'net-reach-hub', x - 2, levelY(hub.level) + ROOM_HEIGHT / 2 - 2, BAR_W + 4, 4);
       tick.dataset.live = bar.dataset.live;
     });
 
-    // The links, as conduits: along the ceiling of each room to a riser
-    // beside the stairwell, and down the riser. Links are staggered across a
-    // few risers so two that overlap stay tellable.
-    net.links.forEach((link, i) => {
-      const [top, bottom] = link.a.level <= link.b.level ? [link.a, link.b] : [link.b, link.a];
-      const a = anchor(top, state);
-      const b = anchor(bottom, state);
-      const riser = RISER_X - (i % 3) * RISER_STEP;
-      const d = `M${a.x} ${a.y}H${riser}V${b.y}H${b.x}`;
-      svg(lines, 'path', 'net-line-under').setAttribute('d', d);
-      const over = svg(lines, 'path', `net-line-over${def?.flowsDownhill ? ' net-line-drain' : ''}`);
-      over.setAttribute('d', d);
-      for (const end of [a, b]) {
-        const dot = svg(lines, 'circle', 'net-joint');
-        dot.setAttribute('cx', String(end.x));
-        dot.setAttribute('cy', String(end.y));
-        dot.setAttribute('r', '3.5');
-      }
-      if (def?.flowsDownhill && b.y - a.y > 40) {
-        // A chevron on the riser, pointing the way it drains.
-        const my = (a.y + b.y) / 2;
-        const chevron = svg(lines, 'path', 'net-chevron');
-        chevron.setAttribute('d', `M${riser - 5} ${my - 3}l5 6l5 -6`);
-      }
-    });
+    // The links, each network in its own material (conduits.js).
+    const draw = {
+      'power-grid': drawPower,
+      'water-mains': (...a) => drawPipes(...a, 'main'),
+      sewer: (...a) => drawPipes(...a, 'sewer'),
+      'duct-network': drawDucts,
+    }[network];
+    draw?.(state, currentCtx, net, def);
 
     // The nodes, outlined and tagged.
     for (const node of net.graph.nodes) {
@@ -151,9 +156,10 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       const outline = rect(outlines, 'net-node-outline', r.x + 1, r.y + 1, r.width - 2, r.height - 2);
       if (node.instanceId === linkFrom) outline.classList.add('net-from');
       const role = roleOf(currentCtx, network, node);
-      const label = network === 'power-grid' && isHub(currentCtx, network, node.buildingId)
-        ? `P${priorityOf(node, currentCtx)}`
-        : role.toUpperCase().slice(0, 6);
+      const hub = isHub(currentCtx, network, node.buildingId);
+      const label = network === 'power-grid' && hub ? `P${priorityOf(node, currentCtx)}`
+        : network === 'duct-network' && hub ? (fanMode(node) === SUCK ? 'SUCK ▲' : 'BLOW ▼')
+          : role.toUpperCase().slice(0, 8);
       const tag = svg(outlines, 'g', 'net-tag');
       tag.setAttribute('transform', `translate(${r.x + 4} ${r.y + 4})`);
       const box = svg(tag, 'rect');
@@ -164,6 +170,134 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       text.setAttribute('y', '7.5');
       text.textContent = label;
     }
+  }
+
+  /** Where a network's run meets a room: the room's middle, near its ceiling. */
+  function port(network, instance, state) {
+    const r = roomRect(instance, state.buildings);
+    return { x: Math.round(r.x + r.width / 2), y: r.y + LANES[network].y };
+  }
+
+  function laneOf(network, i) {
+    return LANES[network].x - (i % 3) * LANES[network].step;
+  }
+
+  /** Ducts and pipes: tiles along each link's route, joints at the corners. */
+  function drawPipes(state, currentCtx, net, def, kind) {
+    const network = net.graph.networkId;
+    const tiles = tilesOf(kind);
+    net.links.forEach((link, i) => {
+      const route = riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i));
+      tileRoute(lines, defs, tiles, route);
+      if (def?.flowsDownhill && route.length > 2) {
+        // A chevron on the riser, pointing the way it drains.
+        const x = route[1].x;
+        const my = (route[1].y + route[2].y) / 2;
+        const chevron = svg(flows, 'path', 'net-chevron');
+        chevron.setAttribute('d', `M${x - 5} ${my - 3}l5 6l5 -6`);
+      }
+    });
+  }
+
+  /**
+   * The air ducts, and the air in them: chevrons riding each duct the way
+   * the air goes, as fast as it goes, coloured by how clean it is, with the
+   * flow on a plate; and on every room a sucking or blowing fan reaches, how
+   * much air is drawn off or blown onto its level.
+   */
+  function drawDucts(state, currentCtx, net) {
+    const network = 'duct-network';
+    const tiles = tilesOf('duct');
+    const air = state.resources.flows.air ?? { links: {}, levelIn: [], levelOut: [] };
+    net.links.forEach((link, i) => {
+      let route = riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i));
+      tileRoute(lines, defs, tiles, route);
+      const flow = air.links?.[link.id];
+      if (!flow || flow.flow < 0.5) return;
+      // Run the chevrons from the upstream end.
+      if (flow.to === link.a.instanceId) route = riserRoute(port(network, link.b, state), port(network, link.a, state), laneOf(network, i));
+      airflow(flows, route, { speed: 12 + flow.flow * 0.35, band: airBand(flow) });
+      const mid = midpoint(route);
+      plate(flows, mid.x, mid.y, `${Math.round(flow.flow)}`, `airflow-plate air-${airBand(flow)}`);
+    });
+    for (const b of state.buildings) {
+      const blown = air.levelIn?.[b.level] ?? 0;
+      const drawn = air.levelOut?.[b.level] ?? 0;
+      if (blown < 0.5 && drawn < 0.5) continue;
+      const r = roomRect(b, state.buildings);
+      const text = blown >= drawn ? `▼${Math.round(blown)}` : `▲${Math.round(drawn)}`;
+      plate(flows, r.x + r.width - 16, r.y + ROOM_HEIGHT - 12, text, blown >= drawn ? 'airflow-in' : 'airflow-out');
+    }
+  }
+
+  /**
+   * The grid: a thick trunk cable along every link, and from every junction
+   * thin wires hanging out to each room it feeds — dropping down the
+   * junction's own wall to each level, then strung room to room along the
+   * ceiling. A wire to a dark room is dark.
+   */
+  function drawPower(state, currentCtx, net) {
+    const network = 'power-grid';
+    net.links.forEach((link, i) => {
+      trunkCable(lines, hangingPath(riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i))));
+    });
+    if (!net.graph.enforced) return;
+
+    const live = new Set(net.groups.filter((g) => g.live).map((g) => g.key));
+    const graph = graphOf(state, currentCtx, network);
+    const hubAt = new Map();
+    const fed = new Map(); // junction -> Map(level -> [room])
+    for (const b of state.buildings) {
+      const d = currentCtx.catalog.buildings.byId[b.buildingId];
+      if (!d || isNode(currentCtx, network, b.buildingId)) continue;
+      if (!(d.powerDraw > 0) && powerDemand(b, d, currentCtx, state) <= 0) continue;
+      if (!hubAt.has(b.level)) {
+        hubAt.set(b.level, hubFor(graph, currentCtx, b.level, { usable: (h) => !h.brokenDown, live: (k) => live.has(k) }));
+      }
+      const hub = hubAt.get(b.level);
+      if (!hub || typeof hub === 'string') continue;
+      if (!fed.has(hub)) fed.set(hub, new Map());
+      const levels = fed.get(hub);
+      if (!levels.has(b.level)) levels.set(b.level, []);
+      levels.get(b.level).push(b);
+    }
+
+    for (const [hub, levels] of fed) {
+      const from = port(network, hub, state);
+      const ceiling = (level) => levelY(level) + LANES[network].y + 4;
+      // The drop: straight down (and up) the junction's wall.
+      const ys = [from.y, ...[...levels.keys()].map(ceiling)];
+      const top = Math.min(...ys);
+      const bottom = Math.max(...ys);
+      if (bottom > top) wire(flows, `M${from.x} ${top}V${bottom}`, true);
+      for (const [level, rooms] of levels) {
+        const y = ceiling(level);
+        clamp(flows, from.x, y);
+        // Strung outward both ways, room to room, each span sagging.
+        for (const side of [-1, 1]) {
+          const along = rooms
+            .map((b) => ({ b, x: port(network, b, state).x }))
+            .filter(({ x }) => (side < 0 ? x < from.x : x >= from.x))
+            .sort((p, q) => side * (p.x - q.x));
+          let at = { x: from.x, y };
+          for (const { b, x } of along) {
+            if (Math.abs(x - at.x) < 1) { clamp(flows, x, y); continue; }
+            const to = { x, y };
+            wire(flows, sagPath(at, to, sagOf(x - at.x)), b.powered !== false);
+            clamp(flows, x, y);
+            at = to;
+          }
+        }
+      }
+    }
+  }
+
+  function tilesOf(kind) {
+    return {
+      v: view.art.conduit?.(`${kind}-v`) ?? null,
+      h: view.art.conduit?.(`${kind}-h`) ?? null,
+      joint: view.art.conduit?.(`${kind}-joint`) ?? null,
+    };
   }
 
   /** The dashed line from the half-laid link's start to the room under the pointer. */
@@ -217,6 +351,32 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   }
 }
 
+/** How clean the air in a duct is, as a band for its colour. */
+function airBand(link) {
+  const q = Math.min(link.airQuality ?? 100, link.oxygen ?? 100);
+  return q >= 85 ? 'fresh' : q >= 65 ? 'clean' : q >= 40 ? 'stale' : 'foul';
+}
+
+/** Half way along a route, by length. */
+function midpoint(route) {
+  const segs = [];
+  let total = 0;
+  for (let i = 1; i < route.length; i++) {
+    const len = Math.abs(route[i].x - route[i - 1].x) + Math.abs(route[i].y - route[i - 1].y);
+    segs.push(len);
+    total += len;
+  }
+  let left = total / 2;
+  for (let i = 1; i < route.length; i++) {
+    if (left <= segs[i - 1]) {
+      const f = segs[i - 1] ? left / segs[i - 1] : 0;
+      return { x: route[i - 1].x + (route[i].x - route[i - 1].x) * f, y: route[i - 1].y + (route[i].y - route[i - 1].y) * f };
+    }
+    left -= segs[i - 1];
+  }
+  return route[route.length - 1];
+}
+
 /** Where a link meets a room: near its ceiling, a little in from the left. */
 function anchor(instance, state) {
   const r = roomRect(instance, state.buildings);
@@ -232,10 +392,4 @@ function rect(parent, className, x, y, width, height) {
   return node;
 }
 
-function svg(parent, tag, className = '') {
-  const node = document.createElementNS(SVG_NS, tag);
-  if (className) node.setAttribute('class', className);
-  parent.appendChild(node);
-  return node;
-}
 

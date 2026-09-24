@@ -29,6 +29,7 @@ import { iconOf } from '../icons.js';
 import { visitorsOf } from '../routePlan.js';
 import { graphOf, hubFor, isHub, networksOf, networkDef } from '../../systems/infrastructure/networkGraph.js';
 import { priorityOf } from '../../systems/power/priorityLadder.js';
+import { fanMode, SUCK, BLOW } from '../../systems/airQuality/airflow.js';
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -90,6 +91,22 @@ export function mount(root, state, ctx, dispatch) {
         priorityButtons.push(b);
         row.appendChild(b);
       }
+      host.appendChild(row);
+    }
+
+    // A duct fan's direction.
+    let fanButtons = null;
+    if (isHub(currentCtx, 'duct-network', def.id)) {
+      const row = el('div', 'inspect-row net-priority');
+      row.appendChild(el('span', 'meter-label', 'Fan'));
+      fanButtons = [[SUCK, '▲ Suck'], [BLOW, '▼ Blow']].map(([mode, label]) => {
+        const b = button(label, mode === SUCK ? 'Draw air off these levels into the ducts' : 'Push the ducts\' air out onto these levels', () => {
+          dispatch({ type: 'player:setFanMode', instanceId: instance.instanceId, mode });
+        }, 'net-prio net-fan');
+        b.dataset.mode = mode;
+        row.appendChild(b);
+        return b;
+      });
       host.appendChild(row);
     }
 
@@ -165,6 +182,7 @@ export function mount(root, state, ctx, dispatch) {
       if ((current.waterShare ?? 1) < 1) lines.push(`Water ration ${Math.round(current.waterShare * 100)}%`);
       if (current.repairing) lines.push('On the repair list');
       lines.push(...networkLines(currentState, ctxNow, current, def, draw));
+      if (fanButtons) for (const b of fanButtons) b.setAttribute('aria-pressed', String(b.dataset.mode === fanMode(current)));
       if (priorityButtons) {
         const p = priorityOf(current, ctxNow);
         priorityButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(i + 1 === p)));
@@ -367,6 +385,14 @@ function networkLines(state, ctx, instance, def, draw) {
     const hub = hubFor(graphOf(state, ctx, 'water-mains'), ctx, instance.level, { usable: (h) => !h.brokenDown });
     if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
   }
+  // The air moving past it: blown onto its level, or drawn off.
+  const air = state.resources.flows.air;
+  const blown = air?.levelIn?.[instance.level] ?? 0;
+  const drawn = air?.levelOut?.[instance.level] ?? 0;
+  if (blown >= 0.5) lines.push(`Air blown onto this level: ${Math.round(blown)} a tick`);
+  if (drawn >= 0.5) lines.push(`Air drawn off this level: ${Math.round(drawn)} a tick`);
+  const passing = air?.nodes?.[instance.instanceId]?.through ?? 0;
+  if (passing >= 0.5 && !isHub(ctx, 'duct-network', def.id)) lines.push(`Air passing through: ${Math.round(passing)} a tick`);
   for (const networkId of networksOf(ctx, def.id)) {
     const links = (state.infrastructure?.links ?? []).filter((l) => l.network === networkId && (l.from === instance.instanceId || l.to === instance.instanceId));
     const net = networkDef(ctx, networkId);

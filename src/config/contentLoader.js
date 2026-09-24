@@ -89,6 +89,7 @@ export function buildDataset(manifest, docs, selection = {}) {
     openingPorters: shaftProfile.opening?.porters ?? [],
     openingLinks: shaftProfile.opening?.links ?? [],
     openingPriorities: shaftProfile.opening?.priorities ?? [],
+    openingFans: shaftProfile.opening?.fans ?? [],
   };
 
   // --- catalog tier ----------------------------------------------------

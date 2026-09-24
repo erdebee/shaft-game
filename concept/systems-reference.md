@@ -144,8 +144,9 @@ need intermediate hubs.
 
 ### Air network
 - Tracked **per level**, as two numbers: purity (fouled by crowds and industry, most of all the deep generator, smelter and dig face) and oxygen (breathed by everyone, burned by combustion). Breathable air is the worse of the two
-- **Exhaust ducts:** duct fans draw foul air off the levels they reach to the scrubbers they are ducted to. A scrubber with no ducts cleans only its own level
-- **Fresh-air ducts:** the same fans blow in the oxygen of the **oxygen gardens** they are ducted to. Each fan moves only so much a tick
+- **Duct fans suck or blow.** Air drawn off the levels a sucking fan reaches travels the ducts to the blowing fans, and is blown out onto their levels. A ducted group moves the lesser of what its suckers can draw and its blowers can push — two blowers and no sucker move nothing
+- Everything the air passes works on it: a **scrubber** cleans it, an **oxygen garden** breathes into it, each sharing its capacity over the air through it. A scrubber or garden off the air's path works on its own level only
+- A sucked level is refilled from the stairwell, taking on the Shaft's average air. The gardens are in the shallows and the people in the middle, so fresh air is drawn at the top and blown downward; the Works' foul air is best drawn off and cleaned on its way somewhere else
 - Plants (bays, groves, gardens) need clean air to grow and breathe a little oxygen back out
 - Sealing a level (fire, contamination, containment during unrest) cuts it from every fan — which is also why it begins suffocating
 

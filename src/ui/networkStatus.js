@@ -31,7 +31,7 @@ export function colorOf(networkId) {
 export function roleOf(ctx, networkId, instance) {
   const def = ctx.catalog.buildings.byId[instance.buildingId];
   if (isHub(ctx, networkId, def.id)) {
-    return { 'power-grid': 'junction', 'water-mains': 'cistern', sewer: 'drain', 'duct-network': 'vent', 'oxygen-ducts': 'vent' }[networkId] ?? 'hub';
+    return { 'power-grid': 'junction', 'water-mains': 'cistern', sewer: 'drain', 'duct-network': 'fan' }[networkId] ?? 'hub';
   }
   if ((def.produces ?? []).some((p) => p.id === 'power')) return 'source';
   if ((def.produces ?? []).some((p) => p.id === 'water')) return 'source';
@@ -39,7 +39,7 @@ export function roleOf(ctx, networkId, instance) {
   if ((def.effects ?? []).some((e) => e.op === 'flow.setQuality')) return 'filter';
   if ((def.effects ?? []).some((e) => e.op === 'buffer.add' && e.target === 'power')) return 'store';
   if ((def.effects ?? []).some((e) => e.op === 'flow.scrub')) return 'scrubber';
-  if (def.oxygenOutput) return 'source';
+  if (def.oxygenOutput) return 'garden';
   return 'node';
 }
 
@@ -94,9 +94,8 @@ function liveTest(state, ctx, networkId, graph) {
       case 'sewer':
         return (d.effects ?? []).some((e) => e.op === 'reclamation.enable');
       case 'duct-network':
-        return (d.effects ?? []).some((e) => e.op === 'flow.scrub');
-      case 'oxygen-ducts':
-        return (d.oxygenOutput ?? 0) > 0;
+        // A group is live when air moves through it.
+        return (state.resources.flows.air?.nodes?.[n.instanceId]?.flow ?? 0) > 0;
       default:
         return true;
     }
@@ -137,18 +136,15 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
       }
       break;
     }
-    case 'duct-network':
-    case 'oxygen-ducts': {
-      // Fans only move air while they run.
-      const running = new Map();
-      for (const [level, hubs] of reach) {
-        const on = hubs.filter((h) => outputScale(h, def(h), ctx) > 0);
-        if (on.length) running.set(level, on);
-      }
-      const sources = new Set(graph.nodes.filter((n) => !isHub(ctx, networkId, n.buildingId)).map((n) => n.level));
+    case 'duct-network': {
+      // Where people live and no air is moved, bar a scrubber's or garden's
+      // own level.
+      const air = state.resources.flows.air ?? {};
+      const own = new Set(graph.nodes.filter((n) => !isHub(ctx, networkId, n.buildingId)).map((n) => n.level));
       residents.forEach((n, level) => {
-        if (level < 1 || n < 1 || running.has(level) || sources.has(level)) return;
-        gaps.push({ level, what: `${Math.round(n)} residents, no fan in reach` });
+        if (level < 1 || n < 1 || own.has(level)) return;
+        if ((air.levelIn?.[level] ?? 0) > 0 || (air.levelOut?.[level] ?? 0) > 0) return;
+        gaps.push({ level, what: `${Math.round(n)} residents, no air moved` });
       });
       break;
     }

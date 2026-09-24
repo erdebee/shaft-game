@@ -203,26 +203,75 @@ test('dumped sewage fouls the air of its level', async () => {
 
 // --- air ------------------------------------------------------------------------
 
-const AIR = ['duct-network', 'oxygen-ducts'];
+const AIR = ['duct-network'];
 const SCRUBBING = { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 };
+const STILL = { 'air.migrationRateBetweenLevels': 0, 'air.oxygenPerCapitaPerTick': 0 };
+const fan = (run, level) => at(run, 'duct-fan', level).instanceId;
+const setFan = (run, level, mode) => dispatch(run.state, run.ctx, { type: 'player:setFanMode', instanceId: fan(run, level), mode });
 
-test('a duct fan carries a scrubber\'s work to the levels it serves', async () => {
-  const layout = [['main-generator', 38], ['scrubber-bank', 20], ['duct-fan', 26], ['simple-suite', 25]];
-  const tunables = { 'air.migrationRateBetweenLevels': 0, 'air.oxygenPerCapitaPerTick': 0 };
-  const unducted = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables });
-  const ducted = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables });
-  link(ducted, 'duct-network', 'duct-fan', 'scrubber-bank');
-  for (const run of [unducted, ducted]) { run.state.population.headcount = 80; ticks(run, 60); }
-  assert.ok(unducted.state.levels[24].airQuality < 90, `got ${unducted.state.levels[24].airQuality}`);
-  assert.ok(ducted.state.levels[24].airQuality > 99, `got ${ducted.state.levels[24].airQuality}`);
+/** A fan sucking the deep levels through a scrubber, and one blowing onto the suites. */
+async function ventilated(modes) {
+  const layout = [['main-generator', 38], ['duct-fan', 36], ['scrubber-bank', 30], ['duct-fan', 25], ['simple-suite', 25]];
+  const run = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables: STILL });
+  link(run, 'duct-network', ['duct-fan', 36], 'scrubber-bank');
+  link(run, 'duct-network', 'scrubber-bank', ['duct-fan', 25]);
+  setFan(run, 36, modes[0]);
+  setFan(run, 25, modes[1]);
+  run.state.population.headcount = 80;
+  return run;
+}
+
+test('air moves only from a sucking fan to a blowing one, cleaned on the way', async () => {
+  const flowing = await ventilated(['suck', 'blow']);
+  const still = await ventilated(['blow', 'blow']);
+  for (const run of [flowing, still]) {
+    for (const l of run.state.levels) l.airQuality = 50;
+    ticks(run, 1);
+  }
+  assert.ok(flowing.state.resources.flows.air.moved > 0);
+  assert.equal(still.state.resources.flows.air.moved, 0, 'two blowers move nothing');
+  assert.ok(flowing.state.levels[24].airQuality > still.state.levels[24].airQuality + 5,
+    `blown ${flowing.state.levels[24].airQuality} vs still ${still.state.levels[24].airQuality}`);
 });
 
-test('an oxygen garden\'s oxygen reaches only where it is ducted', async () => {
-  const layout = [['main-generator', 38], ['oxygen-garden', 6], ['duct-fan', 12], ['simple-suite', 13]];
+test('the flow on each duct is recorded, running from sucker to blower', async () => {
+  const run = await ventilated(['suck', 'blow']);
+  ticks(run, 1);
+  const air = run.state.resources.flows.air;
+  const [intoScrubber, outOfScrubber] = run.state.infrastructure.links;
+  const cap = run.ctx.catalog.buildings.byId['duct-fan'].airflowPerTick;
+  assert.equal(air.links[intoScrubber.id].to, at(run, 'scrubber-bank', 30).instanceId);
+  assert.equal(air.links[outOfScrubber.id].to, fan(run, 25));
+  assert.ok(Math.abs(air.links[outOfScrubber.id].flow - cap) < 1e-9);
+  assert.ok(air.levelIn[25] > 0 && air.levelOut[36] > 0);
+  assert.ok(air.links[outOfScrubber.id].airQuality >= air.links[intoScrubber.id].airQuality);
+
+  // Turn them round, and the air runs the other way.
+  setFan(run, 36, 'blow');
+  setFan(run, 25, 'suck');
+  ticks(run, 1);
+  assert.equal(run.state.resources.flows.air.links[outOfScrubber.id].to, at(run, 'scrubber-bank', 30).instanceId);
+});
+
+test('a scrubber off the air\'s path works on its own level only', async () => {
+  const run = await runWith([['main-generator', 38], ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 22]], {
+    keep: SCRUBBING, networks: AIR, tunables: STILL,
+  });
+  run.state.population.headcount = 160;
+  ticks(run, 60);
+  const air = (i) => run.state.levels[i - 1].airQuality;
+  assert.ok(air(20) > 95, `the scrubbed level should stay clean, got ${air(20)}`);
+  assert.ok(air(22) < air(20));
+});
+
+test('an oxygen garden\'s oxygen reaches only where the air carries it', async () => {
+  const layout = [['main-generator', 38], ['duct-fan', 4], ['oxygen-garden', 6], ['duct-fan', 13], ['simple-suite', 13]];
   const tunables = { 'air.migrationRateBetweenLevels': 0, 'water.potablePerCapitaPerTick': 0 };
   const alone = await runWith(layout, { keep: { ...FUEL }, networks: AIR, tunables });
   const ducted = await runWith(layout, { keep: { ...FUEL }, networks: AIR, tunables });
-  link(ducted, 'oxygen-ducts', 'oxygen-garden', 'duct-fan');
+  link(ducted, 'duct-network', ['duct-fan', 4], 'oxygen-garden');
+  link(ducted, 'duct-network', 'oxygen-garden', ['duct-fan', 13]);
+  setFan(ducted, 4, 'suck');
   for (const run of [alone, ducted]) {
     run.engine.systems.water = { tick() {} }; // the garden's water is not the question
     run.state.population.headcount = 200;
@@ -230,6 +279,16 @@ test('an oxygen garden\'s oxygen reaches only where it is ducted', async () => {
   }
   assert.ok(alone.state.levels[12].oxygen < 90, `got ${alone.state.levels[12].oxygen}`);
   assert.ok(ducted.state.levels[12].oxygen > alone.state.levels[12].oxygen + 10);
+});
+
+test('only a duct fan takes a direction', async () => {
+  const run = await runWith([['duct-fan', 20], ['scrubber-bank', 22]], { networks: AIR });
+  dispatch(run.state, run.ctx, { type: 'player:setFanMode', instanceId: at(run, 'scrubber-bank', 22).instanceId, mode: 'suck' });
+  dispatch(run.state, run.ctx, { type: 'player:setFanMode', instanceId: fan(run, 20), mode: 'sideways' });
+  assert.equal(at(run, 'scrubber-bank', 22).fanMode, undefined);
+  assert.equal(at(run, 'duct-fan', 20).fanMode, undefined);
+  setFan(run, 20, 'suck');
+  assert.equal(at(run, 'duct-fan', 20).fanMode, 'suck');
 });
 
 test('plants grow slower in foul air', async () => {

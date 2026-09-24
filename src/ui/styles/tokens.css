@@ -192,8 +192,7 @@
   --net-power-grid:   var(--sodium-core);
   --net-water-mains:  var(--water-lit);
   --net-sewer:        var(--brass);
-  --net-duct-network: var(--steel-highlight);
-  --net-oxygen-ducts: var(--readout-ok);
+  --net-duct-network: var(--rust-bright);
 
   /* ---- Type ---- */
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;

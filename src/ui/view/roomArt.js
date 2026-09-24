@@ -88,6 +88,13 @@ export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
       ? { href: href(stair), fg: href(stairFg), signPlate: stair.signPlate, ...stair.tile }
       : null,
     rock: (band) => href(byId.get(`${band}-rock`)),
+    // The ducts' and pipes' tiles (tools/conduitTiles.mjs): '<kind>-v',
+    // '<kind>-h' and '<kind>-joint', or null before they have been made.
+    conduit: (id) => {
+      const entry = byId.get(id);
+      const size = entry?.tile ?? entry?.size;
+      return entry && size ? { href: href(entry), width: size.width, height: size.height } : null;
+    },
     font,
   };
 }

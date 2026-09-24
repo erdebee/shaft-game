@@ -157,6 +157,14 @@ const HANDLERS = {
     log(state, `${net?.name ?? link.network}: ${net?.link ?? 'link'} taken out`);
   },
 
+  /** Set a duct fan to suck air off its levels or blow it onto them (airflow.js). */
+  'player:setFanMode': (state, ctx, cmd) => {
+    const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
+    if (!instance || !isHub(ctx, 'duct-network', instance.buildingId)) return;
+    if (cmd.mode !== 'suck' && cmd.mode !== 'blow') return;
+    instance.fanMode = cmd.mode;
+  },
+
   /**
    * Rank a junction 1 (served first) to 5 (dropped first) for when the
    * generators run short (systems/power/priorityLadder.js).

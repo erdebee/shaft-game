@@ -1157,10 +1157,45 @@ body {
 .net-node-outline.net-from { stroke: var(--sodium-core); stroke-width: 4; stroke-dasharray: 8 4; }
 .net-tag rect { fill: var(--net); stroke: var(--rock); stroke-width: 1; }
 .net-tag text { fill: var(--rock); font: 700 8px var(--font-mono); }
-.net-line-under { fill: none; stroke: var(--rock); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
-.net-line-over  { fill: none; stroke: var(--net); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.net-joint { fill: var(--net); stroke: var(--rock); stroke-width: 1.5; }
-.net-line-drain { stroke-dasharray: 7 4; }
+
+/* The networks' materials (view/conduits.js). Ducts and pipes are pixel
+   tiles; the power is drawn: a thick black trunk from the generators, and
+   thin wires sagging from each junction to the rooms it feeds. */
+.network-layer image, .network-layer pattern image { image-rendering: pixelated; }
+.cable-trunk-edge  { fill: none; stroke: var(--rock); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.cable-trunk       { fill: none; stroke: var(--steel-darkest); stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; }
+.cable-trunk-sheen { fill: none; stroke: var(--steel-lit); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
+.wire-edge { fill: none; stroke: var(--rock); stroke-width: 2.6; stroke-linecap: round; }
+.wire      { fill: none; stroke: var(--sodium); stroke-width: 1.2; stroke-linecap: round; }
+.wire[data-lit="false"] { stroke: var(--steel-dark); }
+.wire-clamp { fill: var(--steel-pale); stroke: var(--rock); stroke-width: 1; }
+
+/* The air in the ducts: chevrons riding the duct, as fast as the air goes,
+   coloured by how clean it is. On a [data-part] so they stop with the clock. */
+.airflow[data-part="airflow"] {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 5 9;
+  animation: airflow-run 1s linear infinite;
+}
+.airflow.airflow-casing[data-part="airflow"] { stroke: var(--rock); stroke-width: 6.5; }
+.airflow:not(.airflow-casing)[data-air="fresh"] { stroke: var(--water-glint); }
+.airflow:not(.airflow-casing)[data-air="clean"] { stroke: var(--readout-ok); }
+.airflow:not(.airflow-casing)[data-air="stale"] { stroke: var(--readout-warn); }
+.airflow:not(.airflow-casing)[data-air="foul"]  { stroke: var(--readout-critical); }
+@keyframes airflow-run { to { stroke-dashoffset: -14; } }
+@media (prefers-reduced-motion: reduce) {
+  .airflow[data-part="airflow"] { animation: none; }
+}
+.net-plate rect { fill: var(--panel); stroke: var(--rock); stroke-width: 1; }
+.net-plate text { fill: var(--ink); font: 700 8px var(--font-mono); text-anchor: middle; }
+.airflow-plate.air-fresh text { fill: var(--water-glint); }
+.airflow-plate.air-clean text { fill: var(--readout-ok); }
+.airflow-plate.air-stale text { fill: var(--readout-warn); }
+.airflow-plate.air-foul text  { fill: var(--readout-critical); }
+.airflow-in text  { fill: var(--water-glint); }
+.airflow-out text { fill: var(--readout-warn); }
 .net-chevron { fill: none; stroke: var(--net); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .net-preview { fill: none; stroke: var(--critical); stroke-width: 2.5; stroke-dasharray: 4 4; }
 .net-preview[data-ok="true"] { stroke: var(--readout-ok); }

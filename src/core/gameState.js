@@ -19,6 +19,7 @@ import { initialSeams } from '../systems/resources/minerals.js';
 import { initialLedger } from '../systems/resources/ledger.js';
 import { initialWater } from '../systems/water/greywaterLoop.js';
 import { initialPower } from '../systems/power/priorityLadder.js';
+import { initialAir } from '../systems/airQuality/airflow.js';
 import { initialVitals } from '../systems/population/vitals.js';
 import { initialUnrest } from '../systems/society/unrest.js';
 import { initialMaintenance } from '../systems/buildings/maintenance.js';
@@ -60,6 +61,7 @@ export function createGameState({ chapter, dataset, seed }) {
       flows: {
         power: initialPower(),
         water: initialWater(),
+        air: initialAir(),
       },
       cutSupplies: [],
       ledger: initialLedger(),

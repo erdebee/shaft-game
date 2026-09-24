@@ -19,7 +19,7 @@
       "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
       "effects": [{ "op": "flow.scrub", "target": "air-quality", "value": 40 }],
-      "_note": "Cleans its own level, and every level the duct fans it is ducted to serve. The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
+      "_note": "Cleans the air the ducts carry through it, and its own level with what is left. The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
     },
     {
       "id": "oxygen-garden",
@@ -40,7 +40,7 @@
       "effects": [
         { "op": "meter.add", "target": "morale", "value": 2 }
       ],
-      "_note": "Makes oxygenOutput a tick for its own level, or for every level the duct fans it is ducted to serve. Needs clean air to grow (airNeed), and no catalyst. The self-sufficient option, which is thematically loaded once the player learns what the scrubbers actually depend on."
+      "_note": "Breathes oxygenOutput a tick into the air the ducts carry through it, and into its own level with what is left. Needs clean air to grow (airNeed), and no catalyst. The self-sufficient option, which is thematically loaded once the player learns what the scrubbers actually depend on."
     },
     {
       "id": "duct-fan",
@@ -55,11 +55,11 @@
       "consumes": [],
       "produces": [],
       "serviceRadiusLevels": 3,
-      "ductFlowPerTick": 10,
+      "airflowPerTick": 120,
       "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
       "effects": [],
-      "_note": "The hub of both duct loops: while it runs it draws foul air off every level within serviceRadiusLevels to the scrubbers it is ducted to, and blows in the oxygen of the gardens it is ducted to — at most ductFlowPerTick of each a tick. It cleans nothing itself — it moves the problem to where something can solve it."
+      "_note": "The hub of the air ducts. The player sets it to suck or blow: sucking, it draws airflowPerTick of air off every level within serviceRadiusLevels into the ducts; blowing, it pushes the ducts' air out onto them. It cleans nothing itself — it moves the problem to where something can solve it."
     }
   ]
 }

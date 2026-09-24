@@ -90,8 +90,8 @@ function openingBuilding(state, [buildingId, level, nth = 0]) {
 }
 
 /**
- * The cables, pipes, drains and ducts the Shaft opens with, and its junction
- * priorities, through the player's own commands. A link that names nothing
+ * The cables, pipes, drains and ducts the Shaft opens with, its junction
+ * priorities and which way its fans turn, through the player's own commands. A link that names nothing
  * placed, or that the network refuses, is an error in the data.
  */
 function layOpeningNetworks(state, ctx, dispatch) {
@@ -110,6 +110,9 @@ function layOpeningNetworks(state, ctx, dispatch) {
   }
   for (const entry of ctx.shaft.openingPriorities ?? []) {
     dispatch(state, ctx, { type: 'player:setPriority', instanceId: openingBuilding(state, entry.at), priority: entry.priority });
+  }
+  for (const entry of ctx.shaft.openingFans ?? []) {
+    dispatch(state, ctx, { type: 'player:setFanMode', instanceId: openingBuilding(state, entry.at), mode: entry.mode });
   }
 }
 
