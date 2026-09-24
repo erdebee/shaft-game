@@ -28,7 +28,7 @@ import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { cisternCapacity } from '../../systems/water/greywaterLoop.js';
 import { inStorehouses, nameOf } from '../../systems/resources/stores.js';
 import { outputScale } from '../../systems/buildings/buildingRegistry.js';
-import { fanMode, SUCK, BLOW, AIR_LINES, FOUL, FRESH } from '../../systems/airQuality/airflow.js';
+import { fanMode, SUCK, BLOW, AIR_LINES, FOUL, FRESH, isOutside } from '../../systems/airQuality/airflow.js';
 
 /** The one page both air lines share: they are one loop. */
 const AIR = 'air';
@@ -141,6 +141,8 @@ function airPage(parent, state, ctx, dispatch) {
         rows = [];
         const byLevel = new Map();
         for (const b of currentState.buildings) {
+          const at = currentState.levels[b.level - 1];
+          if (!at || isOutside(currentCtx, at)) continue; // the surface is outside the Shaft's air
           if (!byLevel.has(b.level)) byLevel.set(b.level, []);
           byLevel.get(b.level).push(currentCtx.catalog.buildings.byId[b.buildingId]?.name ?? b.buildingId);
         }
@@ -388,7 +390,7 @@ function statusLines(state, ctx, networkId) {
     }
     case AIR: {
       const band = (q) => (q < ctx.config.air.qualityCriticalThreshold ? 'critical' : q < ctx.config.air.qualityWarnThreshold ? 'warn' : 'ok');
-      const lived = state.levels.filter((l) => state.buildings.some((b) => b.level === l.index));
+      const lived = state.levels.filter((l) => !isOutside(ctx, l) && state.buildings.some((b) => b.level === l.index));
       const worst = (field) => lived.reduce((w, l) => ((l[field] ?? 100) < (w[field] ?? 100) ? l : w), lived[0]);
       const mean = (field) => lived.reduce((t, l) => t + (l[field] ?? 100), 0) / Math.max(1, lived.length);
       if (lived.length) {
@@ -431,6 +433,10 @@ function readingOf(state, ctx, networkId, node) {
       if (cap > 0) return `${Math.round(water.cisterns?.[node.instanceId] ?? 0)}/${cap} · ${span}`;
       if (water.sewage?.[node.instanceId] !== undefined) return `${Math.round(water.sewage[node.instanceId])} a tick coming in`;
       if (water.lift?.[node.instanceId] !== undefined) return `lifts ${Math.round(water.lift[node.instanceId])} levels`;
+      if ((def.consumes ?? []).some((c) => c.id === 'water')) {
+        if (networkId === 'sewer') return (water.spilled?.[node.level] ?? 0) > 0.01 ? 'dumping sewage on its level' : '';
+        return `watered ${Math.round((node.waterShare ?? 1) * 100)}%`;
+      }
       return '';
     }
     case 'foul-ducts':

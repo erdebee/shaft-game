@@ -45,7 +45,7 @@
       "powerDraw": 30,
       "staffing": 3,
       "wearPerTick": 0.0015,
-      "consumes": [],
+      "consumes": [{ "id": "water", "qty": 2 }],
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },

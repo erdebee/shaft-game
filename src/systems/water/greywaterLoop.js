@@ -7,7 +7,8 @@
  *   cistern ─drain─ cistern ─drain─ reclamation plant (sewer, downhill only)
  *
  * A room or a level's residents draw from the nearest cistern that reaches
- * them. Each piped-together component of the mains is settled on its own:
+ * them — except a room that is itself on the mains (the cultivation rooms),
+ * which draws only through its pipes and drains only through its drains. Each piped-together component of the mains is settled on its own:
  * what its reclamation plants recovered is used first, being already up here;
  * its pumps lift the rest, plus what its cisterns have room for — and the
  * aquifer yields what it yields, however many pumps are sunk into it, shared
@@ -30,7 +31,7 @@ import { approach, clamp } from '../../utils/math.js';
 import { workScale, outputScale } from '../buildings/buildingRegistry.js';
 import { residentsByLevel } from '../population/housing.js';
 import { cohortFactor } from '../population/demography.js';
-import { graphOf, hubFor, downhillFrom, VIRTUAL } from '../infrastructure/networkGraph.js';
+import { graphOf, hubFor, downhillFrom, isHub, VIRTUAL } from '../infrastructure/networkGraph.js';
 
 const MAINS = 'water-mains';
 const SEWER = 'sewer';
@@ -125,6 +126,15 @@ export function tick(state, ctx) {
     return hubCache.get(level);
   };
   const keyOf = (hub) => (hub === VIRTUAL ? VIRTUAL : mains.component.get(hub.instanceId));
+  // A room on the mains itself (the cultivation rooms) is not served by a
+  // cistern's reach but by its pipes: it draws from its own component, and
+  // drains by its own drains. It stands as its own hub.
+  const piped = (instance) => mains.enforced && mains.byId.has(instance.instanceId)
+    && !isHub(ctx, MAINS, instance.buildingId) && !(def(instance).produces ?? []).some((p) => p.id === 'water');
+  const hubOf = (instance) => {
+    if (!piped(instance)) return hubAt(instance.level);
+    return hasWater(mains.component.get(instance.instanceId)) ? instance : null;
+  };
 
   // --- demand, by the cistern that serves it --------------------------------
   const residents = residentsByLevel(state, ctx);
@@ -156,7 +166,7 @@ export function tick(state, ctx) {
     }
     const qty = use.qty * workScale(instance, d, ctx);
     buildingDemand += qty;
-    const hub = hubAt(instance.level);
+    const hub = hubOf(instance);
     if (!hub) {
       instance.waterShare = 0;
       if (qty > 0) unserved.push(instance.instanceId);
@@ -231,7 +241,8 @@ export function tick(state, ctx) {
   const drainsTo = (hub) => {
     const id = hub === VIRTUAL ? VIRTUAL : hub.instanceId;
     if (!drainCache.has(id)) {
-      const reach = hub === VIRTUAL || !sewer.enforced ? null : downhillFrom(sewer, hub.instanceId);
+      const reach = hub === VIRTUAL || !sewer.enforced ? null
+        : sewer.byId.has(hub.instanceId) ? downhillFrom(sewer, hub.instanceId) : new Set();
       drainCache.set(id, plants.filter((p) => !p.brokenDown && (reach === null || reach.has(p.instanceId))));
     }
     return drainCache.get(id);

@@ -23,7 +23,7 @@ import { roomRect, levelY, ROOM_HEIGHT, BUILD_X, SHAFT_WIDTH } from './interpola
 import {
   tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, sagPath, sagOf, svg,
 } from './conduits.js';
-import { fanMode, SUCK, AIR_LINES, FOUL, FRESH } from '../../systems/airQuality/airflow.js';
+import { fanMode, SUCK, AIR_LINES, FOUL, FRESH, isOutside } from '../../systems/airQuality/airflow.js';
 import { createAirParticles } from './airParticles.js';
 import { graphOf, hubFor } from '../../systems/infrastructure/networkGraph.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
@@ -227,6 +227,8 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     particles.build(state, air.paths, ducts);
 
     for (const b of state.buildings) {
+      // The surface is outside the Shaft's air.
+      if (!state.levels[b.level - 1] || isOutside(currentCtx, state.levels[b.level - 1])) continue;
       const r = roomRect(b, state.buildings);
       const g = svg(flows, 'g', 'air-gauge');
       g.setAttribute('transform', `translate(${r.x + r.width - 38} ${r.y + ROOM_HEIGHT - 26})`);

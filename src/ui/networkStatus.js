@@ -15,6 +15,7 @@ import {
   graphOf, isHub, levelsServedBy, downhillFrom, linksOf, networkDef,
 } from '../systems/infrastructure/networkGraph.js';
 import { residentsByLevel } from '../systems/population/housing.js';
+import { isOutside } from '../systems/airQuality/airflow.js';
 import { powerDemand, outputScale } from '../systems/buildings/buildingRegistry.js';
 
 /** The networks in the order the panel lists them. */
@@ -39,7 +40,8 @@ export function roleOf(ctx, networkId, instance) {
   if ((def.effects ?? []).some((e) => e.op === 'flow.setQuality')) return 'filter';
   if ((def.effects ?? []).some((e) => e.op === 'buffer.add' && e.target === 'power')) return 'store';
   if ((def.effects ?? []).some((e) => e.op === 'flow.scrub')) return 'scrubber';
-  if (def.oxygenOutput) return 'garden';
+  if (def.oxygenOutput && networkId !== 'water-mains' && networkId !== 'sewer') return 'garden';
+  if ((def.consumes ?? []).some((c) => c.id === 'water')) return 'user';
   return 'node';
 }
 
@@ -116,21 +118,30 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
         gaps.push({ level: b.level, instance: b, what: 'no junction in reach' });
       }
       break;
-    case 'water-mains':
+    case 'water-mains': {
+      const live = new Set([...graph.members.entries()].filter(([, nodes]) => liveTest(state, ctx, networkId, graph)(nodes)).map(([k]) => k));
       for (const b of state.buildings) {
-        if (reach.has(b.level) || !(def(b).consumes ?? []).some((c) => c.id === 'water')) continue;
+        if (!(def(b).consumes ?? []).some((c) => c.id === 'water')) continue;
+        // A room on the mains is watered by its pipes, not by a cistern's reach.
+        if (graph.byId.has(b.instanceId)) {
+          if (!live.has(graph.component.get(b.instanceId))) gaps.push({ level: b.level, instance: b, what: 'not piped to any water' });
+          continue;
+        }
+        if (reach.has(b.level)) continue;
         gaps.push({ level: b.level, instance: b, what: 'no cistern in reach' });
       }
       residents.forEach((n, level) => {
         if (level >= 1 && n >= 1 && !reach.has(level)) gaps.push({ level, what: `${Math.round(n)} residents, no cistern in reach` });
       });
       break;
+    }
     case 'sewer': {
       // A cistern whose drains reach no reclamation plant dumps what its
       // area uses.
       const plants = graph.nodes.filter((n) => (def(n).effects ?? []).some((e) => e.op === 'reclamation.enable'));
       for (const n of graph.nodes) {
-        if (!isHub(ctx, networkId, n.buildingId)) continue;
+        const user = (def(n).consumes ?? []).some((c) => c.id === 'water');
+        if (!isHub(ctx, networkId, n.buildingId) && !user) continue;
         const down = downhillFrom(graph, n.instanceId);
         if (plants.some((p) => down.has(p.instanceId))) continue;
         gaps.push({ level: n.level, instance: n, what: 'drains to no reclamation plant' });
@@ -155,11 +166,13 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
 }
 
 /**
- * How well a level is aired by the loop: 'still' with nothing flowing past
+ * How well a level is aired by the loop: 'outside' for the surface, open to
+ * the air; 'still' with nothing flowing past
  * it, 'weak' where the flow would take several ticks to change its air,
  * 'aired' otherwise.
  */
 export function airingOf(state, ctx, level) {
+  if (state.levels[level - 1] && isOutside(ctx, state.levels[level - 1])) return 'outside';
   const through = state.resources.flows.air?.through?.[level] ?? 0;
   const volume = ctx.tables?.levels?.levelTemplate?.airVolume ?? 100;
   if (through < volume * 0.01) return 'still';

@@ -44,6 +44,15 @@ export const AIR_LINES = [FOUL, FRESH];
 export const SUCK = 'suck';
 export const BLOW = 'blow';
 
+/**
+ * Whether a level is the surface: open to the air outside, so always clean
+ * and full of oxygen, and no part of the Shaft's air — no vent opens on it
+ * and nothing mixes with it.
+ */
+export function isOutside(ctx, level) {
+  return level.index === (ctx.shaft?.layout?.surfaceLevel ?? 1);
+}
+
 /** Which way a fan runs. A new fan blows. */
 export function fanMode(instance) {
   return instance.fanMode === SUCK ? SUCK : BLOW;
@@ -74,7 +83,7 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
   const used = new Map(); // treatment node -> { scrub, oxygen } spent on passing air
   const vents = []; // level -> { in, out, airQuality, oxygen (weighted), blowers, suckers }
 
-  const open = levels.filter((l) => !l.sealed);
+  const open = levels.filter((l) => !l.sealed && !isOutside(ctx, l));
 
   if (graph.enforced) {
     for (const [, members] of graph.members) {
@@ -84,7 +93,7 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
           node: n,
           mode: fanMode(n),
           cap: (def(n).airflowPerTick ?? 0) * scaleOf.get(n.instanceId),
-          levels: levelsServedBy(state, ctx, n).map((l) => levels[l - 1]).filter((l) => l && !l.sealed),
+          levels: levelsServedBy(state, ctx, n).map((l) => levels[l - 1]).filter((l) => l && !l.sealed && !isOutside(ctx, l)),
         }))
         .filter((f) => f.cap > 0 && f.levels.length > 0);
       // Air only runs where the loop closes: foul ducts from a sucker into a

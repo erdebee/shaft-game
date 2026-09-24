@@ -383,14 +383,20 @@ function networkLines(state, ctx, instance, def, draw) {
     if (hub) lines.push(hub === '*' ? 'Power from the grid' : `Power via the junction on ${levelOf(hub)} (priority ${priorityOf(hub, ctx)})`);
   }
   if ((def.consumes ?? []).some((c) => c.id === 'water')) {
-    const hub = hubFor(graphOf(state, ctx, 'water-mains'), ctx, instance.level, { usable: (h) => !h.brokenDown });
-    if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
+    const mains = graphOf(state, ctx, 'water-mains');
+    const hub = hubFor(mains, ctx, instance.level, { usable: (h) => !h.brokenDown });
+    // A room on the mains is watered through its own pipes, not by a cistern's reach.
+    if (mains.enforced && mains.byId.has(instance.instanceId)) lines.push(`Water by pipe: ${Math.round((instance.waterShare ?? 1) * 100)}% of what it needs`);
+    else if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
   }
   // The air it stands in, and whether the loop airs it.
   const level = state.levels[instance.level - 1];
-  if (level) {
-    const airing = { still: 'still air', weak: 'barely aired', aired: 'aired by the ducts' }[airingOf(state, ctx, instance.level)];
-    lines.push(`Air: oxygen ${Math.round(level.oxygen ?? 100)}%, pollution ${100 - Math.round(level.airQuality ?? 100)}% · ${airing}`);
+  const airing = level ? airingOf(state, ctx, instance.level) : null;
+  if (airing === 'outside') {
+    lines.push('Air: open to the surface');
+  } else if (level) {
+    const how = { still: 'still air', weak: 'barely aired', aired: 'aired by the ducts' }[airing];
+    lines.push(`Air: oxygen ${Math.round(level.oxygen ?? 100)}%, pollution ${100 - Math.round(level.airQuality ?? 100)}% · ${how}`);
   }
   for (const networkId of networksOf(ctx, def.id)) {
     const links = (state.infrastructure?.links ?? []).filter((l) => l.network === networkId && (l.from === instance.instanceId || l.to === instance.instanceId));

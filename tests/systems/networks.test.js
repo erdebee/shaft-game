@@ -150,23 +150,23 @@ test('demolishing a building takes its links with it; a link can be taken out', 
 const WATERWORKS = ['water-mains', 'sewer'];
 
 test('a cistern waters what it reaches only once piped to a source', async () => {
-  const layout = [['main-generator', 38], ['deep-pump', 40], ['cistern', 30], ['hydroponics-bay', 29], ['hydroponics-bay', 20]];
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['cistern', 30], ['clinic', 29], ['clinic', 20]];
   const run = await runWith(layout, { keep: FUEL, networks: ['water-mains'], tunables: { 'water.potablePerCapitaPerTick': 0 } });
   const water = run.state.resources.flows.water;
   ticks(run, 5);
-  assert.equal(at(run, 'hydroponics-bay', 29).waterShare, 1, 'the cistern opens full');
-  assert.equal(at(run, 'hydroponics-bay', 20).waterShare, 0, 'level 20 is out of its reach');
-  assert.ok(water.unserved.includes(at(run, 'hydroponics-bay', 20).instanceId));
+  assert.equal(at(run, 'clinic', 29).waterShare, 1, 'the cistern opens full');
+  assert.equal(at(run, 'clinic', 20).waterShare, 0, 'level 20 is out of its reach');
+  assert.ok(water.unserved.includes(at(run, 'clinic', 20).instanceId));
   ticks(run, 60);
-  assert.equal(at(run, 'hydroponics-bay', 29).waterShare, 0, 'unpiped, it runs dry');
+  assert.equal(at(run, 'clinic', 29).waterShare, 0, 'unpiped, it runs dry');
 
   link(run, 'water-mains', 'deep-pump', 'cistern');
   ticks(run, 2);
-  assert.equal(at(run, 'hydroponics-bay', 29).waterShare, 1);
+  assert.equal(at(run, 'clinic', 29).waterShare, 1);
 });
 
 test('sewage drains downhill to reclamation, and is dumped where no drain goes', async () => {
-  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['hydroponics-bay', 30]];
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['clinic', 30]];
   const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
   link(run, 'water-mains', 'deep-pump', 'cistern');
   link(run, 'water-mains', 'reclamation-plant', 'cistern');
@@ -183,7 +183,7 @@ test('sewage drains downhill to reclamation, and is dumped where no drain goes',
 });
 
 test('a drain never carries sewage uphill', async () => {
-  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 29], ['cistern', 30], ['hydroponics-bay', 30]];
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 29], ['cistern', 30], ['clinic', 30]];
   const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
   link(run, 'water-mains', 'deep-pump', 'cistern');
   link(run, 'sewer', 'cistern', 'reclamation-plant');
@@ -192,13 +192,37 @@ test('a drain never carries sewage uphill', async () => {
 });
 
 test('dumped sewage fouls the air of its level', async () => {
-  const layout = [['main-generator', 38], ['deep-pump', 40], ['cistern', 30], ['hydroponics-bay', 30]];
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['cistern', 30], ['clinic', 30]];
   const tunables = { 'water.potablePerCapitaPerTick': 0, 'air.migrationRateBetweenLevels': 0, 'air.contaminantPerCapitaPerTick': 0 };
   const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables });
   link(run, 'water-mains', 'deep-pump', 'cistern');
   ticks(run, 20);
   assert.ok(run.state.levels[29].airQuality < 100);
   assert.equal(run.state.levels[28].airQuality, 100);
+});
+
+test('a cultivation room is watered and drained only by its own pipes', async () => {
+  const layout = [['main-generator', 38], ['deep-pump', 40], ['reclamation-plant', 42], ['cistern', 30], ['hydroponics-bay', 30], ['hydroponics-bay', 31]];
+  const run = await runWith(layout, { keep: FUEL, networks: WATERWORKS, tunables: { 'water.potablePerCapitaPerTick': 0 } });
+  link(run, 'water-mains', 'deep-pump', 'cistern');
+  link(run, 'water-mains', 'reclamation-plant', 'cistern');
+  const bay = (level) => at(run, 'hydroponics-bay', level);
+  ticks(run, 2);
+  assert.equal(bay(30).waterShare, 0, 'in the cistern\'s reach, but not piped');
+
+  link(run, 'water-mains', 'cistern', ['hydroponics-bay', 30]);
+  link(run, 'water-mains', ['hydroponics-bay', 30], ['hydroponics-bay', 31]);
+  ticks(run, 2);
+  const water = run.state.resources.flows.water;
+  assert.equal(bay(30).waterShare, 1);
+  assert.equal(bay(31).waterShare, 1, 'watered through the bay before it');
+  assert.ok(water.spilled[30] > 0 && water.spilled[31] > 0, 'no drains of their own: the sewage is dumped');
+
+  link(run, 'sewer', ['hydroponics-bay', 30], ['hydroponics-bay', 31]);
+  link(run, 'sewer', ['hydroponics-bay', 31], 'reclamation-plant');
+  ticks(run, 2);
+  assert.equal(water.spilled[30], 0);
+  assert.equal(water.spilled[31], 0);
 });
 
 // --- air ------------------------------------------------------------------------
@@ -358,4 +382,19 @@ test('the Shaft opens wired: every room lit, every home watered, no sewage dumpe
   assert.deepEqual(water.unserved, []);
   assert.equal(water.spilled.reduce((a, b) => a + b, 0), 0);
   assert.ok(run.state.infrastructure.links.length > 20);
+});
+
+test('the surface is outside the Shaft\'s air: always clean, never vented', async () => {
+  const layout = [['main-generator', 38], ['duct-fan', 2], ['scrubber-bank', 5], ['duct-fan', 8]];
+  const run = await runWith(layout, { keep: SCRUBBING, networks: AIR });
+  link(run, 'foul-ducts', ['duct-fan', 2], 'scrubber-bank');
+  link(run, 'fresh-ducts', 'scrubber-bank', ['duct-fan', 8]);
+  setFan(run, 2, 'suck');
+  for (const l of run.state.levels) l.airQuality = 50;
+  ticks(run, 1);
+  const air = run.state.resources.flows.air;
+  assert.equal(run.state.levels[0].airQuality, 100);
+  assert.equal(run.state.levels[0].oxygen, 100);
+  assert.equal(air.levelOut[1], 0, 'no vent opens on the surface');
+  assert.ok(air.levelOut[2] > 0);
 });

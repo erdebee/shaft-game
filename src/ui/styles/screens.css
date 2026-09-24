@@ -1148,13 +1148,14 @@ body {
 .air-levels { display: grid; gap: 1px; margin-bottom: var(--space-2); max-height: 22rem; overflow-y: auto; }
 .air-level {
   display: grid;
-  grid-template-columns: 2.4em minmax(0, 1fr) 5.2em 8.6em 6.5em;
+  grid-template-columns: 2.4em minmax(0, 1fr) 5.2em 8.6em 7.6em;
   gap: var(--space-1);
   align-items: baseline;
   font-size: var(--size-xs);
 }
 .air-level-no { color: var(--ink-dim); font-family: var(--font-mono); }
 .air-rooms { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.air-airing { white-space: nowrap; }
 .air-reading { font-family: var(--font-mono); color: var(--readout-ok); white-space: nowrap; }
 .air-reading[data-state="warn"], .air-airing[data-state="warn"] { color: var(--readout-warn); }
 .air-reading[data-state="critical"], .air-airing[data-state="critical"] { color: var(--readout-critical); }

@@ -16,6 +16,10 @@
  *   3. MIGRATE   air mixes with the levels above and below
  *   4. SEAL      a sealed level is cut off from 2 and 3 and goes stale
  *
+ * The surface level is not part of it: it is open to the air outside, always
+ * clean, and neither vented nor mixed with the level below (airflow.js
+ * isOutside).
+ *
  * A plant needs clean air too: below its airNeed it grows proportionally
  * slower (`airShare`, read by outputScale next tick). The deep levels, where
  * the generator, the smelter and the dig face are, foul fastest; the gardens
@@ -36,7 +40,7 @@ import { residentsByLevel } from '../population/housing.js';
 import { put } from '../resources/stores.js';
 import { made } from '../resources/ledger.js';
 import { graphOf } from '../infrastructure/networkGraph.js';
-import { settleAirflow, FOUL, FRESH } from './airflow.js';
+import { settleAirflow, isOutside, FOUL, FRESH } from './airflow.js';
 import { breathable } from '../../core/selectors.js';
 
 const CATALYST = 'scrubber-catalyst';
@@ -83,11 +87,11 @@ export function tick(state, ctx) {
   // --- 3. migrate -------------------------------------------------------------
   const rate = clamp(cfg.migrationRateBetweenLevels, 0, 0.5);
   const mix = (field) => levels.map((level, i) => {
-    if (level.sealed) return level[field];
+    if (level.sealed || isOutside(ctx, level)) return level[field];
     let flow = 0;
     for (const j of [i - 1, i + 1]) {
       const other = levels[j];
-      if (!other || other.sealed) continue;
+      if (!other || other.sealed || isOutside(ctx, other)) continue;
       flow += (other[field] - level[field]) * rate / 2;
     }
     return level[field] + flow;
@@ -100,6 +104,11 @@ export function tick(state, ctx) {
     const q = level.sealed ? purity[i] - cfg.sealedLevelDecayPerTick : purity[i];
     level.airQuality = clamp(q, 0, 100);
     level.oxygen = clamp(oxygen[i], 0, 100);
+    // The surface breathes the air outside, whatever is done on it.
+    if (isOutside(ctx, level)) {
+      level.airQuality = 100;
+      level.oxygen = 100;
+    }
   });
 
   // Plants grow at the share the air allows.

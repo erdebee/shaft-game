@@ -41,6 +41,10 @@
         2
       ],
       [
+        "duct-fan",
+        2
+      ],
+      [
         "archive",
         3
       ],
@@ -227,6 +231,10 @@
       [
         "duct-fan",
         39
+      ],
+      [
+        "duct-fan",
+        42
       ]
     ],
     "porters": [
@@ -1065,6 +1073,279 @@
           "duct-fan",
           32
         ]
+      },
+      {
+        "network": "fresh-ducts",
+        "from": [
+          "duct-fan",
+          2
+        ],
+        "to": [
+          "duct-fan",
+          4
+        ]
+      },
+      {
+        "network": "fresh-ducts",
+        "from": [
+          "duct-fan",
+          42
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          13,
+          0
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          13,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          13,
+          1
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          13,
+          1
+        ],
+        "to": [
+          "hydroponics-bay",
+          14,
+          0
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          14,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          14,
+          1
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          14,
+          1
+        ],
+        "to": [
+          "protein-vats",
+          15,
+          0
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "protein-vats",
+          15,
+          0
+        ],
+        "to": [
+          "protein-vats",
+          15,
+          1
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "protein-vats",
+          15,
+          1
+        ],
+        "to": [
+          "hydroponics-bay",
+          16,
+          0
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          16,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          16,
+          1
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "hydroponics-bay",
+          16,
+          1
+        ],
+        "to": [
+          "food-processing",
+          17
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          4
+        ],
+        "to": [
+          "grove",
+          5
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          13,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          13,
+          1
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          13,
+          1
+        ],
+        "to": [
+          "hydroponics-bay",
+          14,
+          0
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          14,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          14,
+          1
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          14,
+          1
+        ],
+        "to": [
+          "protein-vats",
+          15,
+          0
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "protein-vats",
+          15,
+          0
+        ],
+        "to": [
+          "protein-vats",
+          15,
+          1
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "protein-vats",
+          15,
+          1
+        ],
+        "to": [
+          "hydroponics-bay",
+          16,
+          0
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          16,
+          0
+        ],
+        "to": [
+          "hydroponics-bay",
+          16,
+          1
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "hydroponics-bay",
+          16,
+          1
+        ],
+        "to": [
+          "food-processing",
+          17
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "food-processing",
+          17
+        ],
+        "to": [
+          "cistern",
+          22
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "grove",
+          5
+        ],
+        "to": [
+          "cistern",
+          13
+        ]
       }
     ],
     "priorities": [
@@ -1115,17 +1396,23 @@
     ]
   },
   "startingStocks": {
-    "_note": "What the settlement has in hand at tick zero. Structure rather than a tunable, like layout and veins, because it is a map of resource ids and not a scalar the schema can range-check. Read by core/run.js stockOpening — and being in data rather than boot code is what lets a run replay from its command log alone. They go into the depots and storehouses, in this order, and what will not fit is not there — so food comes last. The canteens and every other building also open with their own input stores full.",
+    "_note": "What the settlement has in hand at tick zero. Structure rather than a tunable, like layout and veins, because it is a map of resource ids and not a scalar the schema can range-check. Read by core/run.js stockOpening — and being in data rather than boot code is what lets a run replay from its command log alone. They go into the depots and storehouses, in this order, and what will not fit is not there — so food comes last. The canteens and every other building also open with their own input stores full. The building materials are generous so the Shaft can be built on from the first day.",
     "paper": 40,
     "fuel": 60,
     "coal": 200,
     "iron-ore": 120,
     "limestone": 80,
     "scrap": 60,
-    "wood": 40,
-    "basic-parts": 30,
+    "wood": 200,
+    "basic-parts": 400,
     "activated-carbon": 20,
     "scrubber-catalyst": 40,
+    "electrical-components": 150,
+    "precision-components": 100,
+    "glass": 100,
+    "concrete": 300,
+    "steel-billet": 250,
+    "copper-wire": 250,
     "food": 1500
   },
   "veins": [
