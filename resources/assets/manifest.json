@@ -1739,6 +1739,38 @@
     "width": 20,
     "height": 20
    }
+  },
+  {
+   "id": "fresh-duct-v",
+   "path": "sprites/structure/fresh-duct-v.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 24,
+    "height": 32,
+    "repeat": "vertical"
+   }
+  },
+  {
+   "id": "fresh-duct-h",
+   "path": "sprites/structure/fresh-duct-h.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "tile": {
+    "width": 32,
+    "height": 24,
+    "repeat": "horizontal"
+   }
+  },
+  {
+   "id": "fresh-duct-joint",
+   "path": "sprites/structure/fresh-duct-joint.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "size": {
+    "width": 30,
+    "height": 30
+   }
   }
  ],
  "audio": [

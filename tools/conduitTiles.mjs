@@ -9,8 +9,10 @@
  * --sprite-core + --sprite-deep): the networks are the Works' plumbing, and
  * rust is only in that band's palette.
  *
- *   duct-v / duct-h / duct-joint    the air ducts: riveted sheet iron, gone
- *                                   to rust, flanged every 32 px
+ *   duct-v / duct-h / duct-joint    the foul-air ducts: riveted sheet iron,
+ *                                   gone to rust, flanged every 32 px
+ *   fresh-duct-v / -h / -joint      the fresh-air ducts: the same, newer and
+ *                                   galvanised, only spotted with rust
  *   sewer-v / sewer-h / sewer-joint the drains: cast iron, red-oxide collars
  *                                   bolted every 32 px, stained below each
  *   main-v / main-h / main-joint    the water mains: galvanised pipe, steel
@@ -94,7 +96,18 @@ function rivet(cv, x, y, lit = 'steel-bright', mid = 'steel-pale', dark = 'steel
 const DUCT_W = 24;
 const DUCT_L = 32;
 
-function ductV(seed) {
+/**
+ * The fresh-air line's duct is newer, galvanised sheet: a shade paler, and
+ * only spotted with rust where the foul line is eaten through. `clean` lifts
+ * every rust threshold by this much, and paints the panels a tone lighter.
+ */
+const CLEAN = 0.2;
+const PALER = { 'steel-dark': 'steel', steel: 'steel-lit', 'steel-lit': 'steel-pale', 'steel-pale': 'steel-bright' };
+const paint = (clean) => (name) => (clean ? PALER[name] ?? name : name);
+
+function ductV(seed, clean = false) {
+  const tone = paint(clean);
+  const lift = clean ? CLEAN : 0;
   const rand = mulberry32(seed);
   const rust = noise(3, 4, rand);
   const flake = noise(8, 11, rand);
@@ -120,10 +133,11 @@ function ductV(seed) {
         const edge = Math.max(0, 1 - Math.min(x - 3, DUCT_W - 4 - x) / 5) * 0.12;
         const r = rust(u, v) * 0.55 + flake(u, v) * 0.35 + edge;
         const p = pits(u, v);
-        if (r > 0.64) c = 'rust-bright';
-        else if (r > 0.5) c = 'rust';
-        else if (r > 0.44 && p > 0.5) c = 'rust';
-        if (p > 0.82) c = c === 'rust-bright' ? 'rust' : 'rust-deep-pit';
+        c = tone(c);
+        if (r > 0.64 + lift) c = 'rust-bright';
+        else if (r > 0.5 + lift) c = 'rust';
+        else if (r > 0.44 + lift && p > 0.5) c = 'rust';
+        if (p > 0.82 + lift / 2) c = c === 'rust-bright' ? 'rust' : 'rust-deep-pit';
         else if (p < 0.1) c = 'steel-darkest';
       }
       cv.set(x, y, C(c === 'rust-deep-pit' ? 'rust' : c));
@@ -148,7 +162,9 @@ function ductV(seed) {
   return cv;
 }
 
-function ductJoint(seed) {
+function ductJoint(seed, clean = false) {
+  const tone = paint(clean);
+  const lift = clean ? CLEAN : 0;
   const rand = mulberry32(seed + 7);
   const rust = noise(3, 3, rand);
   const pits = noise(10, 10, rand);
@@ -166,8 +182,9 @@ function ductJoint(seed) {
         c = x + y < S ? 'steel' : 'steel-dark';
         const edge = Math.max(0, 1 - Math.min(x - 3, y - 3, S - 4 - x, S - 4 - y) / 6) * 0.15;
         const r = rust(x / S, y / S) * 0.6 + pits(x / S, y / S) * 0.4 + edge;
-        if (r > 0.62) c = 'rust-bright';
-        else if (r > 0.48) c = 'rust';
+        c = tone(c);
+        if (r > 0.62 + lift) c = 'rust-bright';
+        else if (r > 0.48 + lift) c = 'rust';
       }
       cv.set(x, y, C(c));
     }
@@ -280,6 +297,10 @@ const duct = ductV(seed);
 write('duct-v', duct);
 write('duct-h', turn(duct));
 write('duct-joint', ductJoint(seed));
+const freshDuct = ductV(seed + 5, true);
+write('fresh-duct-v', freshDuct);
+write('fresh-duct-h', turn(freshDuct));
+write('fresh-duct-joint', ductJoint(seed + 5, true));
 const sewer = pipeV(seed + 11, SEWER);
 write('sewer-v', sewer);
 write('sewer-h', turn(sewer));

@@ -31,7 +31,7 @@ export function colorOf(networkId) {
 export function roleOf(ctx, networkId, instance) {
   const def = ctx.catalog.buildings.byId[instance.buildingId];
   if (isHub(ctx, networkId, def.id)) {
-    return { 'power-grid': 'junction', 'water-mains': 'cistern', sewer: 'drain', 'duct-network': 'fan' }[networkId] ?? 'hub';
+    return { 'power-grid': 'junction', 'water-mains': 'cistern', sewer: 'drain', 'foul-ducts': 'fan', 'fresh-ducts': 'fan' }[networkId] ?? 'hub';
   }
   if ((def.produces ?? []).some((p) => p.id === 'power')) return 'source';
   if ((def.produces ?? []).some((p) => p.id === 'water')) return 'source';
@@ -93,7 +93,8 @@ function liveTest(state, ctx, networkId, graph) {
           || (water.cisterns?.[n.instanceId] ?? 0) > 0;
       case 'sewer':
         return (d.effects ?? []).some((e) => e.op === 'reclamation.enable');
-      case 'duct-network':
+      case 'foul-ducts':
+      case 'fresh-ducts':
         // A group is live when air moves through it.
         return (state.resources.flows.air?.nodes?.[n.instanceId]?.flow ?? 0) > 0;
       default:
@@ -136,7 +137,8 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
       }
       break;
     }
-    case 'duct-network': {
+    case 'foul-ducts':
+    case 'fresh-ducts': {
       // Where people live and no air is moved, bar a scrubber's or garden's
       // own level.
       const air = state.resources.flows.air ?? {};

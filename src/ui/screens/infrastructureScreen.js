@@ -28,7 +28,7 @@ import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { cisternCapacity } from '../../systems/water/greywaterLoop.js';
 import { inStorehouses, nameOf } from '../../systems/resources/stores.js';
 import { outputScale } from '../../systems/buildings/buildingRegistry.js';
-import { fanMode, SUCK, BLOW } from '../../systems/airQuality/airflow.js';
+import { fanMode, SUCK, BLOW, AIR_LINES } from '../../systems/airQuality/airflow.js';
 
 /** Which page was open last, kept across tab switches. */
 let lastMode = 'power-grid';
@@ -178,7 +178,7 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
     }
 
     // A fan's direction: suck air off its levels, or blow it onto them.
-    if (networkId === 'duct-network' && isHub(currentCtx, networkId, node.buildingId)) {
+    if (AIR_LINES.includes(networkId) && isHub(currentCtx, networkId, node.buildingId)) {
       const way = el('div', 'net-priority');
       way.appendChild(el('span', 'meter-label', 'Fan'));
       const mode = fanMode(node);
@@ -237,7 +237,7 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
         view.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}:${g.what}`),
         linkFrom,
         networkId === 'power-grid' ? currentState.buildings.map((b) => b.priority ?? '') : null,
-        networkId === 'duct-network' ? currentState.buildings.map((b) => b.fanMode ?? '') : null,
+        AIR_LINES.includes(networkId) ? currentState.buildings.map((b) => b.fanMode ?? '') : null,
         // Affordability of the offered links moves with the stores.
         linkFrom ? (net.linkCost ?? []).map((c) => Math.floor(inStorehouses(currentState, currentCtx, c.id))) : null,
       ]);
@@ -291,7 +291,8 @@ function statusLines(state, ctx, networkId) {
       }
       break;
     }
-    case 'duct-network': {
+    case 'foul-ducts':
+    case 'fresh-ducts': {
       const air = state.resources.flows.air ?? {};
       const band = (q) => (q < ctx.config.air.qualityCriticalThreshold ? 'critical' : q < ctx.config.air.qualityWarnThreshold ? 'warn' : 'ok');
       lines.push([`Moving ${round(air.moved ?? 0)} of air a tick`, (air.moved ?? 0) > 0 ? 'ok' : 'warn']);
@@ -334,7 +335,8 @@ function readingOf(state, ctx, networkId, node) {
       if (water.lift?.[node.instanceId] !== undefined) return `lifts ${Math.round(water.lift[node.instanceId])} levels`;
       return '';
     }
-    case 'duct-network': {
+    case 'foul-ducts':
+    case 'fresh-ducts': {
       const air = state.resources.flows.air?.nodes?.[node.instanceId];
       if (reach) {
         if (outputScale(node, def, ctx) <= 0) return 'not running';

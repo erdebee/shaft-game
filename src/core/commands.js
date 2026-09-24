@@ -160,7 +160,7 @@ const HANDLERS = {
   /** Set a duct fan to suck air off its levels or blow it onto them (airflow.js). */
   'player:setFanMode': (state, ctx, cmd) => {
     const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
-    if (!instance || !isHub(ctx, 'duct-network', instance.buildingId)) return;
+    if (!instance || !isHub(ctx, 'foul-ducts', instance.buildingId)) return;
     if (cmd.mode !== 'suck' && cmd.mode !== 'blow') return;
     instance.fanMode = cmd.mode;
   },

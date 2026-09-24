@@ -25,7 +25,7 @@
 
   "infrastructure": {
     "_note": "Networks the player must lay by hand (catalog/infrastructure/networks.json). A network left out is treated as fully laid — every node joined and every hub reaching everywhere — which is for system tests and sandboxes, not play.",
-    "enforced": ["power-grid", "water-mains", "sewer", "duct-network"]
+    "enforced": ["power-grid", "water-mains", "sewer", "foul-ducts", "fresh-ducts"]
   },
 
   "air": {

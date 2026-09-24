@@ -84,7 +84,7 @@ test('a pump draws more power the higher people live', async () => {
 test('residents foul their own level, and an unducted scrubber cleans only its own', async () => {
   const run = await runWith([...POWERED, ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 22]], {
     keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 },
-    networks: ['duct-network'],
+    networks: ['foul-ducts', 'fresh-ducts'],
     tunables: { 'air.migrationRateBetweenLevels': 0 },
   });
   run.state.population.headcount = 160;

@@ -144,9 +144,9 @@ need intermediate hubs.
 
 ### Air network
 - Tracked **per level**, as two numbers: purity (fouled by crowds and industry, most of all the deep generator, smelter and dig face) and oxygen (breathed by everyone, burned by combustion). Breathable air is the worse of the two
-- **Duct fans suck or blow.** Air drawn off the levels a sucking fan reaches travels the ducts to the blowing fans, and is blown out onto their levels. A ducted group moves the lesser of what its suckers can draw and its blowers can push — two blowers and no sucker move nothing
-- Everything the air passes works on it: a **scrubber** cleans it, an **oxygen garden** breathes into it, each sharing its capacity over the air through it. A scrubber or garden off the air's path works on its own level only
-- A sucked level is refilled from the stairwell, taking on the Shaft's average air. The gardens are in the shallows and the people in the middle, so fresh air is drawn at the top and blown downward; the Works' foul air is best drawn off and cleaned on its way somewhere else
+- **Two duct lines, one loop.** Duct fans suck or blow. Foul-air ducts carry what the sucking fans draw off their levels to the **scrubbers**; fresh-air ducts carry it on, cleaned, to the blowing fans, which push it out onto their levels. Air only moves round a loop that passes a scrubber — two blowers, or foul ducts straight to a blower, move nothing
+- **Oxygen gardens** can sit on either line and breathe into the air passing them. A scrubber or garden off the air's path works on its own level only
+- Air is moved, never made: what the blowers push out displaces their levels' air, which flows through the Shaft to refill the levels being sucked, picking up their dirt on the way. The gardens are in the shallows and the people in the middle, so the loop draws at the top, through the garden, and blows downward
 - Plants (bays, groves, gardens) need clean air to grow and breathe a little oxygen back out
 - Sealing a level (fire, contamination, containment during unrest) cuts it from every fan — which is also why it begins suffocating
 

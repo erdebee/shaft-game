@@ -56,11 +56,11 @@
       "_note": "Gravity is the whole design: a drain never carries anything up, so the plant belongs at the bottom."
     },
     {
-      "id": "duct-network",
-      "name": "Air ducts",
-      "short": "Air",
+      "id": "foul-ducts",
+      "name": "Foul-air ducts",
+      "short": "Foul air",
       "carries": "air",
-      "link": "duct",
+      "link": "foul duct",
       "connects": [
         { "from": "duct-fan", "to": "duct-fan" },
         { "from": "duct-fan", "to": "scrubber-bank" },
@@ -72,8 +72,27 @@
       "hubs": ["duct-fan"],
       "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
       "maxSpanLevels": 10,
-      "description": "Each duct fan either sucks or blows. Air drawn in by the sucking fans travels the ducts to the blowing ones, cleaned by every scrubber and freshened by every oxygen garden it passes, and is blown out onto the levels they reach. Nothing moves unless a group has both. A scrubber or garden off the air's path works on its own level only.",
-      "_note": "Airflow is settled in systems/airQuality/airflow.js. Suck where the air is foul (the Works), route it through the scrubbers and gardens, blow it where people live. Sealing a level cuts it from every fan."
+      "description": "The first half of the air's loop. Sucking duct fans draw the foul air off the levels they reach and send it down the foul-air ducts to the scrubbers — through any oxygen garden on the way, which feeds on it and breathes into it. Air only moves when the loop is closed: foul ducts into a scrubber, fresh ducts out of it to a blowing fan.",
+      "_note": "Airflow is settled in systems/airQuality/airflow.js, over this network and fresh-ducts together: the air runs sucker -> foul ducts -> scrubber -> fresh ducts -> blower."
+    },
+    {
+      "id": "fresh-ducts",
+      "name": "Fresh-air ducts",
+      "short": "Fresh air",
+      "carries": "air",
+      "link": "fresh duct",
+      "connects": [
+        { "from": "duct-fan", "to": "duct-fan" },
+        { "from": "duct-fan", "to": "scrubber-bank" },
+        { "from": "duct-fan", "to": "oxygen-garden" },
+        { "from": "scrubber-bank", "to": "oxygen-garden" },
+        { "from": "oxygen-garden", "to": "oxygen-garden" }
+      ],
+      "hubs": ["duct-fan"],
+      "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
+      "maxSpanLevels": 10,
+      "description": "The second half of the loop. Out of the scrubbers, cleaned, the air runs along the fresh-air ducts — through any oxygen garden on them, which breathes into it — to the blowing duct fans, which push it out onto the levels they reach. A scrubber or garden the air does not pass works on its own level only.",
+      "_note": "A duct fan may carry both lines. What it does with its own levels is set by suck or blow; air can still pass through it on either line."
     }
   ]
 }

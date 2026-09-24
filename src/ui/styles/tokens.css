@@ -192,7 +192,8 @@
   --net-power-grid:   var(--sodium-core);
   --net-water-mains:  var(--water-lit);
   --net-sewer:        var(--brass);
-  --net-duct-network: var(--rust-bright);
+  --net-foul-ducts: var(--rust-bright);
+  --net-fresh-ducts: var(--steel-highlight);
 
   /* The air moving through the rooms: clean air blue, air that has picked
      up the Shaft's dirt brown (view/airParticles.js blends between them). */

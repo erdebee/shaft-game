@@ -36,11 +36,10 @@ import { residentsByLevel } from '../population/housing.js';
 import { put } from '../resources/stores.js';
 import { made } from '../resources/ledger.js';
 import { graphOf } from '../infrastructure/networkGraph.js';
-import { settleAirflow } from './airflow.js';
+import { settleAirflow, FOUL, FRESH } from './airflow.js';
 import { breathable } from '../../core/selectors.js';
 
 const CATALYST = 'scrubber-catalyst';
-const DUCTS = 'duct-network';
 
 export function tick(state, ctx) {
   const cfg = ctx.config.air;
@@ -59,7 +58,8 @@ export function tick(state, ctx) {
     foul[i] += (residents[i] ?? 0) * cfg.contaminantPerCapitaPerTick + (spilled[i] ?? 0) * (cfg.sewageLoadPerUnit ?? 0);
     breath[i] += (residents[i] ?? 0) * (cfg.oxygenPerCapitaPerTick ?? 0);
   }
-  const ducts = graphOf(state, ctx, DUCTS);
+  const foulDucts = graphOf(state, ctx, FOUL);
+  const freshDucts = graphOf(state, ctx, FRESH);
   for (const instance of state.buildings) {
     const d = def(instance);
     if (!d) continue;
@@ -70,7 +70,7 @@ export function tick(state, ctx) {
     if (d.oxygenDraw && !idle) breath[instance.level] += d.oxygenDraw * scale;
     // Plants breathe out where they stand; a garden on the ducts breathes
     // into the air passing it (step 2).
-    if (d.oxygenOutput && !ducts.byId.has(instance.instanceId)) breath[instance.level] -= d.oxygenOutput * scale;
+    if (d.oxygenOutput && !freshDucts.byId.has(instance.instanceId)) breath[instance.level] -= d.oxygenOutput * scale;
   }
   for (const level of levels) {
     level.airQuality -= foul[level.index];
@@ -78,7 +78,7 @@ export function tick(state, ctx) {
   }
 
   // --- 2. airflow ------------------------------------------------------------
-  state.resources.flows.air = settleAirflow(state, ctx, ducts, scaleOf);
+  state.resources.flows.air = settleAirflow(state, ctx, foulDucts, freshDucts, scaleOf);
 
   // --- 3. migrate -------------------------------------------------------------
   const rate = clamp(cfg.migrationRateBetweenLevels, 0, 0.5);

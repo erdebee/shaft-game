@@ -137,7 +137,7 @@ export function sourcesOf(ctx, id) {
     if (ops.some((e) => e.op === 'flow.scrub' && e.target === id)) add(madeBy, b.id);
     // A duct fan makes no clean air of its own, but it is why the scrubbers'
     // air reaches anyone, and the player looking for "what helps" wants it.
-    if (id === 'air-quality' && ops.some((e) => e.op === 'network.boost' && e.target === 'duct-network')) add(madeBy, b.id);
+    if (id === 'air-quality' && ops.some((e) => e.op === 'network.boost' && e.target === 'foul-ducts')) add(madeBy, b.id);
     if (ops.some((e) => e.op === 'focus.add' && e.target === id)) add(madeBy, b.id);
     if (b.receivesDeliveries && b.storeCapacity?.[id] !== undefined) add(madeBy, 'outside');
     if (id === 'labour' && b.staffing) add(usedBy, b.id);

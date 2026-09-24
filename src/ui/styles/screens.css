@@ -1170,10 +1170,11 @@ body {
 .wire[data-lit="false"] { stroke: var(--steel-dark); }
 .wire-clamp { fill: var(--steel-pale); stroke: var(--rock); stroke-width: 1; }
 
-/* The air moving through the rooms (view/airParticles.js): particles from
-   blowing fans to sucking fans, coloured in script from --air-fresh to
+/* The air moving round its loop (view/airParticles.js): particles through
+   the rooms from blowing fans to sucking fans and back through the ducts,
+   coloured in script from --air-fresh to
    --air-dirty by how clean the air is where they are. */
-.air-particle { stroke: var(--rock); stroke-width: 0.8; opacity: 0.95; shape-rendering: crispEdges; }
+.air-particle { stroke: var(--rock); stroke-width: 0.5; opacity: 0.95; }
 .net-plate rect { fill: var(--panel); stroke: var(--rock); stroke-width: 1; }
 .net-plate text { fill: var(--ink); font: 700 8px var(--font-mono); text-anchor: middle; }
 .airflow-pickup text { fill: var(--sodium-spill); }

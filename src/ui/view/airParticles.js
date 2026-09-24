@@ -1,28 +1,36 @@
 /**
  * airParticles.js
- * The air moving through the rooms, drawn as particles: out of every blowing
- * duct fan, along its level, down or up through the rooms of every level
- * between, and along the sucking fan's level into the sucker — the half of
- * the loop where the air does its work, picking up what the Shaft breathes
- * out. Each particle takes its own line, so a stream is a curtain.
+ * The air moving round its loop, drawn as particles.
  *
- * Each particle is coloured by how clean its air is at that point: blue as
- * it leaves the blower, browning as it crosses dirty levels, and arriving as
- * dirty as the air the sucker actually draws (state.resources.flows.air
- * paths, settled by systems/airQuality/airflow.js). Between the two ends the
- * colour follows the purity of each level it passes, so a stream through the
- * Works turns brown there and not before. How many particles a stream has
- * follows how much air it moves.
+ *   through the rooms  out of every blowing duct fan, along its level, down
+ *                      or up through the rooms of every level between, and
+ *                      along the sucking fan's level into the sucker — the
+ *                      half of the loop where the air picks up what the
+ *                      Shaft breathes out. Each particle takes its own line,
+ *                      so a stream is a curtain
+ *   through the ducts  from the sucker back along every duct to the
+ *                      blowers, through the scrubbers and gardens on the way
  *
- * Positions are a pure function of the view's ambient clock, which stops
- * while the game is paused — nothing here is state, and nothing is saved.
+ * Each particle is coloured by how clean its air is at that point: in the
+ * rooms, blue as it leaves the blower, browning as it crosses dirty levels,
+ * and arriving as dirty as the air the sucker actually draws
+ * (state.resources.flows.air paths, settled by systems/airQuality/
+ * airflow.js); in a duct, as clean as the air in that duct — brown on the
+ * way to a scrubber, blue after it. How many particles there are follows how
+ * much air moves.
+ *
+ * A particle is not pinned to its line: it chases a point that runs along
+ * it, on a loose spring, so it carries its speed round corners, overshoots
+ * and swings back, and drifts a little side to side. That is the only state
+ * here, and it is the view's — never saved. Time is the view's ambient
+ * clock, which stops while the game is paused, so the particles do too.
  */
 
 import { roomRect, levelY, ROOM_HEIGHT, BUILD_X, visualJitter } from './interpolate.js';
 import { svg } from './conduits.js';
 
 /** A particle's size, in shaft units. */
-const SIZE = 6;
+const SIZE = 3;
 
 /** Purity at and below which air is drawn fully brown; above CLEAN, fully blue. */
 const DIRTY = 65;
@@ -31,10 +39,23 @@ const CLEAN = 97;
 /** How strongly a stream takes on the air of each level it crosses. */
 const PICKUP_PER_LEVEL = 0.35;
 
+/**
+ * The spring a particle chases its point on: its natural frequency (rad/s)
+ * and damping ratio. Under-damped, so it overshoots a corner and swings back.
+ */
+const OMEGA = 7;
+const ZETA = 0.28;
+
+/** How fast air moves, in shaft units a second, for a given flow. */
+const speedFor = (flow) => 64 + flow * 0.4;
+
 export function createAirParticles(parent) {
   const group = svg(parent, 'g', 'air-particles');
   let streams = [];
+  /** Where each particle is and how fast it is going, by key, kept across rebuilds. */
+  let motion = new Map();
   let colours = null;
+  let lastMs = null;
   const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return { build, frame, clear };
@@ -45,54 +66,114 @@ export function createAirParticles(parent) {
   }
 
   /**
-   * Lay out one stream per blower-to-sucker path. Each particle takes its
-   * own line down (or up) through the rooms, so a stream is a curtain of air
-   * drifting through the levels it crosses rather than a single thread.
+   * Lay out the streams: one through the rooms per blower-to-sucker path,
+   * and one along every duct that moves air.
+   *
+   * @param ducts [{ key, points, flow, airQuality }] — each duct's route,
+   *   upstream first, as the network layer draws it
    */
-  function build(state, paths) {
+  function build(state, paths, ducts = []) {
     clear();
     colours ??= readColours();
+    const kept = new Map();
     const byId = new Map(state.buildings.map((b) => [b.instanceId, b]));
+
     for (const path of paths ?? []) {
       const from = byId.get(path.from);
       const to = byId.get(path.to);
       if (!from || !to || path.flow < 0.5) continue;
-      const count = Math.max(6, Math.min(60, Math.round(path.flow / 3)));
+      const count = Math.max(12, Math.min(120, Math.round(path.flow / 1.5)));
       const width = builtWidth(state, from.level, to.level);
       const particles = [];
       for (let k = 0; k < count; k++) {
         const key = `${path.from}>${path.to}#${k}`;
-        const lane = BUILD_X + 14 + visualJitter(`${key}lane`) * width;
-        const route = routeOf(state, from, to, lane);
-        const dot = svg(group, 'rect', 'air-particle');
-        dot.setAttribute('width', String(SIZE));
-        dot.setAttribute('height', String(SIZE));
-        particles.push({
-          dot,
+        const route = routeOf(state, from, to, BUILD_X + 14 + visualJitter(`${key}lane`) * width);
+        const profile = profileOf(state, route, from.level, to.level, path);
+        particles.push(particle(key, kept, {
           route,
-          profile: profileOf(state, route, from.level, to.level, path),
-          phase: k / count + visualJitter(`${key}phase`) / count,
-          speed: (40 + path.flow * 0.25) * (0.8 + visualJitter(`${key}speed`) * 0.4),
+          quality: (t) => qualityAt(profile, t),
+          phase: (k + visualJitter(`${key}phase`)) / count,
+          speed: speedFor(path.flow) * (0.8 + visualJitter(`${key}speed`) * 0.4),
           dx: (visualJitter(`${key}x`) - 0.5) * 10,
           dy: (visualJitter(`${key}y`) - 0.5) * 50,
-          fill: null,
-        });
+          sway: 7,
+        }));
       }
-      streams.push({ particles });
+      streams.push(particles);
     }
+
+    for (const duct of ducts) {
+      if (duct.flow < 0.5 || duct.points.length < 2) continue;
+      const route = routeFrom(duct.points);
+      const count = Math.max(8, Math.min(120, Math.round(route.length / 12)));
+      const particles = [];
+      for (let k = 0; k < count; k++) {
+        const key = `duct:${duct.key}#${k}`;
+        particles.push(particle(key, kept, {
+          route,
+          quality: () => duct.airQuality,
+          phase: (k + visualJitter(`${key}phase`)) / count,
+          speed: speedFor(duct.flow) * (0.85 + visualJitter(`${key}speed`) * 0.3),
+          // Inside the duct: it is 24 across, the particles keep off its walls.
+          dx: (visualJitter(`${key}x`) - 0.5) * 12,
+          dy: (visualJitter(`${key}y`) - 0.5) * 12,
+          sway: 2.5,
+          ducted: true,
+        }));
+      }
+      streams.push(particles);
+    }
+    motion = kept;
   }
 
-  /** Move every particle to where the clock puts it, and colour it. */
+  /** A particle, carrying on from where it was if it was already moving. */
+  function particle(key, kept, spec) {
+    const dot = svg(group, 'rect', 'air-particle');
+    dot.setAttribute('width', String(SIZE));
+    dot.setAttribute('height', String(SIZE));
+    const m = motion.get(key) ?? { x: null, y: null, vx: 0, vy: 0, along: null };
+    kept.set(key, m);
+    return { ...spec, key, dot, m, fill: null, wobble: visualJitter(`${key}w`) * Math.PI * 2 };
+  }
+
+  /** Move every particle towards where the clock puts its point, and colour it. */
   function frame(ambientMs) {
     const seconds = calm ? 0 : ambientMs / 1000;
-    for (const { particles } of streams) {
+    const dt = lastMs === null ? 0 : Math.max(0, Math.min(0.1, (ambientMs - lastMs) / 1000));
+    lastMs = ambientMs;
+    const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+    const h = dt / steps;
+    const k = OMEGA * OMEGA;
+    const c = 2 * ZETA * OMEGA;
+
+    for (const particles of streams) {
       for (const p of particles) {
-        const { route } = p;
+        const { route, m } = p;
         const along = ((seconds * p.speed + p.phase * route.length) % route.length + route.length) % route.length;
         const at = pointAt(route, along);
-        p.dot.setAttribute('x', (at.x + p.dx * (1 - at.spread) - SIZE / 2).toFixed(1));
-        p.dot.setAttribute('y', (at.y + p.dy * at.spread - SIZE / 2).toFixed(1));
-        const fill = colourOf(qualityAt(p.profile, along / route.length));
+        // A slow drift across the line, so no two particles run parallel.
+        const sway = Math.sin(seconds * 1.7 + p.wobble) * p.sway;
+        const across = p.ducted ? 1 : 1 - at.spread;
+        const tx = at.x + (p.dx + (at.vertical ? sway : 0)) * (at.vertical ? 1 : across * 0.3);
+        const ty = at.y + (p.dy + (at.vertical ? 0 : sway)) * (at.vertical ? (p.ducted ? 0.3 : 0.1) : (p.ducted ? 1 : at.spread));
+
+        // Back at the start of its loop, or new: it appears where it should be.
+        const wrapped = m.along !== null && along < m.along - route.length / 2;
+        if (m.x === null || wrapped || calm) {
+          m.x = tx; m.y = ty; m.vx = 0; m.vy = 0;
+        } else {
+          for (let i = 0; i < steps; i++) {
+            m.vx += (k * (tx - m.x) - c * m.vx) * h;
+            m.vy += (k * (ty - m.y) - c * m.vy) * h;
+            m.x += m.vx * h;
+            m.y += m.vy * h;
+          }
+        }
+        m.along = along;
+
+        p.dot.setAttribute('x', (m.x - SIZE / 2).toFixed(1));
+        p.dot.setAttribute('y', (m.y - SIZE / 2).toFixed(1));
+        const fill = colourOf(p.quality(along / route.length));
         if (fill !== p.fill) {
           p.fill = fill;
           p.dot.setAttribute('fill', fill);
@@ -122,9 +203,13 @@ function routeOf(state, from, to, lane) {
   const b = roomRect(to, state.buildings);
   const start = { x: a.x + a.width / 2, y: a.y + ROOM_HEIGHT / 2 };
   const end = { x: b.x + b.width / 2, y: b.y + ROOM_HEIGHT / 2 };
-  const points = from.level === to.level
+  return routeFrom(from.level === to.level
     ? [start, end]
-    : [start, { x: lane, y: start.y }, { x: lane, y: end.y }, end];
+    : [start, { x: lane, y: start.y }, { x: lane, y: end.y }, end]);
+}
+
+/** A route through a list of points: its segments and its length. */
+function routeFrom(points) {
   const segments = [];
   let length = 0;
   for (let i = 1; i < points.length; i++) {
@@ -155,12 +240,13 @@ function pointAt(route, along) {
       return {
         x: s.from.x + (s.to.x - s.from.x) * f,
         y: s.from.y + (s.to.y - s.from.y) * f,
-        // Squeezed into the stairwell, spread out through the rooms.
+        // Squeezed onto its line between levels, spread out through the rooms.
         spread: vertical ? 0 : 1,
+        vertical,
       };
     }
   }
-  return { ...route.points[0], spread: 1 };
+  return { ...route.points[0], spread: 1, vertical: false };
 }
 
 /**

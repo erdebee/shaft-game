@@ -203,7 +203,7 @@ test('dumped sewage fouls the air of its level', async () => {
 
 // --- air ------------------------------------------------------------------------
 
-const AIR = ['duct-network'];
+const AIR = ['foul-ducts', 'fresh-ducts'];
 const SCRUBBING = { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 };
 const STILL = { 'air.migrationRateBetweenLevels': 0, 'air.oxygenPerCapitaPerTick': 0 };
 const fan = (run, level) => at(run, 'duct-fan', level).instanceId;
@@ -213,8 +213,8 @@ const setFan = (run, level, mode) => dispatch(run.state, run.ctx, { type: 'playe
 async function ventilated(modes) {
   const layout = [['main-generator', 38], ['duct-fan', 36], ['scrubber-bank', 30], ['duct-fan', 25], ['simple-suite', 25]];
   const run = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables: STILL });
-  link(run, 'duct-network', ['duct-fan', 36], 'scrubber-bank');
-  link(run, 'duct-network', 'scrubber-bank', ['duct-fan', 25]);
+  link(run, 'foul-ducts', ['duct-fan', 36], 'scrubber-bank');
+  link(run, 'fresh-ducts', 'scrubber-bank', ['duct-fan', 25]);
   setFan(run, 36, modes[0]);
   setFan(run, 25, modes[1]);
   run.state.population.headcount = 80;
@@ -252,11 +252,22 @@ test('the flow on each duct is recorded, running from sucker to blower', async (
   assert.ok(Math.abs(stream.flow - cap) < 1e-9);
   assert.ok(stream.blown.airQuality >= stream.drawn.airQuality);
 
-  // Turn them round, and the air runs the other way.
+  // Turned round, the fans would push foul air up the fresh line: the loop
+  // only runs into a scrubber on foul ducts and out of it on fresh ones.
   setFan(run, 36, 'blow');
   setFan(run, 25, 'suck');
   ticks(run, 1);
-  assert.equal(run.state.resources.flows.air.links[outOfScrubber.id].to, at(run, 'scrubber-bank', 30).instanceId);
+  assert.equal(run.state.resources.flows.air.moved, 0);
+});
+
+test('no air moves round a loop that does not pass a scrubber', async () => {
+  const layout = [['main-generator', 38], ['duct-fan', 30], ['duct-fan', 25]];
+  const run = await runWith(layout, { keep: FUEL, networks: AIR, tunables: STILL });
+  link(run, 'foul-ducts', ['duct-fan', 30], ['duct-fan', 25]);
+  link(run, 'fresh-ducts', ['duct-fan', 30], ['duct-fan', 25]);
+  setFan(run, 30, 'suck');
+  ticks(run, 1);
+  assert.equal(run.state.resources.flows.air.moved, 0);
 });
 
 test('a scrubber off the air\'s path works on its own level only', async () => {
@@ -271,12 +282,13 @@ test('a scrubber off the air\'s path works on its own level only', async () => {
 });
 
 test('an oxygen garden\'s oxygen reaches only where the air carries it', async () => {
-  const layout = [['main-generator', 38], ['duct-fan', 4], ['oxygen-garden', 6], ['duct-fan', 13], ['simple-suite', 13]];
+  const layout = [['main-generator', 38], ['duct-fan', 4], ['oxygen-garden', 6], ['scrubber-bank', 9], ['duct-fan', 13], ['simple-suite', 13]];
   const tunables = { 'air.migrationRateBetweenLevels': 0, 'water.potablePerCapitaPerTick': 0 };
-  const alone = await runWith(layout, { keep: { ...FUEL }, networks: AIR, tunables });
-  const ducted = await runWith(layout, { keep: { ...FUEL }, networks: AIR, tunables });
-  link(ducted, 'duct-network', ['duct-fan', 4], 'oxygen-garden');
-  link(ducted, 'duct-network', 'oxygen-garden', ['duct-fan', 13]);
+  const alone = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables });
+  const ducted = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables });
+  link(ducted, 'foul-ducts', ['duct-fan', 4], 'oxygen-garden');
+  link(ducted, 'foul-ducts', 'oxygen-garden', 'scrubber-bank');
+  link(ducted, 'fresh-ducts', 'scrubber-bank', ['duct-fan', 13]);
   setFan(ducted, 4, 'suck');
   for (const run of [alone, ducted]) {
     run.engine.systems.water = { tick() {} }; // the garden's water is not the question

@@ -96,7 +96,7 @@ export function mount(root, state, ctx, dispatch) {
 
     // A duct fan's direction.
     let fanButtons = null;
-    if (isHub(currentCtx, 'duct-network', def.id)) {
+    if (isHub(currentCtx, 'foul-ducts', def.id)) {
       const row = el('div', 'inspect-row net-priority');
       row.appendChild(el('span', 'meter-label', 'Fan'));
       fanButtons = [[SUCK, '▲ Suck'], [BLOW, '▼ Blow']].map(([mode, label]) => {
@@ -392,7 +392,7 @@ function networkLines(state, ctx, instance, def, draw) {
   if (blown >= 0.5) lines.push(`Air blown onto this level: ${Math.round(blown)} a tick`);
   if (drawn >= 0.5) lines.push(`Air drawn off this level: ${Math.round(drawn)} a tick`);
   const passing = air?.nodes?.[instance.instanceId]?.through ?? 0;
-  if (passing >= 0.5 && !isHub(ctx, 'duct-network', def.id)) lines.push(`Air passing through: ${Math.round(passing)} a tick`);
+  if (passing >= 0.5 && !isHub(ctx, 'foul-ducts', def.id)) lines.push(`Air passing through: ${Math.round(passing)} a tick`);
   for (const networkId of networksOf(ctx, def.id)) {
     const links = (state.infrastructure?.links ?? []).filter((l) => l.network === networkId && (l.from === instance.instanceId || l.to === instance.instanceId));
     const net = networkDef(ctx, networkId);

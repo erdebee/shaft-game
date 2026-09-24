@@ -994,7 +994,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "foul-ducts",
         "from": [
           "duct-fan",
           4
@@ -1005,7 +1005,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "foul-ducts",
         "from": [
           "oxygen-garden",
           6
@@ -1016,7 +1016,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "foul-ducts",
         "from": [
           "duct-fan",
           11
@@ -1027,7 +1027,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "fresh-ducts",
         "from": [
           "scrubber-bank",
           20
@@ -1038,7 +1038,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "fresh-ducts",
         "from": [
           "duct-fan",
           18
@@ -1049,7 +1049,18 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "fresh-ducts",
+        "from": [
+          "duct-fan",
+          25
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "foul-ducts",
         "from": [
           "duct-fan",
           39
@@ -1060,7 +1071,7 @@
         ]
       },
       {
-        "network": "duct-network",
+        "network": "fresh-ducts",
         "from": [
           "scrubber-bank",
           30
@@ -1106,6 +1117,13 @@
         "at": [
           "duct-fan",
           4
+        ],
+        "mode": "suck"
+      },
+      {
+        "at": [
+          "duct-fan",
+          11
         ],
         "mode": "suck"
       },

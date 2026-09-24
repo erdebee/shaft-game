@@ -21,7 +21,7 @@
       "description": "How breathable a level is. Scrubbers and oxygen gardens clean it; crowds and depth foul it, and stale air pools where the ducts don't reach.",
       "quote": { "text": "If you can smell your neighbour's dinner, the scrubber's fine. If you can smell your neighbour, it isn't.", "by": "Engineering" },
       "unit": "index",
-      "network": "duct-network",
+      "network": "foul-ducts",
       "trackedPer": "level",
       "_note": "Tracked PER LEVEL, not globally — stale air pools in pockets the scrubbers do not reach. This is the whole point of the air system.",
       "bufferedIn": null,
