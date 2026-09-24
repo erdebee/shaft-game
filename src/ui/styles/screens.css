@@ -211,6 +211,15 @@ body {
    room's workers out of lockstep; JS hashes it from the figure's placement. */
 .figure-window [data-part="strip"] { animation-delay: var(--phase, 0s); }
 
+/* The bar under a good that has actually RUN OUT — not one that is merely
+   low. The plate exists to be noticed while the player is looking somewhere
+   else, and at 16 units a colour alone does not manage that at the far end of
+   a 42-level shaft. shaftView sets data-part on the bar only while the good is
+   out, so the selector can stay at the same specificity as the reduced-motion
+   rule below and still be beaten by it. */
+@keyframes stock-alarm { 50% { opacity: 0.3; } }
+[data-part="alarm"] { animation: stock-alarm 1.4s ease-in-out infinite; }
+
 .shaft.paused [data-part] { animation-play-state: paused; }
 
 /* Motion is information here, so under reduced-motion figures keep moving —
@@ -289,6 +298,96 @@ body {
 .inspect-status[data-state="ok"] { color: var(--ok); }
 .inspect-status[data-state="warn"] { color: var(--warn); }
 .inspect-status[data-state="critical"] { color: var(--critical); }
+
+/* Every problem a building has, one line each (inspect.js problemsOf). */
+.inspect-problems { display: grid; gap: 2px; }
+
+/* What a building consumes and produces: an icon over "on hand/room" and a
+   small fill bar, coloured by how the store reads (stores.js bandOf). The
+   bars side by side are a little bar chart of the building's bins. */
+.res-group { margin-top: var(--space-2); }
+.res-group .build-zone { margin: 0 0 4px; }
+.res-grid { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.res-cell { display: flex; flex-direction: column; align-items: center; min-width: 36px; }
+.res-icon { width: 32px; height: 32px; image-rendering: pixelated; }
+.res-icon-missing { display: grid; place-items: center; font: 9px var(--font-mono); color: var(--ink-dim); border: 1px solid var(--panel-edge); box-sizing: border-box; }
+.res-count { font: 11px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-dim); line-height: 1.2; }
+.res-count[data-band="ok"]       { color: var(--readout-ok); }
+.res-count[data-band="warn"]     { color: var(--readout-warn); }
+.res-count[data-band="critical"] { color: var(--readout-critical); }
+.res-cell:focus-visible { outline: 1px solid var(--steel-bright); outline-offset: 2px; }
+.res-bar {
+  display: block;
+  width: 32px;
+  height: 6px;
+  margin-top: 2px;
+  box-sizing: border-box;
+  border: 1px solid var(--gauge-ok-edge);
+  background: var(--gauge-track);
+}
+.res-fill { display: block; height: 100%; background: var(--gauge-ok); }
+.res-bar[data-band="warn"]     { border-color: var(--gauge-warn-edge); }
+.res-bar[data-band="warn"] .res-fill { background: var(--warn); }
+.res-bar[data-band="critical"] { border-color: var(--gauge-critical-edge); }
+.res-bar[data-band="critical"] .res-fill { background: var(--critical); }
+
+/* ---- Resource card ----
+   Opens over any [data-resource] icon (components/resourceTip.js): what the
+   good is, a line from someone who lives with it, who makes and uses it, and
+   the rates right now. A raised plate like the rest of the chrome, and never
+   takes the pointer itself, so it cannot trap the hover that opened it. */
+.res-tip {
+  position: fixed;
+  z-index: 60;
+  display: none;
+  width: 290px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  padding: var(--space-3);
+  background: var(--panel-raised);
+  border: 1px solid var(--panel-edge);
+  border-top-color: var(--steel-lit);
+  box-shadow: 0 0 0 1px var(--rock), 0 6px 0 var(--rock);
+  color: var(--ink);
+  font: var(--size-xs)/1.45 var(--font-ui);
+  pointer-events: none;
+}
+.res-tip.shown { display: block; }
+.res-tip-head { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.res-tip-icon { width: 32px; height: 32px; image-rendering: pixelated; flex: none; }
+.res-tip-name { font-size: var(--size-md); font-weight: 700; }
+.res-tip-kind { color: var(--ink-dim); }
+.res-tip-desc { margin: 0 0 var(--space-2); }
+.res-tip-quote {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--panel-edge);
+  color: var(--ink-dim);
+  font-style: italic;
+}
+.res-tip-quote cite { display: block; margin-top: 2px; font-style: normal; color: var(--ink-faint); }
+.res-tip-totals {
+  display: grid;
+  gap: 1px;
+  padding: var(--space-2);
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+}
+.res-tip-total, .res-tip-row { display: flex; justify-content: space-between; gap: var(--space-2); }
+.res-tip-value, .res-tip-rate { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.res-tip-value[data-band="ok"]       { color: var(--readout-ok); }
+.res-tip-value[data-band="warn"]     { color: var(--readout-warn); }
+.res-tip-value[data-band="critical"] { color: var(--readout-critical); }
+.res-tip-h {
+  margin: var(--space-2) 0 2px;
+  font-size: var(--size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.res-tip-count { color: var(--ink-dim); }
+.res-tip-row.unbuilt, .res-tip-none { color: var(--ink-faint); }
 .inspect-row { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .inspect-row .meter-label { flex: 1; }
 .inspect-facts { margin: var(--space-2) 0; }
@@ -323,11 +422,65 @@ body {
 .badge { display: none; pointer-events: none; }
 .badge rect { stroke: var(--rock); stroke-width: 1; }
 .badge text { font: 700 8px var(--font-mono); text-anchor: middle; fill: var(--rock); }
-.badge-starved rect { fill: var(--critical); }
-.badge-starved text { fill: var(--sign-ink); }
 .badge-blocked rect { fill: var(--warn); }
-.building.starved .badge-starved,
 .building.blocked .badge-blocked { display: inline; }
+
+/* ---- Shortage popover ----
+   A plate on the room carrying one resource icon per good it is out of or
+   running low on. Chrome, not world: recessed face, lit top edge, bolted on
+   (principles §10). Sized in shaft units by shaftView.js, so nothing here
+   sets a dimension — only colour, and what shows.
+
+   The bar under each icon carries the state, and it is the only thing that
+   does. The icons themselves are never recoloured: --critical means alarm
+   and nothing else (principles §6), so a good that has run out gets a red
+   BAR, and stays its own colour. The bar is three rects: an edge a shade
+   darker than the fill, a dark channel, and the fill — full length and
+   blinking when the bin is out, as long as the share left when it is low.
+   Only the fill blinks; the edge holds the bar's shape through the blink.
+
+   The slots take the pointer, though the plate does not: hovering an icon
+   opens the resource card, and anything else on the plate falls through to
+   the room. */
+
+.stock-popover { display: none; pointer-events: none; }
+.stock-popover.shown { display: inline; }
+
+.stock-face {
+  fill: var(--panel);
+  stroke: var(--panel-edge);
+  stroke-width: 1;
+  fill-opacity: 0.92;
+}
+.stock-lip { fill: var(--steel-lit); fill-opacity: 0.5; }
+
+.stock-slot { display: inline; pointer-events: auto; }
+.stock-slot.empty { display: none; }
+.stock-icon { image-rendering: pixelated; }
+
+.stock-edge { fill: var(--steel-dark); }
+.stock-edge.stock-low { fill: var(--gauge-warn-edge); }
+.stock-edge.stock-out { fill: var(--gauge-critical-edge); }
+.stock-track { fill: var(--gauge-track); }
+.stock-mark { fill: var(--panel-edge); }
+.stock-mark.stock-low { fill: var(--warn); }
+.stock-mark.stock-out { fill: var(--critical); }
+
+/* The plate's own edge answers the worst good on it, so a room that has
+   stopped reads as stopped from further away than one icon ever could. */
+.stock-plate.stock-low .stock-face { stroke: var(--warn); }
+.stock-plate.stock-out .stock-face { stroke: var(--critical); }
+
+/* The counter that replaces the last icon when there are more shortages than
+   the room is wide enough to show, and the two-letter stand-in for a good
+   whose icon is not drawn yet. */
+.stock-text { font: 700 9px var(--font-mono); text-anchor: middle; fill: var(--ink-dim); }
+.stock-slot.counting .stock-icon,
+.stock-slot.counting .stock-edge,
+.stock-slot.counting .stock-track,
+.stock-slot.counting .stock-mark { display: none; }
+.stock-slot.untitled .stock-icon { display: none; }
+.stock-slot.untitled .stock-text { fill: var(--ink); }
 
 .route-markers { pointer-events: none; }
 .route-marker rect { stroke: var(--rock); stroke-width: 1; }

@@ -28,6 +28,7 @@
 import { workScale } from '../buildings/buildingRegistry.js';
 import { amount, put, take, room, total } from './stores.js';
 import { setWaiting } from './flowStock.js';
+import { made, used } from './ledger.js';
 
 export function tick(state, ctx) {
   for (const instance of state.buildings) {
@@ -64,7 +65,7 @@ export function tick(state, ctx) {
     setWaiting(instance, [], full, ctx);
     if (full.length > 0) continue;
 
-    for (const output of recipe.outputs) put(instance, def, ctx, output.id, output.qty * efficiency);
+    for (const output of recipe.outputs) made(state, output.id, put(instance, def, ctx, output.id, output.qty * efficiency), def.id);
     instance.job = null;
     ctx.emit('recipe:completed', { instanceId: instance.instanceId, recipeId: recipe.id });
 
@@ -110,7 +111,7 @@ function startNext(state, ctx, instance, def, recipes) {
   const recipe = chooseRecipe(state, ctx, instance, recipes);
   if (!recipe) return;
 
-  for (const input of recipe.inputs) take(instance, input.id, input.qty);
+  for (const input of recipe.inputs) used(state, input.id, take(instance, input.id, input.qty), instance.buildingId);
   instance.job = { recipeId: recipe.id, progress: 0 };
 }
 

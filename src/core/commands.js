@@ -19,6 +19,7 @@ import { evaluate } from './predicates.js';
 import { createInstance } from '../systems/buildings/buildingRegistry.js';
 import { emit as busEmit } from './eventBus.js';
 import { inStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
+import { used } from '../systems/resources/ledger.js';
 import { hire } from '../systems/population/roster.js';
 import { labourPool } from '../systems/population/staffing.js';
 import { validRoute } from '../systems/haulage/haulageMethods.js';
@@ -58,7 +59,7 @@ const HANDLERS = {
       return;
     }
     // Materials come out of the common stores, nearest the site first.
-    for (const c of check.cost) takeFromStorehouses(state, ctx, c.id, c.qty, cmd.level);
+    for (const c of check.cost) used(state, c.id, takeFromStorehouses(state, ctx, c.id, c.qty, cmd.level), 'construction');
 
     state.buildings.push(createInstance(def, ctx, {
       instanceId: nextInstanceId(state),

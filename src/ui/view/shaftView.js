@@ -25,10 +25,33 @@ import {
 } from './interpolate.js';
 import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
 import { createFigureLayer, renderFigures } from './figures.js';
+import { shortages, inputsOf, nameOf } from '../../systems/resources/stores.js';
 import { SPEEDS } from '../../core/clock.js';
 import * as selection from '../selection.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * Shortage-popover geometry, in shaft units — which are sprite pixels, so
+ * these are the icon's real size and nothing here scales (spec §2).
+ *
+ * The widest plate a 64-unit room can carry is three icons: 3 + 16 + 2 + 16 +
+ * 2 + 16 + 3 = 58. That is where the cap on a one-slot room comes from, and
+ * why a fourth shortage folds into a counter rather than making the plate
+ * wider than the room it belongs to.
+ *
+ * Under each icon, a bar: a 1-unit edge one shade darker than the fill,
+ * around a 14×2 channel. The edge never blinks — only the fill does — so an
+ * empty bin's bar still has a shape at the bottom of the blink.
+ */
+const ICON = 16;
+const SLOT_PITCH = 18;
+const PLATE_PAD = 3;
+const BAR_GAP = 1;
+const BAR_H = 4;
+const BAR_INNER = ICON - 2;
+const PLATE_H = PLATE_PAD + ICON + BAR_GAP + BAR_H + PLATE_PAD;
+const MAX_SLOTS = 4;
 
 /**
  * @param art  the result of roomArt.loadRoomArt()
@@ -56,11 +79,17 @@ export function createShaftView(root, state, ctx, art) {
   const viewport = createViewport({ levelCount: state.levels.length });
   const figureLayer = createFigureLayer(svg);
 
-  // The one layer that draws AFTER the figures: the stair rail a porter holds,
+  // The first of the two layers that draw AFTER the figures: the stair rail a
+  // porter holds,
   // the bars a prisoner stands behind, the table a cook stands at. It is a
   // copy of pixels the room render already contains (tools/cutForeground.mjs),
   // so a room without a cut simply has nothing here.
   layers.foreground = group(svg, 'layer-foreground');
+
+  // Above even that: the shortage popovers. They are the one thing in this
+  // view that is not part of the world, and a handrail drawn over a person is
+  // correct while a handrail drawn over a room's alarm is not.
+  layers.popovers = group(svg, 'layer-popovers');
 
   const view = {
     svg,
@@ -112,7 +141,7 @@ export function createShaftView(root, state, ctx, art) {
     if (!paused && view.lastFrame !== null) view.ambient += Math.min(now - view.lastFrame, 100);
     view.lastFrame = now;
 
-    syncBuildings(view, currentState, currentCtx);
+    syncBuildings(view, currentState, currentCtx, tick);
     syncSelection(view, currentState);
     syncSeams(view, currentState);
     syncLevels(view, currentState);
@@ -316,10 +345,13 @@ function rect(parent, className, x, y, width, height) {
  * Keyed off a signature so the common case — nothing changed — costs one
  * string comparison rather than a diff.
  */
-function syncBuildings(view, state, ctx) {
+function syncBuildings(view, state, ctx, tick) {
   const signature = state.buildings.map((b) => `${b.instanceId}@${b.level}.${b.slot}`).join(',');
   if (signature !== view.builtSignature) {
     view.builtSignature = signature;
+    // A building that has just appeared has no popover state yet, so the
+    // once-a-tick gate below has to run on this frame whatever the tick says.
+    view.popoverTick = null;
 
     const seen = new Set();
     for (const instance of state.buildings) {
@@ -333,11 +365,13 @@ function syncBuildings(view, state, ctx) {
       const node = view.buildingNodes.get(instance.instanceId);
       node.setAttribute('transform', `translate(${r.x} ${r.y})`);
       node.foreground?.setAttribute('transform', `translate(${r.x} ${r.y})`);
+      node.popover?.setAttribute('transform', `translate(${r.x} ${r.y})`);
     }
     for (const [id, node] of view.buildingNodes) {
       if (!seen.has(id)) {
         node.remove();
         node.foreground?.remove();
+        node.popover?.remove();
         view.buildingNodes.delete(id);
       }
     }
@@ -357,11 +391,101 @@ function syncBuildings(view, state, ctx) {
       target.classList.toggle('broken', instance.brokenDown === true);
       if (node.flicker) target.classList.toggle('flicker', dipped);
     }
-    // Waiting for a porter: short of an input, or full of an output. A badge
-    // on the room says so, and the inspector says which goods.
-    node.classList.toggle('starved', instance.starved === true && instance.powered !== false && !instance.brokenDown);
-    node.classList.toggle('blocked', instance.blocked === true && !instance.starved);
+    // Waiting for a porter with nowhere to put its produce. The other half of
+    // waiting — short of an input — is the popover's job, and says which good.
+    node.classList.toggle('blocked', instance.blocked === true && instance.starved !== true);
   }
+
+  // Shortages change on a tick, never between frames, so this runs once per
+  // tick instead of sixty times a second. It walks every building's recipes
+  // and bins, which is far too much to pay for a viewBox update.
+  if (tick !== view.popoverTick) {
+    view.popoverTick = tick;
+    for (const instance of state.buildings) {
+      const node = view.buildingNodes.get(instance.instanceId);
+      if (node?.popover) syncPopover(view, node, instance, ctx);
+    }
+  }
+}
+
+/**
+ * Fill in one room's shortage popover: an icon per good it has run out of or
+ * is running low on, worst first (stores.shortages).
+ *
+ * Hidden while the room is dark or wrecked, for the same reason the waiting
+ * badge was: a building with no power is not short of coal in any sense the
+ * player can act on, and saying so competes with the one thing they should
+ * fix. Light first, then supply.
+ */
+function syncPopover(view, node, instance, ctx) {
+  const pop = node.popover;
+  const dead = instance.powered === false || instance.brokenDown === true;
+  const list = dead ? [] : shortages(instance, ctx.catalog.buildings.byId[instance.buildingId], ctx);
+
+  // A low bar's length is part of what is drawn, so it is part of the key —
+  // in whole units, or the key would change every tick a bin moves at all.
+  const key = list.map((s) => `${s.id}.${s.band}.${barWidth(s)}`).join(',');
+  if (key === pop.key) return;
+  pop.key = key;
+
+  pop.classList.toggle('shown', list.length > 0);
+  if (list.length === 0) return;
+
+  // More shortages than the room is wide enough to show: the last slot counts
+  // the rest instead of drawing one. The list is worst first, so what gets
+  // folded away is always the least urgent.
+  const over = list.length > pop.slots.length;
+  const shown = over ? list.slice(0, pop.slots.length - 1) : list;
+  const worst = list.some((s) => s.band === 'out') ? 'out' : 'low';
+
+  pop.slots.forEach((slot, k) => {
+    const entry = shown[k];
+    const counter = over && k === pop.slots.length - 1;
+    slot.g.classList.toggle('empty', !entry && !counter);
+    slot.g.classList.toggle('counting', counter);
+    if (counter) slot.text.textContent = `+${list.length - shown.length}`;
+    // What the resource card (resourceTip.js) opens on when this is hovered.
+    if (entry) slot.g.dataset.resource = entry.id;
+    else delete slot.g.dataset.resource;
+    if (!entry) return;
+    const icon = view.art.icons?.get(entry.id);
+    // A good with no icon yet still has to show: an empty slot would read as
+    // "nothing wrong" rather than "art missing".
+    slot.g.classList.toggle('untitled', !icon);
+    if (icon) slot.image.setAttribute('href', icon.href);
+    slot.text.textContent = icon ? '' : entry.id.slice(0, 2).toUpperCase();
+    slot.mark.setAttribute('class', `stock-mark stock-${entry.band}`);
+    slot.mark.setAttribute('width', String(barWidth(entry)));
+    slot.edge.setAttribute('class', `stock-edge stock-${entry.band}`);
+    // Only an empty bin blinks, and it is the attribute rather than the class
+    // that says so, because that is what the pause and reduced-motion rules
+    // select on (screens.css, Animation).
+    if (entry.band === 'out') slot.mark.dataset.part = 'alarm';
+    else delete slot.mark.dataset.part;
+  });
+
+  const count = pop.slots.filter((_, k) => shown[k] || (over && k === pop.slots.length - 1)).length;
+  const width = PLATE_PAD * 2 + count * ICON + (count - 1) * (SLOT_PITCH - ICON);
+  // The plate never takes a pointer, so a <title> on it would never be
+  // hovered. The label is what a screen reader gets instead.
+  pop.setAttribute('aria-label', list
+    .map((e) => `${nameOf(ctx, e.id)}: ${e.band === 'out' ? 'none left' : 'running low'}`)
+    .join(', '));
+
+  pop.face.setAttribute('width', String(width));
+  pop.lip.setAttribute('width', String(width));
+  pop.plate.setAttribute('class', `stock-plate stock-${worst}`);
+}
+
+/**
+ * How long a slot's bar is drawn, in whole units of the 14-unit channel. An
+ * empty bin's bar is full length, because it is the alarm and has to be seen;
+ * a low bin's is the share it still holds — at least one unit, so "nearly
+ * gone" never draws as nothing.
+ */
+function barWidth(entry) {
+  if (entry.band !== 'low') return BAR_INNER;
+  return Math.max(1, Math.min(BAR_INNER, Math.round((entry.level ?? 0) * BAR_INNER)));
 }
 
 function createBuildingNode(view, ctx, instance) {
@@ -415,24 +539,98 @@ function createBuildingNode(view, ctx, instance) {
   title.textContent = `${def.name}, level ${instance.level}`;
   g.appendChild(title);
 
-  // Top-right corner badges, shown by the per-frame classes above: `!` when
-  // the room is waiting for goods, a stack when its store is full.
-  for (const [kind, glyph] of [['starved', '!'], ['blocked', '≡']]) {
-    const badge = document.createElementNS(SVG_NS, 'g');
-    badge.setAttribute('class', `badge badge-${kind}`);
-    badge.setAttribute('transform', `translate(${width - 13} 3)`);
-    const box = document.createElementNS(SVG_NS, 'rect');
-    box.setAttribute('width', '10');
-    box.setAttribute('height', '10');
-    const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('x', '5');
-    text.setAttribute('y', '8.5');
-    text.textContent = glyph;
-    badge.append(box, text);
-    g.appendChild(badge);
+  // Bottom-right badge: a stack, when the store is full and nobody has come
+  // to collect. There is no longer a matching badge for the other half of
+  // waiting — being short of an input — because the popover says that, and
+  // says WHICH good, in the same corner. A bare `!` next to the icons would
+  // be the same sentence twice.
+  const badge = document.createElementNS(SVG_NS, 'g');
+  badge.setAttribute('class', 'badge badge-blocked');
+  badge.setAttribute('transform', `translate(${width - 13} ${ROOM_HEIGHT - 13})`);
+  const box = document.createElementNS(SVG_NS, 'rect');
+  box.setAttribute('width', '10');
+  box.setAttribute('height', '10');
+  const glyph = document.createElementNS(SVG_NS, 'text');
+  glyph.setAttribute('x', '5');
+  glyph.setAttribute('y', '8.5');
+  glyph.textContent = '\u2261';
+  badge.append(box, glyph);
+  g.appendChild(badge);
+
+  // Only rooms that take something in can be short of anything. A storehouse,
+  // a stairwell or a dig face never can, and gets no nodes at all.
+  if (canRunShort(def, ctx)) {
+    g.popover = popoverNode(view, width);
+    g.popover.dataset.instance = instance.instanceId;
   }
 
   view.layers.buildings.appendChild(g);
+  return g;
+}
+
+/** Whether this kind of building has anything it could run short OF. */
+function canRunShort(def, ctx) {
+  return inputsOf(def, ctx).size > 0 || (def.consumes ?? []).some((c) => c.id === 'water');
+}
+
+/**
+ * A room's shortage popover: a plate along the top of the room carrying one
+ * resource icon per good it is out of or running low on.
+ *
+ * A plate, not a tooltip. The player has to see it without pointing at
+ * anything — noticing a building in trouble while looking somewhere else is
+ * the entire job — so it is drawn, always, on the room itself. It is styled
+ * like the rest of the game's chrome (principles §10): a recessed face with a
+ * lit top edge, an instrument bolted to the room rather than a floating card.
+ *
+ * Left-aligned, and only because of how the shaft is read: rooms are stacked
+ * in a column against the stairwell, so a plate at each room's left edge
+ * lines up into a column of its own that the eye can run down. Anchoring it
+ * to the right instead strands it 380 units away on a six-slot auditorium and
+ * nowhere near the last one on a one-slot room.
+ *
+ * Every slot is built now and hidden by class later. Rooms come and go rarely
+ * and shortages change constantly, so the cheap thing to do per tick is
+ * toggle a class, never to make or destroy a node.
+ */
+function popoverNode(view, width) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('class', 'stock-popover');
+  g.setAttribute('role', 'img');
+
+  const plate = document.createElementNS(SVG_NS, 'g');
+  plate.setAttribute('class', 'stock-plate');
+  plate.setAttribute('transform', `translate(${PLATE_PAD} ${PLATE_PAD})`);
+  g.appendChild(plate);
+
+  const face = rect(plate, 'stock-face', 0, 0, 0, PLATE_H);
+  const lip = rect(plate, 'stock-lip', 0, 0, 0, 1);
+
+  const slots = [];
+  const count = Math.max(1, Math.min(MAX_SLOTS, Math.floor((width - PLATE_PAD * 2) / SLOT_PITCH)));
+  for (let k = 0; k < count; k++) {
+    const slot = document.createElementNS(SVG_NS, 'g');
+    slot.setAttribute('class', 'stock-slot empty');
+    slot.setAttribute('transform', `translate(${PLATE_PAD + k * SLOT_PITCH} ${PLATE_PAD})`);
+    const img = image(slot, 'stock-icon', '', 0, 0, ICON, ICON);
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('class', 'stock-text');
+    text.setAttribute('x', String(ICON / 2));
+    text.setAttribute('y', String(ICON / 2 + 4));
+    slot.appendChild(text);
+    const edge = rect(slot, 'stock-edge', 0, ICON + BAR_GAP, ICON, BAR_H);
+    rect(slot, 'stock-track', 1, ICON + BAR_GAP + 1, BAR_INNER, BAR_H - 2);
+    const mark = rect(slot, 'stock-mark', 1, ICON + BAR_GAP + 1, BAR_INNER, BAR_H - 2);
+    plate.appendChild(slot);
+    slots.push({ g: slot, image: img, text, edge, mark });
+  }
+
+  g.plate = plate;
+  g.face = face;
+  g.lip = lip;
+  g.slots = slots;
+  g.key = null;
+  view.layers.popovers.appendChild(g);
   return g;
 }
 
@@ -570,7 +768,12 @@ function attachInteraction(view, state, ctx) {
     if (moved === null || moved > 4) return;
     // Pointer capture retargets pointerup to the svg itself, so what was
     // clicked has to be found at the pointer, not read off the event.
-    const node = document.elementFromPoint(event.clientX, event.clientY)?.closest?.('.building');
+    // A room's shortage plate sits in a layer above the rooms, and its icons
+    // take the pointer (for the resource card), so a click on one has to be
+    // traced back to the room it belongs to.
+    const hit = document.elementFromPoint(event.clientX, event.clientY);
+    const plate = hit?.closest?.('.stock-popover');
+    const node = hit?.closest?.('.building') ?? (plate ? view.buildingNodes.get(plate.dataset.instance) : null);
     const level = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect());
     if (node) selection.select({ instanceId: node.dataset.instance, level: Number(node.dataset.level) });
     else if (level >= 1 && level <= state.levels.length) selection.select({ level });

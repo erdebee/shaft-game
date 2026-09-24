@@ -11,7 +11,7 @@ import { render as renderMeter, flowState } from '../components/resourceMeter.js
 import { el, button, card } from '../components/dom.js';
 import { daysOfSupply } from '../../core/selectors.js';
 import { unhoused, residentsByLevel } from '../../systems/population/housing.js';
-import { total } from '../../systems/resources/stores.js';
+import { total, nameOf } from '../../systems/resources/stores.js';
 import * as selection from '../selection.js';
 
 const WATCHED_STOCKS = ['food', 'fuel', 'activated-carbon', 'scrubber-catalyst', 'basic-parts', 'paper', 'wood'];
@@ -94,9 +94,10 @@ export function mount(root, state, ctx, dispatch) {
       const key = held.map((b) => `${b.instanceId}:${b.missing}:${b.full}`).join('|');
       if (key !== waitingKey) {
         waitingKey = key;
+        const said = (ids) => ids.map((id) => nameOf(c, id).toLowerCase()).join(', ');
         waitingList.replaceChildren(...(held.length ? held.slice(0, 10).map((b) => {
           const name = c.catalog.buildings.byId[b.buildingId]?.name ?? b.buildingId;
-          const why = b.starved ? `needs ${b.missing.join(', ')}` : `full of ${b.full.join(', ')}`;
+          const why = b.starved ? `needs ${said(b.missing)}` : `full of ${said(b.full)}`;
           const row = button(`L${b.level} ${name} — ${why}`, `Inspect the ${name} on level ${b.level}`, () => selection.select({ instanceId: b.instanceId, level: b.level }), `waiting-row ${b.starved ? 'starved' : 'blocked'}`);
           return row;
         }) : [el('div', 'meter-label', 'Nothing is waiting.')]));

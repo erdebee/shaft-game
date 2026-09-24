@@ -68,6 +68,8 @@ export const TUNABLES = {
   'stores.inputBufferTicks': TICKS,
   'stores.outputBufferTicks': TICKS,
   'stores.batchesBuffered': N(1, 100),
+  'stores.lowMark': RATE,
+  'stores.rateWindowTicks': N(1, 10000),
 
   'haulage.porterTicksPerLevel': N(0, 100),
   'haulage.porterCapacity': N(1, 100000),

@@ -22,6 +22,7 @@
 import { clamp } from '../../utils/math.js';
 import { currentLadder } from '../power/priorityLadder.js';
 import { inStorehouses, takeFromStorehouses } from '../resources/stores.js';
+import { used } from '../resources/ledger.js';
 
 export function initialMaintenance(config) {
   return { crewTarget: config.buildings.maintenanceCrewsStart, crews: 0, stalledOn: null };
@@ -48,7 +49,7 @@ export function tick(state, ctx) {
     }
     const done = restore * affordable;
     for (const cost of def.repairCost ?? []) {
-      takeFromStorehouses(state, ctx, cost.id, cost.qty * done, instance.level);
+      used(state, cost.id, takeFromStorehouses(state, ctx, cost.id, cost.qty * done, instance.level), 'repairs');
     }
     instance.condition = clamp(instance.condition + done, 0, 1);
     capacity -= done;

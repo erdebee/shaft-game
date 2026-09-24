@@ -68,12 +68,30 @@
   /* ---- Reserved meaning. Each of these is a budget, not a colour ---------- */
   --terminal:      #546d58;   /* a terminal is on */
   --terminal-lit:  #bcccbb;
-  --cool:          #2a4566;   /* the Nexus, and the outside. Chapter 2 only */
+  --cool:          #2a4566;   /* the Nexus's terminal layer; Chapter 2 swaps it brighter */
   --cool-lit:      #79a2bb;
   --cool-dim:      #242e42;
   --critical:      #96472f;   /* alarm. Nothing else */
   --warn:          #c58c5e;
   --ok:            #7c867b;
+
+  /* Small counts in the panels (the inspector's store readouts). --ok and
+     --critical are fills and bars; as 11-px text on --panel they are too
+     dim to read, so the readouts get their own brighter trio. */
+  --readout-ok:       #9dbf8c;
+  --readout-warn:     #d99a5e;
+  --readout-critical: #d8644a;
+
+  /* Bars — a bin's fill level, on the shaft's shortage plates and in the
+     inspector. The fill carries the band (green, --warn, --critical); the
+     edge is one shade darker than its fill, so a bar keeps its outline on
+     any background and through the empty-bin blink, which dims the fill
+     only. */
+  --gauge-ok:            #7fa36b;
+  --gauge-ok-edge:       #4b6640;
+  --gauge-warn-edge:     #8b6a4a;
+  --gauge-critical-edge: #5e2b1d;
+  --gauge-track:         #0c0e11;
   --hot:           #b46741;
   --dead:          #2f323e;
 
@@ -100,6 +118,14 @@
   --soot:          #030709;
   --ash:           #504d4f;
   --steam:         #869493;
+
+  /* ---- Water. Blue is not reserved (2026-09-24): the Nexus keeps its own
+     terminal blue above, and water is simply the colour of water. Used by
+     the water icon and anything piped. ---- */
+  --water-deep:    #1f3550;
+  --water:         #2f5f8a;
+  --water-lit:     #5b93bd;
+  --water-glint:   #c4e2ee;
 
   /* ---- People ---- */
   --figure:        #b3bbb3;

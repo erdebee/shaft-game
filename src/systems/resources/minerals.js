@@ -17,6 +17,7 @@
 import { outputScale } from '../buildings/buildingRegistry.js';
 import { put } from './stores.js';
 import { setWaiting } from './flowStock.js';
+import { made } from './ledger.js';
 
 /** Seams at the start of a run: every vein in the profile, untouched. */
 export function initialSeams(shaft) {
@@ -45,6 +46,7 @@ export function tick(state, ctx) {
       const cut = put(instance, def, ctx, vein.id, wanted);
       if (cut < wanted) full.push(vein.id);
       if (cut <= 0) continue;
+      made(state, vein.id, cut, def.id);
 
       seams[vein.id] = depleteSeam(remaining, depletionPerExtractionTick * scale * (cut / wanted));
       if (seams[vein.id] === 0) {

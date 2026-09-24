@@ -4,6 +4,8 @@
     {
       "id": "power",
       "name": "Power",
+      "description": "Made by the main generator from fuel and carried by the junctions. Every lit room draws on it; when there isn't enough, the priority ladder decides who goes dark.",
+      "quote": { "text": "Amber means it's on. If you can read this, thank a stoker.", "by": "sign above the generator" },
       "unit": "kW",
       "network": "power-grid",
       "trackedPer": "shaft",
@@ -16,6 +18,8 @@
     {
       "id": "air-quality",
       "name": "Air quality",
+      "description": "How breathable a level is. Scrubbers and oxygen gardens clean it; crowds and depth foul it, and stale air pools where the ducts don't reach.",
+      "quote": { "text": "If you can smell your neighbour's dinner, the scrubber's fine. If you can smell your neighbour, it isn't.", "by": "Engineering" },
       "unit": "index",
       "network": "duct-network",
       "trackedPer": "level",
@@ -28,6 +32,8 @@
     {
       "id": "water",
       "name": "Water",
+      "description": "Pumped from deep below, reclaimed from greywater and held in cisterns. People drink it, suites wash in it, and the gardens drink more than anyone.",
+      "quote": { "text": "Every drop in this Shaft has been through at least four people. Two of them were probably you.", "by": "sign at the reclamation plant" },
       "unit": "m3",
       "network": "water-mains",
       "trackedPer": "level",

@@ -25,6 +25,7 @@ import { EFFECT_OPS } from '../config/schema.js';
 import * as S from './selectors.js';
 import { workRate } from '../systems/society/meters.js';
 import { putInStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
+import { made, used } from '../systems/resources/ledger.js';
 
 /**
  * Ops that describe a standing capability or modifier rather than an event.
@@ -63,8 +64,8 @@ const HANDLERS = {
   // Goods are local: a gift lands in the common stores, and a loss comes out
   // of them. What will not fit, or is not there, is simply not.
   'stock.add': (state, ctx, e) => {
-    if (e.value >= 0) putInStorehouses(state, ctx, e.target, e.value);
-    else takeFromStorehouses(state, ctx, e.target, -e.value);
+    if (e.value >= 0) made(state, e.target, putInStorehouses(state, ctx, e.target, e.value), 'events');
+    else used(state, e.target, takeFromStorehouses(state, ctx, e.target, -e.value), 'events');
   },
 
   'focus.add': (state, ctx, e) => {

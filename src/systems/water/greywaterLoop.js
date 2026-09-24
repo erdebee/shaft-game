@@ -32,6 +32,12 @@ export function initialWater() {
     peopleShare: 1,
     buildingShare: 1,
     liftLevels: 0,
+    // This tick's supply split by where it came from, and what reached
+    // people: kept for the water card (ui/components/resourceTip.js), which
+    // cannot tell a pump from the reclamation plant by `generation` alone.
+    pumped: 0,
+    reclaimed: 0,
+    toPeople: 0,
   };
 }
 
@@ -98,6 +104,9 @@ export function tick(state, ctx) {
   water.stored = clamp(available - used, 0, water.capacity);
   water.greywater = used; // it all comes back down, dirtier
   water.generation = pumped + reclaimed;
+  water.pumped = pumped;
+  water.reclaimed = reclaimed;
+  water.toPeople = toPeople;
   water.demand = peopleDemand + buildingDemand;
 
   // How far the pumps lift, on average, to where the water is drunk. Read by

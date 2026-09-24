@@ -4,6 +4,8 @@
     {
       "id": "iron-ore",
       "name": "Iron ore",
+      "description": "Cut from the iron seam at the dig face. The smelter burns it with coal into steel billet.",
+      "quote": { "text": "Heavy, rusty and everywhere. The Shaft's favourite rock, and its least favourite to carry.", "by": "a porter, on the stairs" },
       "unit": "t",
       "grades": ["low", "standard", "rich"],
       "refinesInto": ["steel-billet"],
@@ -12,6 +14,8 @@
     {
       "id": "copper-ore",
       "name": "Copper ore",
+      "description": "Green-streaked rock from the dig face. Drawn into copper wire at the smelter; every cable in the Shaft started as some of this.",
+      "quote": { "text": "If it's green, it's copper. If it's moving, it's Cultivation's.", "by": "a dig-face foreman" },
       "unit": "t",
       "grades": ["low", "standard"],
       "refinesInto": ["copper-wire"],
@@ -20,6 +24,8 @@
     {
       "id": "coal",
       "name": "Coal",
+      "description": "Cut at the dig face and burnt in the smelter for heat. Coked, it gives fuel for the generator and carbon for the filters.",
+      "quote": { "text": "We dig coal to run the smelter to make the parts to fix the drill to dig more coal. It's called an economy.", "by": "Engineering, off the record" },
       "unit": "t",
       "grades": ["low", "standard"],
       "refinesInto": ["fuel", "activated-carbon"],
@@ -29,6 +35,8 @@
     {
       "id": "gold-ore",
       "name": "Gold and silver ore",
+      "description": "Gold and silver, weighed in kilograms rather than tonnes. The machine shop refines it into precision contacts.",
+      "quote": { "text": "Worthless as money down here. Priceless as a contact that doesn't corrode.", "by": "a machine-shop fitter" },
       "unit": "kg",
       "grades": ["trace", "standard"],
       "refinesInto": ["precision-contacts"],
@@ -37,6 +45,8 @@
     {
       "id": "limestone",
       "name": "Limestone",
+      "description": "Soft pale rock from the seams, burnt with coal into concrete for new rooms and repairs.",
+      "quote": { "text": "The Shaft is rock we dug out and turned back into rock. Nobody finds this as funny as I do.", "by": "a mason" },
       "unit": "t",
       "grades": ["standard"],
       "refinesInto": ["concrete"],
@@ -45,6 +55,8 @@
     {
       "id": "silica-sand",
       "name": "Silica sand",
+      "description": "Fine sand from the seams, melted with coal into glass.",
+      "quote": { "text": "Sand goes in, windows come out. Don't ask what we look at through them.", "by": "a smelter hand" },
       "unit": "t",
       "grades": ["standard"],
       "refinesInto": ["glass"],

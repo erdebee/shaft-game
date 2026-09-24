@@ -53,10 +53,12 @@
   },
 
   "stores": {
-    "_note": "How much a building keeps on hand of what it uses and what it makes, when its catalogue entry does not say (storeCapacity). See systems/resources/stores.js.",
+    "_note": "How much a building keeps on hand of what it uses and what it makes, when its catalogue entry does not say (storeCapacity). See systems/resources/stores.js. lowMark is the share of a bin below which an input counts as running low, and above which an output counts as filling up: one number for both, so the inspector and the shaft view's shortage popover can never band the same bin differently (stores.js bandOf). rateWindowTicks is how many ticks the made/used rates the resource tooltips show are averaged over (ledger.js): one shift, long enough that a smelter's batches read as a rate rather than a pulse.",
     "inputBufferTicks": 120,
     "outputBufferTicks": 120,
-    "batchesBuffered": 6
+    "batchesBuffered": 6,
+    "lowMark": 0.33,
+    "rateWindowTicks": 20
   },
 
   "haulage": {

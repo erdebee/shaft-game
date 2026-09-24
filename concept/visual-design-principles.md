@@ -291,9 +291,9 @@ This list does more work than the allow list.
 > generated in the Eastward style (§2, production spec §4) without a forced
 > palette, because the renders read as one set without it. What follows still
 > holds for the **UI, overlays and tints**, which read from tokens.css. The colour
-> *meanings* below — reserved amber, red for alarm, cold blue kept back for
-> Chapter 2, contrast discipline — still apply to sprites as art direction,
-> checked by eye rather than enforced by the generator.
+> *meanings* below — reserved amber, red for alarm, contrast discipline — still
+> apply to sprites as art direction, checked by eye rather than enforced by the
+> generator.
 
 **Palette v2 is locked**, and lives in
 [`src/ui/styles/tokens.css`](../src/ui/styles/tokens.css). It was derived from two
@@ -327,9 +327,15 @@ and tints still read from the tokens, so the two halves stay in agreement.
 | **Cold blue** | The Nexus, and the outside | Ch. 2 only, deliberately alien |
 | **Red** | Alarm | Alerts, klaxons, critical states only |
 
-Using cold blue for a decorative water pipe in Chapter 1 spends the Nexus's
-entrance for nothing. Using red for a painted door means the player learns to
-ignore red. Reserved colours are a budget.
+Using red for a painted door means the player learns to ignore red. Reserved
+colours are a budget.
+
+**Blue is not reserved** (dropped 2026-09-24). It used to be held back for the
+Nexus and the outside, Chapter 2 only, which made water grey — and a grey
+droplet reads as mercury. Water is blue, in its own `--water` ramp in
+tokens.css. The Nexus keeps its terminal blue (`--cool`, brightened by the
+Chapter 2 token swap); what makes it alien is where it is and what it does,
+not a hue nobody else may touch.
 
 ### Contrast discipline
 
@@ -362,6 +368,7 @@ idle, or one that is wrecked.
 | **Sealed level** | Shutters across the level, warning chevrons | Level overlay |
 | **Air: poor / critical** | Haze tint over the whole level, thickening | Existing `data-air` tint |
 | **Brownout** | The level dims as a whole, lamps first | Rooms drop to their `off` render one by one, under a level-wide dimming tint |
+| **Short of goods** | A small riveted plate along the room's top edge, one 16×16 resource icon per good it wants | Shortage popover: a framed bar under each icon — red and full length under a good it has run out of (the fill blinks, the darker edge does not), amber and as long as the share left under one running low. The only per-building state that is chrome rather than a render, because "which good" is not something light can say |
 
 The states of one building must **register exactly**: same canvas, same geometry,
 same position for every object. Only light, activity and damage change. That is
@@ -442,6 +449,19 @@ player is reading the Shaft's own instruments, not a game HUD.
 - **Meters** are analogue — needle gauges and bar tubes with tick marks and
   engraved labels, rather than flat progress bars.
 - **Alerts** are klaxon-style: an amber/black chevron bar, a lamp that lights.
+- **Resource icons** are 16×16 pixel art, one per resource in the catalogue,
+  drawn in the same tokens as everything else (production spec §2.9). They are
+  how the shaft view names a good without words: a room short of coal shows the
+  coal. Colour never carries the alarm — the icon keeps its own colours and the
+  state is a coloured bar under it, because `--critical` is a budget. Bars have
+  an edge one shade darker than their fill (`--gauge-*` tokens), in the shaft and
+  in the inspector alike, where they sit under every stored good as a small bar
+  chart: green, amber, red.
+- **Every resource icon opens a card** on hover or focus: the name, a line of
+  description, a quote from someone in the Shaft, who makes and uses it, and the
+  live rates. The words live in the catalogue (`description`, `quote`), the rates
+  in the sim's ledger. An icon anywhere in the UI gets the card by carrying
+  `data-resource`.
 - **Type:** a generated bitmap face for headings, numerals and gauge labels, where
   the retro character earns its keep. Dense body text — dilemma prose, log entries,
   Accord text — stays in the system monospace already in tokens.css. Legibility

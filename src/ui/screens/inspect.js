@@ -1,7 +1,7 @@
 /**
  * inspect.js
  * The selected building: what it is, whether it is working and — if not —
- * why, what is in its store, and what the player can do about it: crew it,
+ * why, what it consumes and produces and how much of each is on hand, and what the player can do about it: crew it,
  * point it at a recipe, or tear it down. A porter station also lists its
  * porters, hires new ones and opens their routes; while a route is open this
  * tab is the route editor instead (routeEditor.js).
@@ -16,8 +16,9 @@ import { render as renderMeter } from '../components/resourceMeter.js';
 import { recipesFor } from '../../systems/resources/componentChain.js';
 import { factionOf } from '../../systems/population/staffing.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
-import { amount, capacity, inputsOf, outputsOf, isStorage } from '../../systems/resources/stores.js';
+import { amount, capacity, inputsOf, outputsOf, isStorage, bandOf, nameOf } from '../../systems/resources/stores.js';
 import * as routeEditor from './routeEditor.js';
+import { iconOf } from '../icons.js';
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -42,8 +43,9 @@ export function mount(root, state, ctx, dispatch) {
       el('h2', '', def.name),
       el('div', 'meter-label', `Level ${instance.level} · ${def.zone}${faction ? ` · ${currentCtx.catalog.factions.byId[faction].name}` : ''}`),
     );
-    const status = el('div', 'inspect-status');
+    const status = el('div', 'inspect-problems');
     host.appendChild(status);
+    const statusKey = { value: null };
 
     const condition = renderMeter(host, { label: 'Condition' });
 
@@ -69,7 +71,7 @@ export function mount(root, state, ctx, dispatch) {
     const facts = el('div', 'inspect-facts');
     host.appendChild(facts);
 
-    // What is in the building's own store, and how full.
+    // What it consumes and produces, and how much of each is on hand.
     const storeCard = el('div', 'inspect-store');
     host.appendChild(storeCard);
     const storeKey = { value: null };
@@ -91,7 +93,8 @@ export function mount(root, state, ctx, dispatch) {
       recipeSelect = el('select', 'inspect-select');
       recipeSelect.appendChild(new Option('Automatic — whatever is short', ''));
       for (const r of recipes) {
-        recipeSelect.appendChild(new Option(`${r.id} (${r.inputs.map((i) => `${i.qty} ${i.id}`).join(' + ')} → ${r.outputs.map((o) => `${o.qty} ${o.id}`).join(' + ')})`, r.id));
+        const io = (list) => list.map((x) => `${x.qty} ${nameOf(currentCtx, x.id).toLowerCase()}`).join(' + ');
+        recipeSelect.appendChild(new Option(`${io(r.inputs)} \u2192 ${io(r.outputs)}`, r.id));
       }
       recipeSelect.value = instance.recipeId ?? '';
       recipeSelect.addEventListener('change', () => {
@@ -121,9 +124,7 @@ export function mount(root, state, ctx, dispatch) {
     refresh = (currentState, ctxNow) => {
       const current = selectedInstance(currentState);
       if (!current) return;
-      const [text, band] = statusOf(current, def, currentState, ctxNow);
-      status.textContent = text;
-      status.dataset.state = band;
+      renderProblems(status, statusKey, problemsOf(current, def, currentState, ctxNow));
       condition.update(current.condition * 100, 100, current.condition < 0.4 ? 'critical' : current.condition < 0.75 ? 'warn' : 'ok', `${Math.round(current.condition * 100)}%`);
       if (crewValue) crewValue.textContent = `${current.staffing} / ${current.staffTarget ?? def.staffing} (posts ${def.staffing})`;
 
@@ -132,8 +133,6 @@ export function mount(root, state, ctx, dispatch) {
       if (draw > 0) lines.push(`Draws ${Math.round(draw)} kW`);
       if (def.housing) lines.push(`Homes for ${def.housing}`);
       if ((current.waterShare ?? 1) < 1) lines.push(`Water ration ${Math.round(current.waterShare * 100)}%`);
-      for (const c of def.consumes ?? []) lines.push(`Uses ${c.qty} ${c.id} / tick`);
-      for (const p of def.produces ?? []) lines.push(`Makes ${p.qty} ${p.id} / tick`);
       if (current.repairing) lines.push('On the repair list');
       facts.replaceChildren(...lines.map((line) => el('div', 'meter-label', line)));
 
@@ -176,35 +175,115 @@ export function mount(root, state, ctx, dispatch) {
 }
 
 /**
- * The building's store: every good it holds or has a place for, with a bar
- * against what it can hold, marked in (it uses it) or out (it makes it).
+ * The building's goods, compact: what it consumes and what it produces, each
+ * as its icon over "on hand / room" and a small bar of how full the bin is —
+ * together a little bar chart of the building's stores. Count and bar are
+ * coloured by the same bands the shaft's popover uses (stores.js bandOf): a
+ * consumed good red when it is gone and orange when low; a produced one red
+ * when there is no room left and orange once it is filling; green otherwise.
+ * A depot or storehouse lists what it holds, each bar its share of the whole
+ * store, and a good a porter left somewhere that has no use for it is listed
+ * apart, with no bar, because there is no bin for it to fill.
+ *
+ * Hovering or focusing an icon opens the resource card (resourceTip.js).
  */
 function renderStore(root, key, instance, def, ctx) {
   const inputs = inputsOf(def, ctx);
   const outputs = outputsOf(def, ctx);
-  const ids = new Set([...inputs, ...outputs, ...Object.keys(def.storeCapacity ?? {}), ...Object.keys(instance.stock ?? {})]);
-  if (ids.size === 0) {
-    if (key.value !== '') { root.replaceChildren(); key.value = ''; }
-    return;
-  }
-  const sig = [...ids].join(',');
+  const storage = isStorage(def);
+  const extra = [...Object.keys(def.storeCapacity ?? {}), ...Object.keys(instance.stock ?? {})]
+    .filter((id) => !inputs.has(id) && !outputs.has(id));
+  const groups = storage
+    ? [['Stores', 'held', [...new Set(extra)]]]
+    : [['Consumes', 'in', [...inputs]], ['Produces', 'out', [...outputs]], ['Also holds', 'held', [...new Set(extra)]]];
+  const shown = groups.filter(([, , ids]) => ids.length);
+
+  const sig = shown.map(([title, , ids]) => `${title}:${ids.join(',')}`).join('|');
   if (key.value !== sig) {
     key.value = sig;
-    root.replaceChildren(el('h3', 'build-zone', isStorage(def) ? `Store · holds ${def.storage.capacity}` : 'Store'));
-    root.meters = new Map([...ids].map((id) => {
-      const tag = inputs.has(id) ? 'in' : outputs.has(id) ? 'out' : 'held';
-      return [id, renderMeter(root, { label: `${id} · ${tag}` })];
-    }));
+    root.replaceChildren();
+    root.cells = [];
+    for (const [title, role, ids] of shown) {
+      const group = el('div', 'res-group');
+      const head = el('h3', 'build-zone', title);
+      if (storage) root.total = head;
+      const grid = el('div', 'res-grid');
+      for (const id of ids) {
+        const cell = el('div', 'res-cell');
+        cell.dataset.resource = id;
+        cell.tabIndex = 0;
+        cell.setAttribute('aria-label', rateOf(def, ctx, id, role));
+        const icon = iconOf(id);
+        if (icon) {
+          const img = el('img', 'res-icon');
+          img.src = icon.href;
+          img.alt = nameOf(ctx, id);
+          cell.appendChild(img);
+        } else {
+          cell.appendChild(el('span', 'res-icon res-icon-missing', nameOf(ctx, id).slice(0, 3)));
+        }
+        const count = el('span', 'res-count');
+        cell.appendChild(count);
+        // The bar's frame is its own element so its edge can be a shade darker
+        // than the fill, the same as the bars on the shaft's plates.
+        let fill = null;
+        let bar = null;
+        if (role !== 'held' || storage) {
+          bar = el('span', 'res-bar');
+          fill = el('span', 'res-fill');
+          bar.appendChild(fill);
+          cell.appendChild(bar);
+        }
+        grid.appendChild(cell);
+        root.cells.push({ id, role, count, bar, fill });
+      }
+      group.append(head, grid);
+      root.appendChild(group);
+    }
   }
-  const held = Object.values(instance.stock ?? {}).reduce((a, b) => a + b, 0);
-  for (const [id, meter] of root.meters) {
-    const cap = isStorage(def) ? def.storage.capacity : capacity(instance, def, ctx, id);
+
+  for (const { id, role, count, bar, fill } of root.cells ?? []) {
     const qty = amount(instance, id);
-    const out = outputs.has(id);
-    const fill = cap > 0 ? qty / cap : 0;
-    const bandOf = out ? (fill >= 0.999 ? 'critical' : fill > 0.8 ? 'warn' : 'ok') : (qty <= 1e-6 && inputs.has(id) ? 'critical' : fill < 0.2 && inputs.has(id) ? 'warn' : 'ok');
-    meter.update(qty, isStorage(def) ? Math.max(held, 1) : cap, bandOf, `${Math.round(qty)} / ${Math.round(cap)}`);
+    if (storage || role === 'held') {
+      count.textContent = compact(qty);
+      count.dataset.band = 'none';
+      if (bar) setBar(bar, fill, def.storage.capacity > 0 ? qty / def.storage.capacity : 0, 'ok');
+      continue;
+    }
+    const cap = capacity(instance, def, ctx, id);
+    const band = { out: 'critical', low: 'warn', full: 'critical', filling: 'warn', ok: 'ok' }[bandOf(qty, cap, role, ctx)];
+    count.textContent = `${compact(qty)}/${compact(cap)}`;
+    count.dataset.band = band;
+    setBar(bar, fill, cap > 0 ? qty / cap : 0, band);
   }
+  if (storage && root.total) {
+    const held = Object.values(instance.stock ?? {}).reduce((a, b) => a + b, 0);
+    root.total.textContent = `Stores · ${compact(held)}/${compact(def.storage.capacity)}`;
+  }
+}
+
+/**
+ * One bin's bar: fill to the share held, coloured by band. Anything held at
+ * all shows at least a sliver, so "a little" never reads as "none".
+ */
+function setBar(bar, fill, share, band) {
+  const pct = share <= 0 ? 0 : Math.max(4, Math.min(100, share * 100));
+  fill.style.width = `${pct.toFixed(1)}%`;
+  bar.dataset.band = band;
+}
+
+/** A whole number, shortened past four digits: 950, 1200, 12k. */
+function compact(n) {
+  const v = Math.round(n);
+  return v >= 10000 ? `${Math.round(v / 1000)}k` : String(v);
+}
+
+/** A good's accessible label: its name, and the rate when the catalogue gives one. */
+function rateOf(def, ctx, id, role) {
+  const name = nameOf(ctx, id);
+  const list = role === 'in' ? def.consumes : role === 'out' ? def.produces : null;
+  const rate = list?.find((x) => x.id === id)?.qty;
+  return rate ? `${name} · ${role === 'in' ? 'uses' : 'makes'} ${rate} a tick` : name;
 }
 
 /** A station's porters, each with what they are doing, and the hiring. */
@@ -242,25 +321,46 @@ function renderStation(root, key, state, ctx, instance, def, dispatch) {
   for (const { w, doing } of root.rows) doing.textContent = routeEditor.describe(state, ctx, w);
 }
 
-function list(ids = []) {
-  return ids.join(', ');
-}
-
 function selectedInstance(state) {
   const { instanceId } = selection.get();
   return instanceId ? state.buildings.find((b) => b.instanceId === instanceId) ?? null : null;
 }
 
-/** One line saying whether the building works, and the first reason it does not. */
-function statusOf(instance, def, state, ctx) {
+/**
+ * What is stopping the building, worst first, as [message, band] pairs — or
+ * a single "Working" when nothing is. Every problem is listed, not just the
+ * first: a smelter can be out of coal AND have nowhere to put its steel, and
+ * fixing one only to find the other is the thing to spare the player.
+ */
+function problemsOf(instance, def, state, ctx) {
+  const problems = [];
+  const good = (id) => nameOf(ctx, id).toLowerCase();
   const faction = factionOf(ctx, def.id);
-  if (faction && state.population.strikes.some((s) => s.faction === faction)) return ['On strike', 'critical'];
-  if (instance.brokenDown) return ['Broken down — waiting for repairs', 'critical'];
-  if (instance.powered === false) return ['Dark — no power', 'critical'];
-  if (instance.starved) return [`Waiting for ${list(instance.missing) || 'its inputs'} — none in its store`, 'critical'];
-  if (instance.blocked) return [`Store full of ${list(instance.full)} — waiting for a porter to collect`, 'warn'];
-  if ((instance.waterShare ?? 1) < 1) return ['Short of water', 'warn'];
-  if (def.staffing && instance.staffing < def.staffing) return [`Short-handed: ${instance.staffing} of ${def.staffing} crews`, 'warn'];
-  if (recipesFor(def.id, ctx).length && !instance.job) return ['Idle — nothing needed, or no inputs', 'warn'];
-  return ['Working', 'ok'];
+  if (faction && state.population.strikes.some((s) => s.faction === faction)) problems.push(['Production stalled, on strike', 'critical']);
+  if (instance.brokenDown) problems.push(['Production stalled, broken down — waiting for repairs', 'critical']);
+  if (instance.powered === false) problems.push(['Production stalled, no power', 'critical']);
+  if (def.staffing && (instance.staffing ?? 0) === 0) problems.push(['Production stalled, no workers', 'critical']);
+  if (instance.starved) {
+    for (const id of instance.missing?.length ? instance.missing : []) problems.push([`Production stalled, ran out of ${good(id)}`, 'critical']);
+    if (!instance.missing?.length) problems.push(['Production stalled, ran out of its inputs', 'critical']);
+  }
+  if (instance.blocked) {
+    for (const id of instance.full ?? []) problems.push([`Production stalled, no space to store ${good(id)}`, 'critical']);
+  }
+  if ((instance.waterShare ?? 1) < 1) problems.push([`Short of water — rationed to ${Math.round((instance.waterShare ?? 0) * 100)}%`, 'warn']);
+  if (def.staffing && instance.staffing > 0 && instance.staffing < def.staffing) problems.push([`Short-handed: ${instance.staffing} of ${def.staffing} crews`, 'warn']);
+  if (!problems.length && recipesFor(def.id, ctx).length && !instance.job) problems.push(['Idle — nothing needed, or no inputs', 'warn']);
+  return problems.length ? problems : [['Working', 'ok']];
+}
+
+/** Draw the problem lines, rebuilding only when they change. */
+function renderProblems(root, key, problems) {
+  const sig = problems.map(([text]) => text).join('|');
+  if (key.value === sig) return;
+  key.value = sig;
+  root.replaceChildren(...problems.map(([text, band]) => {
+    const line = el('div', 'inspect-status', text);
+    line.dataset.state = band;
+    return line;
+  }));
 }

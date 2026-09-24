@@ -16,6 +16,7 @@
  */
 
 import { initialSeams } from '../systems/resources/minerals.js';
+import { initialLedger } from '../systems/resources/ledger.js';
 import { initialWater } from '../systems/water/greywaterLoop.js';
 import { initialVitals } from '../systems/population/vitals.js';
 import { initialUnrest } from '../systems/society/unrest.js';
@@ -57,6 +58,7 @@ export function createGameState({ chapter, dataset, seed }) {
         water: initialWater(),
       },
       cutSupplies: [],
+      ledger: initialLedger(),
     },
 
     meters: initialMeters(catalog, chapter),

@@ -11,6 +11,7 @@
 
 import { workScale } from '../buildings/buildingRegistry.js';
 import { isGood, amount, room, put, take } from './stores.js';
+import { made, used } from './ledger.js';
 
 export function createStock(id, { capacity, initial = 0 }) {
   return { id, capacity, amount: initial };
@@ -117,8 +118,8 @@ export function tick(state, ctx) {
     }
     if (scale <= 0) continue;
 
-    for (const input of inputs) take(instance, input.id, input.qty * scale * multiplier(input.id));
-    for (const output of outputs) put(instance, def, ctx, output.id, output.qty * scale);
+    for (const input of inputs) used(state, input.id, take(instance, input.id, input.qty * scale * multiplier(input.id)), def.id);
+    for (const output of outputs) made(state, output.id, put(instance, def, ctx, output.id, output.qty * scale), def.id);
   }
 
   applySpoilage(state, ctx);
@@ -153,7 +154,9 @@ function applySpoilage(state, ctx) {
     if (rate <= 0) continue;
     for (const holder of [...state.buildings, ...state.population.workers]) {
       const store = holder.stock ?? holder.carrying;
-      if (store?.[id] > 0) store[id] *= 1 - rate;
+      if (!(store?.[id] > 0)) continue;
+      used(state, id, store[id] * rate, 'spoilage');
+      store[id] *= 1 - rate;
     }
   }
 }

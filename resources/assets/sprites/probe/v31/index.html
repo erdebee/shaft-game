@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock bars and resource cards</title>
+<link rel="stylesheet" href="../../../../../src/ui/styles/tokens.css">
+<link rel="stylesheet" href="../../../../../src/ui/styles/screens.css">
+<style>
+  :root { --bg:#0e0b10; --panel2:#17121a; --edge2:#2c2430; --ink2:#e6d8c0; --dim2:#a8988e; --amber2:#f2b25a; --teal2:#86b6a2; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink2); font:14px/1.6 ui-monospace,"SF Mono",Menlo,monospace; }
+  main { max-width:1500px; margin:0 auto; padding:32px 16px 80px; }
+  h1 { font-size:18px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber2); margin:0 0 6px; }
+  h2 { font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--amber2); margin:44px 0 8px; padding-top:14px; border-top:1px solid var(--edge2); }
+  h3 { font-size:12px; color:var(--teal2); margin:26px 0 4px; }
+  p, li { max-width:100ch; color:var(--dim2); } b { color:var(--ink2); } code { color:var(--teal2); }
+  .summary { background:var(--panel2); border:1px solid var(--edge2); border-left:3px solid var(--amber2); padding:14px 18px; margin:18px 0; max-width:1200px; }
+  figure { margin:0; }
+  figcaption { font-size:11px; color:var(--dim2); margin-top:8px; max-width:34ch; }
+  figcaption b { color:var(--ink2); }
+  img { image-rendering:pixelated; display:block; max-width:none; }
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; margin:14px 0; }
+  svg.sample { display:block; background:#010202; image-rendering:pixelated; }
+  .zoom { display:block; background:#3d3436; image-rendering:pixelated; shape-rendering:crispEdges; }
+  .tape { display:flex; gap:10px; flex-wrap:wrap; align-items:center; background:#2f323e; border:1px solid var(--edge2); padding:12px; margin:8px 0; }
+  .tape.dark { background:#12141d; } .tape.rock { background:#010202; }
+  .icons { display:flex; flex-wrap:wrap; gap:8px; background:#12141d; border:1px solid var(--edge2); padding:14px; max-width:1200px; }
+  .icons button { background:#1e1d27; border:1px solid #2f323e; padding:6px; cursor:help; }
+  .icons button:hover, .icons button:focus-visible { border-color:#7e8c8d; outline:none; }
+  .inspectors { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .inspectors > div { width:290px; }
+  .cards { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .res-tip.static { position:static; display:block; pointer-events:auto; }
+  .loading { color:var(--dim2); }
+</style>
+<body>
+<main>
+<h1>Stock bars, and the resource card</h1>
+<p>Round two on the resource icons: the bars under them now have a frame and a length, the inspector shows
+the same bars as a little chart, water is blue, and every icon opens a card when hovered.</p>
+
+<div class="summary">
+  <b>Everything on this page is the game's own code.</b> It links the real stylesheets, runs a real Shaft
+  headlessly in this tab for 300 ticks, and then mounts the real inspector and the real resource card
+  (<code>ui/components/resourceTip.js</code>) against it. <b>Hover any icon on this page</b> &mdash; in the
+  row below, on the plates, in the inspectors &mdash; and the card that opens is the one the game opens,
+  with that run's numbers. Reload for a fresh run.
+</div>
+
+<h2>1 &middot; Hover any icon</h2>
+<p>All 27 resources. Keyboard focus opens the card too.</p>
+<div class="icons" id="all"><span class="loading">Running the Shaft&hellip;</span></div>
+
+<h2>2 &middot; The plate bars</h2>
+<p>Each bar is now three rects: an <b>edge</b> one shade darker than the fill, a dark <b>channel</b>, and the
+<b>fill</b>. Only the fill blinks, so an empty bin's bar keeps its shape at the bottom of the blink. A low bin's
+fill is as long as the share still held, on the scale of the whole bin &mdash; and since "low" means under a
+third, a low bar is at most 5 of its 14 units. An empty bin stays full length: it is the alarm, and has to be
+seen. Rooms drawn at 2&times;; under each, the plate alone at 7&times;.</p>
+<div class="row" id="plates"></div>
+<h3>Draining</h3>
+<p>One bin running down on a loop: full-length amber at the mark, shortening a unit at a time, then red.</p>
+<div class="row" id="drain"></div>
+
+<h2>3 &middot; In the inspector</h2>
+<p>The real inspector, mounted on rooms from this run, with a few bins nudged so every band shows. Under each
+count, a bar of how full the bin is &mdash; together a small bar chart of the building. <b>Green</b> is fine,
+<b>amber</b> is low (an input) or filling (an output), <b>red</b> is empty or full. A storehouse's bars are each
+good's share of the whole store, and always green. These bars do not blink: the panel is read on purpose, and
+the shaft's plates are what catch the eye.</p>
+<div class="inspectors" id="inspectors"></div>
+
+<h2>4 &middot; The card</h2>
+<p>Six of them held open, as rendered at tick 300. The name and kind; a description; a line from somebody who
+lives with it; the live totals; then who makes it and who uses it, busiest first, with how many are built and
+what each is doing right now. Buildings that could make it but are not built are listed as
+<i>none built</i>, because that is part of the answer.</p>
+<div class="cards" id="cards"></div>
+
+<h2>5 &middot; Water, in blue</h2>
+<p>The Nexus-only rule for blue is gone from the style guide (principles &sect;6). Water has its own ramp in
+tokens.css, <code>--water-deep</code> / <code>--water</code> / <code>--water-lit</code> / <code>--water-glint</code>, and the
+droplet is redrawn in it.</p>
+<div class="tape" id="water-tape"></div>
+<div class="tape dark" id="water-tape-dark"></div>
+<div class="tape rock" id="water-tape-rock"></div>
+
+<h2>6 &middot; Decisions worth arguing with</h2>
+<ul>
+<li><b>An empty bar is full length, not zero.</b> Drawn at its true length an empty bin would have no bar at
+    all, and the red would be one pixel of edge. Out is the alarm; it gets the whole bar.</li>
+<li><b>The low bar's scale is the whole bin.</b> So a low bar is short by definition (&le;5 of 14 units). The
+    alternative, scaling from the low mark down, would make "just under a third" look like a full bar and read
+    as fine.</li>
+<li><b>Rates are a moving average over one shift</b> (<code>stores.rateWindowTicks</code>, 20 ticks), shown per day
+    (60 ticks). A smelter makes a billet every six ticks; per-tick numbers would flicker between 0 and 6.</li>
+<li><b>Hauling is not production.</b> A porter moving food makes none. The ledger records only what is
+    made or used up: buildings, people eating, repairs, construction, spoilage, deliveries and events.</li>
+<li><b>The canteen shows up as a food user beside People.</b> That is the sim, not the card: a canteen has its
+    own <code>consumes: food 1</code> on top of the meals it serves.</li>
+<li><b>No delay on the card.</b> It opens the moment the pointer is on an icon, per the request. On the shaft
+    this means sweeping the mouse over a plate flashes cards; a 150&thinsp;ms delay would stop that if it
+    bothers you.</li>
+<li><b>The plate's icons take the pointer; the rest of the plate does not.</b> Clicking an icon still selects
+    the room under it.</li>
+</ul>
+
+<h2>7 &middot; Still open</h2>
+<ul>
+<li>Touch has no hover, so the card cannot open on a touchscreen yet. A long-press would be the natural way.</li>
+<li>Power, labour and air have no per-building ledger; their cards read the network state directly (kW drawn,
+    crews assigned, rooms scrubbing). Good enough to answer "who", not "how much, averaged".</li>
+<li>The dashboard's Stores rows are still text. They could carry the icon (and so the card) for free.</li>
+</ul>
+</main>
+
+<script type="module">
+import { createRun, placeOpening } from '../../../../../src/core/run.js';
+import { stepOnce } from '../../../../../src/core/engine.js';
+import { dispatch } from '../../../../../src/core/commands.js';
+import { setIcons } from '../../../../../src/ui/icons.js';
+import * as resourceTip from '../../../../../src/ui/components/resourceTip.js';
+import * as inspect from '../../../../../src/ui/screens/inspect.js';
+import * as selection from '../../../../../src/ui/selection.js';
+
+const ROOT = '../../../../../';
+const NS = 'http://www.w3.org/2000/svg';
+const readJson = async (rel) => (await fetch(`${ROOT}resources/data/${rel}`)).json();
+
+const manifest = await (await fetch(`${ROOT}resources/assets/manifest.json`)).json();
+const icons = new Map(manifest.icons.map((i) => [i.id, { href: `${ROOT}resources/assets/${i.path}`, w: 16, h: 16 }]));
+setIcons(icons);
+
+const { engine, state, ctx } = await createRun({ chapter: 1, seed: 1234, readJson });
+placeOpening(state, ctx, dispatch);
+for (let t = 0; t < 300; t++) stepOnce(engine);
+resourceTip.mount(() => ({ state, ctx }));
+
+const byKind = ['stocks', 'minerals', 'components', 'flows', 'abstracts'].flatMap((k) => ctx.catalog[k].ids);
+
+// --- 1. every icon -------------------------------------------------------
+const all = document.getElementById('all');
+all.replaceChildren(...byKind.map((id) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.dataset.resource = id;
+  b.setAttribute('aria-label', id);
+  const img = document.createElement('img');
+  img.src = icons.get(id).href;
+  img.width = 32;
+  img.height = 32;
+  b.appendChild(img);
+  return b;
+}));
+
+// --- 2. plates -----------------------------------------------------------
+// The same geometry and markup as shaftView.js popoverNode/syncPopover.
+const ICON = 16, PITCH = 18, PAD = 3, GAP = 1, BAR_H = 4, INNER = ICON - 2, PLATE_H = PAD + ICON + GAP + BAR_H + PAD;
+const el = (parent, tag, attrs = {}) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+  parent.appendChild(n);
+  return n;
+};
+const barWidth = (e) => (e.band !== 'low' ? INNER : Math.max(1, Math.min(INNER, Math.round(e.level * INNER))));
+
+function plate(parent, entries) {
+  const pop = el(parent, 'g', { class: 'stock-popover shown' });
+  const worst = entries.some((e) => e.band === 'out') ? 'out' : 'low';
+  const p = el(pop, 'g', { class: `stock-plate stock-${worst}`, transform: `translate(${PAD} ${PAD})` });
+  const width = PAD * 2 + entries.length * ICON + (entries.length - 1) * (PITCH - ICON);
+  el(p, 'rect', { class: 'stock-face', width, height: PLATE_H });
+  el(p, 'rect', { class: 'stock-lip', width, height: 1 });
+  const slots = entries.map((e, k) => {
+    const s = el(p, 'g', { class: 'stock-slot', transform: `translate(${PAD + k * PITCH} ${PAD})` });
+    s.dataset.resource = e.id;
+    el(s, 'image', { class: 'stock-icon', href: icons.get(e.id).href, width: ICON, height: ICON });
+    const edge = el(s, 'rect', { class: `stock-edge stock-${e.band}`, y: ICON + GAP, width: ICON, height: BAR_H });
+    el(s, 'rect', { class: 'stock-track', x: 1, y: ICON + GAP + 1, width: INNER, height: BAR_H - 2 });
+    const mark = el(s, 'rect', { class: `stock-mark stock-${e.band}`, x: 1, y: ICON + GAP + 1, width: barWidth(e), height: BAR_H - 2 });
+    if (e.band === 'out') mark.dataset.part = 'alarm';
+    return { edge, mark, s };
+  });
+  return { pop, p, slots };
+}
+
+function sample(host, room, entries, caption) {
+  const slots = ctx.catalog.buildings.byId[room]?.slots ?? 1;
+  const w = 64 * slots;
+  const fig = document.createElement('figure');
+  // Sized inline: screens.css gives .shaft 100% of its box, for the game.
+  const svg = el(fig, 'svg', { class: 'shaft sample', viewBox: `0 0 ${w} 96` });
+  svg.style.width = `${w * 2}px`;
+  svg.style.height = `${96 * 2}px`;
+  el(svg, 'image', { href: `${ROOT}resources/assets/sprites/buildings/${room}-on.png`, width: w, height: 96 });
+  plate(svg, entries);
+  const zw = PAD * 2 + entries.length * PITCH + 6;
+  const zoom = el(fig, 'svg', { class: 'shaft zoom', viewBox: `0 0 ${zw} ${PLATE_H + 6}` });
+  zoom.style.width = `${zw * 7}px`;
+  zoom.style.height = `${(PLATE_H + 6) * 7}px`;
+  zoom.style.marginTop = '8px';
+  plate(zoom, entries);
+  const cap = document.createElement('figcaption');
+  cap.innerHTML = caption;
+  fig.appendChild(cap);
+  host.appendChild(fig);
+  return fig;
+}
+
+const plates = document.getElementById('plates');
+sample(plates, 'archive', [{ id: 'paper', band: 'out', level: 0 }], '<b>Out.</b> Full red bar, blinking; the darker red edge holds still.');
+sample(plates, 'canteen', [{ id: 'food', band: 'low', level: 0.3 }], '<b>Low, 30%.</b> Four units of fourteen.');
+sample(plates, 'main-generator', [{ id: 'fuel', band: 'low', level: 0.05 }], '<b>Low, 5%.</b> The one-unit floor: nearly gone never draws as nothing.');
+sample(plates, 'hydroponics-bay', [{ id: 'water', band: 'low', level: 0.5 }], '<b>Rationed water.</b> The bar is the ration: half.');
+sample(plates, 'scrubber-bank', [{ id: 'activated-carbon', band: 'out', level: 0 }, { id: 'scrubber-catalyst', band: 'low', level: 0.2 }], '<b>Mixed.</b> Worst first; the plate edge answers the worst.');
+sample(plates, 'workshop', [
+  { id: 'steel-billet', band: 'out', level: 0 }, { id: 'copper-wire', band: 'low', level: 0.25 },
+  { id: 'precision-contacts', band: 'low', level: 0.12 }, { id: 'wood', band: 'low', level: 0.3 },
+], '<b>Four.</b> Each low bar at its own length.');
+
+// A bin draining: 0.33 of the bin down to nothing, then out, then round again.
+const drainFig = sample(document.getElementById('drain'), 'smelter', [{ id: 'coal', band: 'low', level: 0.33 }], '<b>Coal, running down.</b>');
+let level = 0.33;
+setInterval(() => {
+  level -= 0.03;
+  const out = level <= 0;
+  if (level < -0.2) level = 0.33;
+  const e = { band: out ? 'out' : 'low', level: Math.max(0, level) };
+  for (const svg of drainFig.querySelectorAll('svg')) {
+    const mark = svg.querySelector('.stock-mark');
+    const edge = svg.querySelector('.stock-edge');
+    mark.setAttribute('width', String(barWidth(e)));
+    mark.setAttribute('class', `stock-mark stock-${e.band}`);
+    edge.setAttribute('class', `stock-edge stock-${e.band}`);
+    svg.querySelector('.stock-plate').setAttribute('class', `stock-plate stock-${e.band}`);
+    if (out) mark.dataset.part = 'alarm'; else delete mark.dataset.part;
+  }
+  drainFig.querySelector('figcaption').innerHTML = `<b>Coal, running down.</b> ${out ? 'Out.' : `${Math.round(level * 100)}% of the bin.`}`;
+}, 400);
+
+// --- 3. inspectors -------------------------------------------------------
+const find = (id) => state.buildings.find((b) => b.buildingId === id);
+const nudge = {
+  canteen: (b) => { b.stock.food = 260; },
+  'main-generator': (b) => { b.stock.fuel = 3; },
+  workshop: (b) => { b.stock['precision-contacts'] = 0; b.stock['basic-parts'] = 5; },
+  smelter: (b) => { b.stock.coal = 3; b.stock.fuel = 5; b.stock['steel-billet'] = 6; },
+};
+const hosts = document.getElementById('inspectors');
+for (const id of ['smelter', 'workshop', 'canteen', 'main-generator', 'storehouse']) {
+  const b = find(id);
+  if (!b) continue;
+  b.stock ??= {};
+  nudge[id]?.(b);
+  const host = document.createElement('div');
+  host.className = 'panel';
+  hosts.appendChild(host);
+  const screen = inspect.mount(host, state, ctx, () => {});
+  selection.select({ instanceId: b.instanceId, level: b.level });
+  screen.update(state, ctx);
+}
+
+// --- 4. cards, held open -------------------------------------------------
+const cards = document.getElementById('cards');
+const tip = document.getElementById('res-tip');
+for (const id of ['food', 'coal', 'water', 'power', 'scrubber-catalyst', 'labour']) {
+  const probe = document.createElement('span');
+  probe.dataset.resource = id;
+  document.body.appendChild(probe);
+  probe.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+  const copy = document.createElement('div');
+  copy.className = 'res-tip static';
+  copy.innerHTML = tip.innerHTML;
+  cards.appendChild(copy);
+  probe.dispatchEvent(new PointerEvent('pointerout', { bubbles: true }));
+  probe.remove();
+}
+
+// --- 5. water -----------------------------------------------------------
+const neighbours = ['air-quality', 'power', 'water', 'glass', 'silica-sand', 'activated-carbon'];
+for (const tapeId of ['water-tape', 'water-tape-dark', 'water-tape-rock']) {
+  const tape = document.getElementById(tapeId);
+  for (const size of [16, 32, 64, 128]) {
+    const img = document.createElement('img');
+    img.src = icons.get('water').href;
+    img.width = size;
+    img.height = size;
+    img.dataset.resource = 'water';
+    tape.appendChild(img);
+  }
+  for (const n of neighbours) {
+    const img = document.createElement('img');
+    img.src = icons.get(n).href;
+    img.width = 32;
+    img.height = 32;
+    img.dataset.resource = n;
+    tape.appendChild(img);
+  }
+}
+
+// The card refreshes per tick while open; this page's Shaft is standing
+// still, so one render is all it ever needs.
+</script>
+</body>
+</html>

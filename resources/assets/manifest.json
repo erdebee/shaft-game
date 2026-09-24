@@ -1,5 +1,5 @@
 {
- "_note": "Media manifest. Same constraint as the data manifest: no build step and no directory listing, so every file is enumerated. preloadGroup controls what is fetched before the first frame ('boot'), what is fetched on chapter entry ('chapter1'/'chapter2'), and what streams on demand ('lazy'). The visual direction is set (concept/visual-design-principles.md). Every building has an on/off/broken render with the floorY its figures stand on (asset-production-spec \u00a72.1); animated rooms add an '<id>-on-anim' strip (frames side by side, played while on), and every other room adds an '<id>-dim' frame the renderer flickers to (\u00a72.5). A render whose contents a person can stand behind \u2014 a stair rail, cell bars, a table, a desk \u2014 also carries an '<id>-fg' cut of just those pixels, which the renderer draws over the figures (tools/cutForeground.mjs).",
+ "_note": "Media manifest. Same constraint as the data manifest: no build step and no directory listing, so every file is enumerated. preloadGroup controls what is fetched before the first frame ('boot'), what is fetched on chapter entry ('chapter1'/'chapter2'), and what streams on demand ('lazy'). The visual direction is set (concept/visual-design-principles.md). Every building has an on/off/broken render with the floorY its figures stand on (asset-production-spec \u00a72.1); animated rooms add an '<id>-on-anim' strip (frames side by side, played while on), and every other room adds an '<id>-dim' frame the renderer flickers to (\u00a72.5). A render whose contents a person can stand behind \u2014 a stair rail, cell bars, a table, a desk \u2014 also carries an '<id>-fg' cut of just those pixels, which the renderer draws over the figures (tools/cutForeground.mjs). Resource icons are 16x16, one per id in the resource catalogue (stocks, minerals, components, flows and abstracts), drawn by tools/resourceIcons.mjs rather than generated; the shaft view puts them on a room that is short of something and the porters carry them in their bubbles, so they load at boot.",
  "version": 1,
  "palettes": {
   "_note": "Chapter palettes live in src/ui/styles/tokens.css as CSS custom properties, switched by a data-chapter attribute on the root element \u2014 NOT in JSON. Colour belongs in the stylesheet; this entry exists only to say so, so nobody adds a second source of truth here.",
@@ -14,7 +14,224 @@
    "chapter": null
   }
  ],
- "icons": [],
+ "icons": [
+  {
+   "id": "food",
+   "path": "sprites/icons/food.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "scrap",
+   "path": "sprites/icons/scrap.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "wood",
+   "path": "sprites/icons/wood.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "paper",
+   "path": "sprites/icons/paper.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "iron-ore",
+   "path": "sprites/icons/iron-ore.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "copper-ore",
+   "path": "sprites/icons/copper-ore.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "coal",
+   "path": "sprites/icons/coal.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "gold-ore",
+   "path": "sprites/icons/gold-ore.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "limestone",
+   "path": "sprites/icons/limestone.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "silica-sand",
+   "path": "sprites/icons/silica-sand.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "steel-billet",
+   "path": "sprites/icons/steel-billet.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "copper-wire",
+   "path": "sprites/icons/copper-wire.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "precision-contacts",
+   "path": "sprites/icons/precision-contacts.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "fuel",
+   "path": "sprites/icons/fuel.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "activated-carbon",
+   "path": "sprites/icons/activated-carbon.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "concrete",
+   "path": "sprites/icons/concrete.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "glass",
+   "path": "sprites/icons/glass.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "basic-parts",
+   "path": "sprites/icons/basic-parts.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "electrical-components",
+   "path": "sprites/icons/electrical-components.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "precision-components",
+   "path": "sprites/icons/precision-components.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "scrubber-catalyst",
+   "path": "sprites/icons/scrubber-catalyst.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "power",
+   "path": "sprites/icons/power.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "water",
+   "path": "sprites/icons/water.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "air-quality",
+   "path": "sprites/icons/air-quality.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "labour",
+   "path": "sprites/icons/labour.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "focus",
+   "path": "sprites/icons/focus.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  },
+  {
+   "id": "authority",
+   "path": "sprites/icons/authority.png",
+   "preloadGroup": "boot",
+   "chapter": null,
+   "w": 16,
+   "h": 16
+  }
+ ],
  "sprites": [
   {
    "id": "archive-on",

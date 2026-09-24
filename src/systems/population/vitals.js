@@ -30,6 +30,7 @@ import { residentsByLevel, housingCapacity } from './housing.js';
 import { cohortFactor } from './demography.js';
 import { workScale } from '../buildings/buildingRegistry.js';
 import { take } from '../resources/stores.js';
+import { used } from '../resources/ledger.js';
 
 const CAUSES = ['starvation', 'thirst', 'suffocation', 'illness'];
 
@@ -131,6 +132,7 @@ function eatAtCanteens(state, ctx, perHead) {
     const meal = take(instance, 'food', can * share * perHead);
     instance.fed = perHead > 0 ? meal / perHead : 0;
     eaten += meal;
+    used(state, 'food', meal, 'people');
   }
   return eaten;
 }

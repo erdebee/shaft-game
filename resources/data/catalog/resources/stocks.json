@@ -4,6 +4,8 @@
     {
       "id": "food",
       "name": "Food",
+      "description": "Rations from the hydroponics bays and the protein vats, served in the canteens. It rots in store, slower where food processing works.",
+      "quote": { "text": "It's called protein because nobody would queue for something called vat.", "by": "a canteen cook" },
       "unit": "ration",
       "producedBy": ["hydroponics-bay", "protein-vats"],
       "primaryUse": "Population survival",
@@ -15,6 +17,8 @@
     {
       "id": "scrap",
       "name": "Scrap",
+      "description": "Metal salvaged from the Shaft's own leftovers. The recycler melts it back into steel, and the protein vats take a little for reasons nobody explains.",
+      "quote": { "text": "One man's scrap is another man's staircase. Please stop taking the staircase.", "by": "Engineering notice board" },
       "unit": "t",
       "producedBy": ["salvage-post"],
       "primaryUse": "Feedstock for parts",
@@ -26,6 +30,8 @@
     {
       "id": "wood",
       "name": "Wood",
+      "description": "Grown in the grove, at a real cost in water and space. Nobody needs it to live; everyone wants it in their suite. Pulped into paper.",
+      "quote": { "text": "A tree down here is either a luxury or a political statement. Usually both.", "by": "a Cultivation grower" },
       "unit": "t",
       "producedBy": ["grove"],
       "primaryUse": "Culture, legitimacy, and paper",
@@ -39,6 +45,8 @@
       "id": "paper",
       "reserve": 30,
       "name": "Paper",
+      "description": "Pressed from wood at the workshop. The political layer runs on it: Accord amendments, court records, the archive's shelves.",
+      "quote": { "text": "Every law in the Shaft started as a tree, and some of them still have the knots.", "by": "an Archive clerk" },
       "unit": "quire",
       "producedBy": ["workshop"],
       "primaryUse": "Accord amendments, archives, court records, the Apocrypha's volumes",

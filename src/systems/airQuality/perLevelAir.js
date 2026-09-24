@@ -25,6 +25,7 @@ import { clamp } from '../../utils/math.js';
 import { outputScale } from '../buildings/buildingRegistry.js';
 import { residentsByLevel } from '../population/housing.js';
 import { put } from '../resources/stores.js';
+import { made } from '../resources/ledger.js';
 
 const CATALYST = 'scrubber-catalyst';
 
@@ -140,5 +141,6 @@ function deliverCatalyst(state, ctx) {
   const exit = state.buildings.find((b) => ctx.catalog.buildings.byId[b.buildingId]?.receivesDeliveries);
   if (!exit) return;
   const landed = put(exit, ctx.catalog.buildings.byId[exit.buildingId], ctx, CATALYST, qty);
+  made(state, CATALYST, landed, 'outside');
   if (landed > 0) ctx.emit('supply:delivered', { id: CATALYST, qty: landed, level: exit.level });
 }

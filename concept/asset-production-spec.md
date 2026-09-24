@@ -455,6 +455,51 @@ damage, and the screen reads as *this* picture coming apart.
 
 ---
 
+## 2.9 Resource icons
+
+One 16×16 icon per resource in the catalogue —
+`resources/data/catalog/resources/*.json`, all five kinds — drawn pixel by
+pixel by [`tools/resourceIcons.mjs`](../tools/resourceIcons.mjs) from ASCII
+maps, the same way §2.7's props are. They are listed in the asset manifest's
+`icons` array, not `sprites`, and load at `boot`: a porter can pick a good up
+on the first tick.
+
+**Hand-drawn because a generator cannot take the job.**
+`create_image_pixflux` rejects a 16×16 canvas outright — its floor is 1024 px
+of total area — and a 32×32 generation halved is mush. At this size there are
+about two hundred pixels and every one of them is a decision about silhouette.
+This is §2.7's lesson one size smaller.
+
+**Why 16.** Shaft units are 1:1 with sprite pixels and zoom is whole-numbered
+(§1), so an icon drawn at 16 is 16 units wherever it is used and never scales.
+Three plus padding is 58, which fits across the narrowest room (64); it is also
+the largest size that sits over a 32 px figure without hiding it, which is what
+the porters' carry bubbles need.
+
+**Colours are tokens.** Palette forcing is suspended for room sprites (§6) but
+never was for the UI, and these are UI — they are read against a panel, not
+against rock. Every value in the tool's palette is a custom property declared
+in [`tokens.css`](../src/ui/styles/tokens.css). One reserved colour is
+deliberately absent:
+
+- **`--critical`** is alarm. It belongs to the *state* — the bar the shaft
+  view draws under an icon whose bin is empty — never to the thing itself. An
+  icon that were already red could not go red.
+
+**Water is blue**, in the `--water` ramp. Blue used to be held back for the
+Nexus (principles §6); that was dropped, and the droplet was redrawn.
+
+**Silhouette carries the difference before colour does.** Five of the six
+minerals are "a rock"; drawn as one shape in five tints they are one icon five
+times. Iron is a blunt chunk, copper a chunk with a splinter off it, coal three
+rounded lumps, gold a chunk with veins cut across it, limestone pale and round.
+
+`tests/ui/resourceIcons.test.js` fails when a resource is added to the
+catalogue without an icon, when an icon names no resource, and when one is the
+wrong size or empty. The drawing is not testable and is not tested.
+
+---
+
 ## 3. Files and naming
 
 Kebab-case throughout, matching the building ids in
@@ -481,6 +526,7 @@ resources/assets/sprites/
   structure/<band>-stair.png            |
   structure/<band>-lift.png            /
   figures/<figure-id>.png              one per role in §4.2, 32 × 32, facing right
+  icons/<resource-id>.png              one per resource in the catalogue, 16 × 16 (§2.9)
   overlays/<state>.png                 grime, rust, shutters, chevrons
   ui/<element-id>.png                  panel frames, gauge faces, klaxon
   probe/                               style probes — never shipped, never in the manifest
@@ -491,7 +537,8 @@ resources/assets/sprites/
 `{ id, path, preloadGroup, chapter }` shape its `_plannedGroups` block already
 reserves. Building sprites add one field, `floorY`: the row their figures stand on
 (§2.1). A foreground cut adds `foregroundOf`, the id of the render it was taken
-from (§2.6). There is no build step and no directory listing over `fetch()`, so the
+from (§2.6). Resource icons go in the manifest's `icons` array
+rather than `sprites`, and add `w` and `h` (§2.9). There is no build step and no directory listing over `fetch()`, so the
 manifest is the entry point, not a convenience — the same hard constraint that
 governs the data manifest.
 
@@ -512,6 +559,7 @@ anything gated; `lazy` for the rest.
 | Floor slab, edges | `create_sidescroller_tileset` | 32 px tiles; platform set, so it gives the slab its top surface and end caps |
 | Stairwell column | `create_image_pixflux` + hand fix | 128×104, vertically tileable (§2.2) |
 | Figures | **`tools/figureTemplate.mjs`** → `create_image_pixflux` | 32×32, `init_image` = the role's mannequin template at strength 150, `no_background: true`, facing east. See §4.2 |
+| Resource icons | **`tools/resourceIcons.mjs`** | Hand-drawn, 16×16. No generator takes a canvas this small — see §2.9 |
 | Animated rooms | `animate_image_pixminimax` over the approved `on` render + mask | Full-room strip, loop closed on frame 1 (§2.5) |
 | UI panels, gauges | `create_ui_asset` | `style_image_base64` = an approved building, binding UI to the world |
 | Display font | `create_font` | headings and numerals only |

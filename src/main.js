@@ -19,9 +19,12 @@ import * as inspect from './ui/screens/inspect.js';
 import * as selection from './ui/selection.js';
 import { createShaftView } from './ui/view/shaftView.js';
 import { loadRoomArt } from './ui/view/roomArt.js';
+import { setIcons } from './ui/icons.js';
+import { nameOf } from './systems/resources/stores.js';
 import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
 import * as logPanel from './ui/components/logPanel.js';
+import * as resourceTip from './ui/components/resourceTip.js';
 
 async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   // createRun owns everything deterministic: dataset, state, streams, systems,
@@ -38,6 +41,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
 
   // --- UI --------------------------------------------------------------
   const roomArt = await loadRoomArt();
+  setIcons(roomArt.icons);
 
   const app = document.getElementById('app');
   app.replaceChildren();
@@ -57,6 +61,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   document.documentElement.dataset.chapter = String(chapter);
 
   const timeControls = mountTimeControls(topbar, dispatch);
+  // Any icon carrying data-resource, anywhere on the page, opens the card.
+  resourceTip.mount(() => ({ state, ctx }));
   const shaftView = createShaftView(shaftHost, state, ctx, roomArt);
 
   // Open on the inhabited middle of the shaft rather than level 1. The top
@@ -111,6 +117,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
     timeControls.update(currentState);
     router.update(currentState, ctx);
     logPanel.update(currentState);
+    resourceTip.update();
   };
 
   // One tick before the first frame, so the view opens on a settled sim
@@ -179,6 +186,7 @@ function wireLog(state, ctx) {
 
   const faction = (id) => ctx.catalog.factions.byId[id]?.name ?? id;
   const building = (id) => ctx.catalog.buildings.byId[id]?.name ?? id;
+  const goods = (ids) => ids.map((id) => nameOf(ctx, id).toLowerCase()).join(', ');
   on('unrest:warning', ({ faction: id }) => record(`${faction(id)} warns that the people are losing patience`, 'warn'));
   on('unrest:strike', ({ faction: id }) => record(`${faction(id)} has walked out: its buildings stand empty`, 'critical'));
   on('unrest:strikeEnded', ({ faction: id }) => record(`${faction(id)} is back at work`));
@@ -204,11 +212,11 @@ function wireLog(state, ctx) {
   };
   on('building:starved', ({ instanceId, buildingId, level, missing, tick }) => {
     if (!once(`starved:${instanceId}`, tick)) return;
-    record(`The ${building(buildingId).toLowerCase()} on level ${level} is waiting for ${missing.join(', ')}`, 'warn');
+    record(`The ${building(buildingId).toLowerCase()} on level ${level} is waiting for ${goods(missing)}`, 'warn');
   });
   on('building:blocked', ({ instanceId, buildingId, level, full, tick }) => {
     if (!once(`blocked:${instanceId}`, tick)) return;
-    record(`The ${building(buildingId).toLowerCase()} on level ${level} is full of ${full.join(', ')}: nobody is collecting`, 'warn');
+    record(`The ${building(buildingId).toLowerCase()} on level ${level} is full of ${goods(full)}: nobody is collecting`, 'warn');
   });
   on('haulage:refused', ({ reason }) => {
     record(reason === 'station-full' ? 'The station has no bed for another porter' : 'Nobody in the labour pool to hire', 'warn');
