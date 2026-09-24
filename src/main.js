@@ -25,6 +25,8 @@ import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
 import * as logPanel from './ui/components/logPanel.js';
 import * as resourceTip from './ui/components/resourceTip.js';
+import * as musicToggle from './ui/components/musicToggle.js';
+import { loadMusic, createMusic } from './ui/audio/music.js';
 
 async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   // createRun owns everything deterministic: dataset, state, streams, systems,
@@ -40,7 +42,12 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   placeOpening(state, ctx, dispatchCommand);
 
   // --- UI --------------------------------------------------------------
-  const roomArt = await loadRoomArt();
+  // The score loads beside the art. Music is decoration: if it fails to load,
+  // the game boots silent rather than not at all.
+  const [roomArt, musicFiles] = await Promise.all([
+    loadRoomArt(),
+    loadMusic().catch((err) => { console.warn('Music unavailable:', err); return null; }),
+  ]);
   setIcons(roomArt.icons);
 
   const app = document.getElementById('app');
@@ -61,6 +68,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   document.documentElement.dataset.chapter = String(chapter);
 
   const timeControls = mountTimeControls(topbar, dispatch);
+  const music = musicFiles ? createMusic(musicFiles) : null;
+  if (music) musicToggle.mount(topbar, music);
   // Any icon carrying data-resource, anywhere on the page, opens the card.
   resourceTip.mount(() => ({ state, ctx }));
   const shaftView = createShaftView(shaftHost, state, ctx, roomArt);
@@ -126,7 +135,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   start(engine);
 
   // Exposed for debugging and for driving the sim from the console.
-  window.game = { engine, state, ctx, dispatch, dataset, shaftView };
+  window.game = { engine, state, ctx, dispatch, dataset, shaftView, music };
   return window.game;
 }
 

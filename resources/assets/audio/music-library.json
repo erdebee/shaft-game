@@ -1,0 +1,144 @@
+{
+  "_note": "The musical vocabulary the score engine (src/ui/audio/) draws on: scales, meters, progressions, written themes, bass lines, drum patterns, kits, textures and arrangement sections. A score (audio/scores/*.json) picks from these by name, and tools/music-lab.html offers every name here as a control. Degrees count scale steps from the key's own chord (0), so a progression or theme follows whatever mode it plays in. Theme melody tokens are degree/length (sixteenths), 'r' a rest, '|' a bar line for reading only. Bass lines: digits are scale steps above the chord root (7 = octave), '-' holds, '.' is silence, one line per bar length (16 or 12 steps). Drum tracks: k kick, s snare, r rim, h hat, o open hat, sh shaker, t low tom, T high tom; X accent, x normal, o ghost (thins out at low activity), ? coin flip, . rest.",
+  "version": 1,
+
+  "notes": ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+
+  "scales": {
+    "Lydian — wonder":      [0, 2, 4, 6, 7, 9, 11],
+    "Ionian — bright":      [0, 2, 4, 5, 7, 9, 11],
+    "Mixolydian — warm":    [0, 2, 4, 5, 7, 9, 10],
+    "Dorian — wistful":     [0, 2, 3, 5, 7, 9, 10],
+    "Aeolian — melancholy": [0, 2, 3, 5, 7, 8, 10],
+    "Phrygian — uneasy":    [0, 1, 3, 5, 7, 8, 10]
+  },
+
+  "meters": {
+    "_note": "steps: sixteenths per bar; beat: sixteenths per felt beat; strong: where the melody leans.",
+    "4/4": { "steps": 16, "beat": 4, "strong": 8 },
+    "3/4": { "steps": 12, "beat": 4, "strong": 12 },
+    "6/8": { "steps": 12, "beat": 6, "strong": 6 }
+  },
+
+  "progressions": {
+    "Wander": "wander",
+    "Seeded loop": "loop",
+    "Anthem  I–V–vi–IV": [0, 4, 5, 3],
+    "Epic  i–VI–III–VII": [0, 5, 2, 6],
+    "Andalusian  i–VII–VI–V": [0, 6, 5, 4],
+    "Jazz  ii–V–I–I": [1, 4, 0, 0],
+    "Circle  vi–ii–V–I": [5, 1, 4, 0],
+    "Royal road  IV–V–iii–vi": [3, 4, 2, 5],
+    "Canon  I–V–vi–iii–IV–I–IV–V": [0, 4, 5, 2, 3, 0, 3, 4],
+    "Sway  I–IV": [0, 3],
+    "Lift  I–ii": [0, 1],
+    "Drone  I": [0]
+  },
+
+  "voicings": ["Close", "Open", "Sus", "Quartal"],
+  "harmonies": ["None", "3rds below", "3rds above", "6ths below", "Octaves"],
+  "arpPatterns": ["Up–down", "Up", "Down", "Broken", "Alberti", "Pulse", "Random"],
+  "arpRates": ["Auto", "Off", "Quarters", "8ths", "16ths"],
+
+  "themes": {
+    "Lantern": { "meter": "4/4", "chords": [[0, 2], [3, 2], [0, 2], [6, 1], [4, 1]], "melody":
+      "4/6 3/2 2/4 0/4 | 2/4 4/4 7/8 | 6/6 5/2 4/4 3/4 | 5/8 r/8 | 4/6 3/2 2/4 0/4 | 2/4 4/4 2/4 1/4 | 1/6 3/2 -1/8 | 1/4 0/4 -3/8" },
+    "Morning shift": { "meter": "4/4", "chords": [[0, 2], [1, 2], [5, 2], [1, 1], [4, 1]], "melody":
+      "4/2 2/2 4/2 7/4 6/2 4/4 | 2/2 4/2 2/2 0/6 r/4 | 5/2 3/2 5/2 8/4 7/2 5/4 | 3/2 5/2 3/2 1/6 r/4 | 5/4 7/4 9/4 7/4 | 7/6 5/2 4/8 | 3/4 5/4 8/8 | 6/4 4/4 1/8" },
+    "Descent": { "meter": "4/4", "chords": [[0, 2], [5, 2], [2, 2], [6, 2]], "melody":
+      "4/8 2/4 1/4 | 0/12 r/4 | 0/8 -2/4 -1/4 | 2/12 r/4 | 4/8 6/4 4/4 | 2/12 r/4 | 1/8 3/4 1/4 | 1/8 -1/8" },
+    "Night watch": { "meter": "4/4", "chords": [[0, 4], [6, 2], [4, 2]], "melody":
+      "r/4 4/4 3/4 4/4 | 7/12 r/4 | r/4 4/4 3/4 2/4 | 3/4 2/4 0/8 | r/4 1/4 3/4 6/4 | 5/8 3/8 | r/4 4/4 6/4 8/4 | 7/8 6/4 4/4" },
+    "Music box": { "meter": "3/4", "chords": [[0, 1], [3, 1], [4, 1], [0, 1], [5, 1], [3, 1], [4, 2]], "melody":
+      "0/4 2/4 4/4 | 5/8 3/4 | 4/4 6/4 8/4 | 7/12 | 9/4 7/4 5/4 | 7/4 5/4 3/4 | 4/6 6/2 8/4 | 6/12" },
+    "Mine cart": { "meter": "6/8", "chords": [[0, 2], [6, 2], [0, 2], [3, 1], [4, 1]], "melody":
+      "0/2 2/2 4/2 7/4 4/2 | 5/2 4/2 2/2 0/6 | 6/2 8/2 10/2 8/4 6/2 | 8/2 6/2 5/2 6/6 | 0/2 2/2 4/2 7/4 4/2 | 5/2 4/2 5/2 7/6 | 3/2 5/2 7/2 5/4 3/2 | 4/2 6/2 8/2 6/6" }
+  },
+
+  "bassPatterns": {
+    "Hold": null,
+    "Root–fifth":    { "16": "0-------4-------", "12": "0-----4-----" },
+    "Quarter pulse": { "16": "0--.0--.0--.0--.", "12": "0--.0--.0--." },
+    "Octave bounce": { "16": "0-7-0-7-0-7-0-7-", "12": "0-7-0-7-0-7-" },
+    "Syncopated":    { "16": "0--0--0---4-7---", "12": "0--0--4--7--" },
+    "Walking":       { "16": "0---2---4---5---", "12": "0---2---4---" },
+    "Dotted":        { "16": "0-----0-----4---", "12": "0-----4-----" },
+    "Heartbeat":     { "16": "0-.0------------", "12": "0-.0--------" }
+  },
+
+  "drums": {
+    "None": null,
+    "Heartbeat":       { "meter": "4/4", "k": "X..x............" },
+    "Soft four":       { "meter": "4/4", "k": "X...x...X...x...", "h": "..x...x...x...x.", "sh": "o.o.o.o.o.o.o.o." },
+    "Lo-fi boom bap":  { "meter": "4/4", "k": "X.....x...x.....", "s": "....X.......X...", "h": "x.x.x.x.x.x.x.x?" },
+    "Half-time":       { "meter": "4/4", "k": "X.........x.....", "s": "........X.......", "h": "x.x.x.x.x.x.x.x." },
+    "Trip-hop":        { "meter": "4/4", "k": "X......x..X.....", "s": "....X.......X..o", "h": "x.x.x.x.x.x.x.x.", "o": "..............x." },
+    "Brushed shuffle": { "meter": "4/4", "k": "X.......x.......", "r": "....x.......x...", "sh": "x.ox.ox.ox.ox.ox" },
+    "Mine cart":       { "meter": "4/4", "k": "X.......X.......", "r": "....x.......x...", "sh": "x.xxx.xxx.xxx.xx" },
+    "Bossa":           { "meter": "4/4", "k": "X..xX..xX..xX..x", "r": "x..x..x...x..x..", "h": "x.x.x.x.x.x.x.x." },
+    "Chip march":      { "meter": "4/4", "k": "X...X...X...X...", "s": "....X.......X.x.", "h": "x.x.x.x.x.x.x.x." },
+    "Tribal toms":     { "meter": "4/4", "k": "X.....x...X.....", "t": "..x..x......x..x", "T": "x.......x..x....", "sh": "x.x.x.x.x.x.x.x." },
+    "Breakbeat":       { "meter": "4/4", "k": "X.........X..x..", "s": "....X..o.o..X...", "h": "x.xxx.x.x.xxx.x." },
+    "Waltz":           { "meter": "3/4", "k": "X...........", "s": "....o...o...", "h": "x.x.x.x.x.x." },
+    "Lullaby":         { "meter": "3/4", "k": "X...........", "r": "....x...x...", "sh": "..o...o...o." },
+    "Jig":             { "meter": "6/8", "k": "X.....x.....", "s": "......X.....", "sh": "X.xx.xX.xx.x" },
+    "Campfire shaker": { "meter": "6/8", "k": "X...........", "sh": "X.x.x.x.x.x." }
+  },
+
+  "kits": {
+    "Soft": { "lowpass": 12000,
+      "kick": { "f0": 120, "f1": 45, "decay": 0.45, "click": 0.15, "wave": "sine" },
+      "snare": { "tone": 185, "toneDecay": 0.1, "nHz": 1800, "nQ": 0.7, "nDecay": 0.18, "nLvl": 0.7 },
+      "hat": { "hz": 8000, "decay": 0.045, "lvl": 0.3, "open": 0.3 }, "rim": { "hz": 1700, "decay": 0.03 },
+      "shaker": { "hz": 6500, "decay": 0.06, "lvl": 0.3 }, "tom": { "lo": 110, "hi": 170, "decay": 0.35, "wave": "sine" } },
+    "Lo-fi dusty": { "lowpass": 4500,
+      "kick": { "f0": 100, "f1": 40, "decay": 0.55, "click": 0.05, "wave": "sine" },
+      "snare": { "tone": 170, "toneDecay": 0.08, "nHz": 1400, "nQ": 0.9, "nDecay": 0.22, "nLvl": 0.9 },
+      "hat": { "hz": 7000, "decay": 0.035, "lvl": 0.28, "open": 0.25 }, "rim": { "hz": 1500, "decay": 0.035 },
+      "shaker": { "hz": 5000, "decay": 0.07, "lvl": 0.3 }, "tom": { "lo": 100, "hi": 150, "decay": 0.4, "wave": "sine" } },
+    "Chip": { "lowpass": 16000,
+      "kick": { "f0": 180, "f1": 40, "decay": 0.18, "click": 0, "wave": "square" },
+      "snare": { "tone": 220, "toneDecay": 0.05, "nHz": 4000, "nQ": 0.3, "nDecay": 0.12, "nLvl": 0.8 },
+      "hat": { "hz": 9000, "decay": 0.025, "lvl": 0.25, "open": 0.15 }, "rim": { "hz": 1200, "decay": 0.02 },
+      "shaker": { "hz": 8000, "decay": 0.03, "lvl": 0.2 }, "tom": { "lo": 140, "hi": 220, "decay": 0.15, "wave": "triangle" } },
+    "Hand percussion": { "lowpass": 10000,
+      "kick": { "f0": 95, "f1": 65, "decay": 0.3, "click": 0.3, "wave": "sine" },
+      "snare": { "tone": 330, "toneDecay": 0.06, "nHz": 1100, "nQ": 2.5, "nDecay": 0.08, "nLvl": 1 },
+      "hat": { "hz": 7500, "decay": 0.05, "lvl": 0.25, "open": 0.2 }, "rim": { "hz": 900, "decay": 0.06 },
+      "shaker": { "hz": 5500, "decay": 0.07, "lvl": 0.4 }, "tom": { "lo": 190, "hi": 260, "decay": 0.28, "wave": "sine" } }
+  },
+
+  "textures": {
+    "Cave":           { "wind": 1, "drips": 1 },
+    "Windy shaft":    { "wind": 1.8, "drips": 0.3 },
+    "Rain":           { "wind": 0.3, "rain": 1, "patter": 1 },
+    "Vinyl":          { "crackle": 1 },
+    "Night crickets": { "wind": 0.4, "crickets": 1 },
+    "None":           {}
+  },
+
+  "sections": [
+    { "name": "Intro",     "pad": 1,   "bass": 0, "lead": 0,   "arp": 0.6, "drums": 0,   "texture": 1,   "machine": 1 },
+    { "name": "Verse",     "pad": 1,   "bass": 1, "lead": 1,   "arp": 0,   "drums": 0.7, "texture": 0.7, "machine": 1 },
+    { "name": "Chorus",    "pad": 1,   "bass": 1, "lead": 1,   "arp": 1,   "drums": 1,   "texture": 0.6, "machine": 1 },
+    { "name": "Breakdown", "pad": 1,   "bass": 0, "lead": 0.8, "arp": 0.5, "drums": 0,   "texture": 1,   "machine": 0.5 },
+    { "name": "Verse",     "pad": 0.8, "bass": 1, "lead": 1,   "arp": 0.5, "drums": 0.8, "texture": 0.7, "machine": 1 },
+    { "name": "Chorus",    "pad": 1,   "bass": 1, "lead": 1,   "arp": 1,   "drums": 1,   "texture": 0.6, "machine": 1 }
+  ],
+
+  "defaults": {
+    "_note": "What a score leaves out. A score is a full or partial copy of this block, as the music lab's Settings JSON exports it.",
+    "depth": 0.3, "activity": 0.4, "tension": 0,
+    "root": 2, "scale": "Dorian — wistful", "meter": "4/4", "bpm": 72,
+    "progression": "Wander", "chordBars": 2, "voicing": "Close", "sevenths": 0.6,
+    "melody": "Wander", "variation": 0.3, "register": 0, "harmony": "None", "seed": 1234,
+    "padInst": "Saw strings", "leadInst": "E-piano", "timbre": 0.35,
+    "bassInst": "Sub", "bassPattern": "Hold",
+    "arpInst": "Soft pluck", "arpPattern": "Up–down", "arpRate": "Auto",
+    "drums": "None", "kit": "Soft", "swing": 0, "fills": 0.3, "pump": 0,
+    "arrangement": "Static", "sectionBars": 8, "texture": "Cave",
+    "warmth": 0.55, "space": 0.5, "wobble": 0.3, "drive": 0.2,
+    "vol": { "pad": 0.7, "bass": 0.6, "lead": 0.6, "arp": 0.45, "drums": 0.6, "texture": 0.1, "machine": 0.5, "stings": 0.7, "master": 0.8 },
+    "mute": {}
+  }
+}

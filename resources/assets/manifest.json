@@ -1645,7 +1645,22 @@
    }
   }
  ],
- "audio": [],
+ "audio": [
+  {
+   "id": "music-library",
+   "kind": "music-library",
+   "path": "audio/music-library.json",
+   "preloadGroup": "boot",
+   "chapter": null
+  },
+  {
+   "id": "background",
+   "kind": "score",
+   "path": "audio/scores/background.json",
+   "preloadGroup": "boot",
+   "chapter": null
+  }
+ ],
  "_plannedGroups": {
   "_note": "The shape entries will take, recorded now so the first real asset does not have to invent it: { id, path, preloadGroup, chapter }. Ids are kebab-case and stable, like every other id in the project.",
   "example": {
