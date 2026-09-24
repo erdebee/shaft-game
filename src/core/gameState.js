@@ -50,7 +50,9 @@ export function createGameState({ chapter, dataset, seed }) {
     buildings: [],
     nextInstanceId: 1,
     maintenance: initialMaintenance(config),
-    haulage: { trips: [], nextTripId: 1 },
+    // Routes are the player's, named and shared: any number of porters may
+    // walk one (systems/haulage/haulageMethods.js).
+    haulage: { trips: [], nextTripId: 1, routes: [], nextRouteId: 1 },
     // The networks the player lays by hand (systems/infrastructure/
     // networkGraph.js): cables, pipes, drains and ducts between buildings.
     infrastructure: { links: [], nextLinkId: 1 },

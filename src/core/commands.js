@@ -235,13 +235,65 @@ const HANDLERS = {
     log(state, `${porter.name} dismissed from portering`);
   },
 
-  /** Give a porter a route: stops they walk in order, then loop. */
-  'player:setRoute': (state, ctx, cmd) => {
-    const porter = state.population.workers.find((w) => w.id === cmd.workerId && w.job === 'porter');
-    const stops = porter ? validRoute(state, ctx, cmd.stops) : null;
+  /**
+   * Define a new route, empty unless `stops` are given, named `name` or
+   * "Route n". With a `workerId`, that porter is assigned to it at once.
+   */
+  'player:createRoute': (state, ctx, cmd) => {
+    const stops = validRoute(state, ctx, cmd.stops ?? []);
     if (!stops) return;
-    porter.route = stops;
-    porter.stop = Math.min(porter.stop ?? 0, Math.max(0, stops.length - 1));
+    const n = state.haulage.nextRouteId;
+    const route = { id: `r${n}`, name: routeName(cmd.name) ?? `Route ${n}`, stops };
+    state.haulage.nextRouteId += 1;
+    state.haulage.routes.push(route);
+    if (cmd.workerId !== undefined) HANDLERS['player:assignRoute'](state, ctx, { workerId: cmd.workerId, routeId: route.id });
+  },
+
+  'player:renameRoute': (state, ctx, cmd) => {
+    const route = state.haulage.routes.find((r) => r.id === cmd.routeId);
+    const name = routeName(cmd.name);
+    if (route && name) route.name = name;
+  },
+
+  /** Set a route's stops: walked in order, then looped, by every porter on it. */
+  'player:setRoute': (state, ctx, cmd) => {
+    const route = state.haulage.routes.find((r) => r.id === cmd.routeId);
+    const stops = route ? validRoute(state, ctx, cmd.stops) : null;
+    if (!stops) return;
+    route.stops = stops;
+    for (const porter of state.population.workers) {
+      if (porter.routeId !== route.id) continue;
+      porter.stop = Math.min(porter.stop ?? 0, Math.max(0, stops.length - 1));
+      porter.item = 0;
+    }
+  },
+
+  /** Take a route away. Its porters are left with none, and go home. */
+  'player:deleteRoute': (state, ctx, cmd) => {
+    const route = state.haulage.routes.find((r) => r.id === cmd.routeId);
+    if (!route) return;
+    state.haulage.routes = state.haulage.routes.filter((r) => r !== route);
+    for (const porter of state.population.workers) {
+      if (porter.routeId === route.id) {
+        porter.routeId = null;
+        porter.stop = 0;
+        porter.item = 0;
+      }
+    }
+  },
+
+  /**
+   * Put a porter on a route, or on none with null. A porter moved to another
+   * route starts it from the first stop, carrying what they hold.
+   */
+  'player:assignRoute': (state, ctx, cmd) => {
+    const porter = state.population.workers.find((w) => w.id === cmd.workerId && w.job === 'porter');
+    if (!porter) return;
+    if (cmd.routeId !== null && !state.haulage.routes.some((r) => r.id === cmd.routeId)) return;
+    if (porter.routeId === cmd.routeId) return;
+    porter.routeId = cmd.routeId;
+    porter.stop = 0;
+    porter.item = 0;
   },
 
   /** How many crews go round repairing, ahead of every building's staff. */
@@ -427,4 +479,10 @@ function withoutOrphans(links) {
     kept.add(l.id);
     return true;
   });
+}
+
+/** A route's name, trimmed and kept short, or null if there is none. */
+function routeName(name) {
+  const clean = typeof name === 'string' ? name.trim().slice(0, 40) : '';
+  return clean || null;
 }

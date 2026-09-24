@@ -22,7 +22,6 @@ import { recipesFor } from '../../systems/resources/componentChain.js';
 import { factionOf } from '../../systems/population/staffing.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
 import { amount, capacity, inputsOf, outputsOf, isStorage, bandOf, nameOf } from '../../systems/resources/stores.js';
-import * as routeEditor from './routeEditor.js';
 import { renderStation } from './porters.js';
 import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
@@ -328,37 +327,36 @@ function rateOf(def, ctx, id, role) {
 }
 
 /**
- * The porters whose routes call at this building: each a button that opens
- * their route and follows them, with the goods they bring here and the goods
- * they take away, as icons that open the resource card.
+ * The routes that call at this building: each a button that opens the route
+ * (following its first porter), with the goods it brings here and the goods
+ * it takes away, as icons that open the resource card, and who walks it.
  */
 function renderVisitors(root, key, state, ctx, instance) {
   const visits = visitorsOf(state, instance.instanceId);
-  const sig = JSON.stringify(visits.map((v) => [v.porter.id, v.stops, v.brings, v.takes]));
+  const sig = JSON.stringify(visits.map((v) => [v.route.id, v.route.name, v.porters.map((p) => p.id), v.stops, v.brings, v.takes]));
   if (key.value !== sig) {
     key.value = sig;
     root.replaceChildren();
     root.rows = [];
     if (!visits.length) return;
-    root.appendChild(el('h3', 'build-zone', 'Porters calling here'));
-    for (const { porter, stops, brings, takes } of visits) {
+    root.appendChild(el('h3', 'build-zone', 'Routes calling here'));
+    for (const { route, porters, stops, brings, takes } of visits) {
       const row = el('div', 'visitor-row');
-      const name = button(porter.name, `Open ${porter.name}'s route and follow them`, () => selection.editRoute(porter.id, { follow: true }), 'visitor-name');
+      const lead = porters[0] ?? null;
+      const name = button(route.name, lead ? `Open ${route.name} and follow ${lead.name}` : `Open ${route.name}`, () => selection.editRoute(route.id, { follow: lead?.id ?? null }), 'visitor-name');
       const where = el('span', 'meter-label', `stop ${stops.map((i) => i + 1).join(', ')}`);
       const goods = el('span', 'visitor-goods');
       if (brings.length) goods.append(el('span', 'meter-label', 'brings'), ...brings.map((id) => goodIcon(ctx, id)));
       if (takes.length) goods.append(el('span', 'meter-label', 'takes'), ...takes.map((id) => goodIcon(ctx, id)));
-      const doing = el('span', 'meter-label visitor-doing');
-      row.append(name, where, goods, doing);
+      const walkers = el('span', 'meter-label visitor-doing', porters.length ? porters.map((p) => p.name).join(', ') : 'no porter on it');
+      row.append(name, where, goods, walkers);
       root.appendChild(row);
-      root.rows.push({ porter, doing });
     }
   }
-  for (const { porter, doing } of root.rows ?? []) doing.textContent = routeEditor.describe(state, ctx, porter);
 }
 
 /** A good's icon, small, opening the resource card; its name if it has none. */
-function goodIcon(ctx, id) {
+export function goodIcon(ctx, id) {
   const icon = iconOf(id);
   const node = icon ? el('img', 'visitor-icon') : el('span', 'visitor-icon visitor-icon-missing', nameOf(ctx, id).slice(0, 3));
   if (icon) {

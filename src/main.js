@@ -17,6 +17,7 @@ import * as dashboard from './ui/screens/dashboard.js';
 import * as build from './ui/screens/build.js';
 import * as infrastructure from './ui/screens/infrastructureScreen.js';
 import * as porters from './ui/screens/porters.js';
+import * as routes from './ui/screens/routes.js';
 import * as inspect from './ui/screens/inspect.js';
 import * as accord from './ui/screens/accordScreen.js';
 import * as selection from './ui/selection.js';
@@ -109,7 +110,7 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   const tabs = [
     { label: 'Stats', screens: [['dashboard', 'Stats', dashboard]] },
     { label: 'Build', screens: [['buildings', 'Buildings', build], ['infrastructure', 'Infrastructure', infrastructure]] },
-    { label: 'Porters', screens: [['porters', 'Porters', porters]] },
+    { label: 'Porters', screens: [['porters', 'Porters', porters], ['routes', 'Routes', routes]] },
     { label: 'Accord', screens: [['accord', 'Accord', accord]] },
   ];
   // Inspect has no tab: a room clicked in the shaft opens it.
@@ -136,6 +137,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   const show = (name) => {
     // The shaft draws a network only while the Infrastructure panel is open.
     if (name !== 'infrastructure') selection.showNetwork(null);
+    // And a route viewed from the Routes list only while that list is open.
+    if (name !== 'routes') selection.viewRoute(null);
     if (router.current() !== name) router.go(name);
     // A building in hand belongs to the Buildings tab: leaving it drops it.
     if (name !== 'buildings') selection.place(null);
@@ -154,17 +157,17 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   show('dashboard');
 
   // Clicking the shaft picks something: a room opens it in Inspect, an empty
-  // stretch of a level opens the Buildings tab. While a porter's route is open the Porters tab holds the editor,
+  // stretch of a level opens the Buildings tab. While a route is open the Routes tab holds the editor,
   // and a click on a room offers to add it as a stop instead; closing the
-  // route leaves the player on the Porters tab.
+  // route leaves the player on the Routes tab.
   let wasEditing = null;
   selection.subscribe(({ instanceId, level, editing }, kind) => {
-    // Opening a network or laying a link changes what the shaft draws, not
-    // which panel is open.
-    if (kind === 'network') return;
+    // Opening a network, laying a link or viewing a route changes what the
+    // shaft draws, not which panel is open.
+    if (kind === 'network' || kind === 'view') return;
     const closed = wasEditing && !editing;
     wasEditing = editing;
-    if (editing) show('porters');
+    if (editing) show('routes');
     else if (closed) return;
     else if (instanceId) show('inspect');
     else if (level !== null) show('buildings');

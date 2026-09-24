@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 
 import { runWith, ticks, instanceOf } from '../helpers/sim.js';
 import { dispatch } from '../../src/core/commands.js';
-import { porterStatus } from '../../src/systems/haulage/haulageMethods.js';
+import { porterStatus, stopsOf, portersOn } from '../../src/systems/haulage/haulageMethods.js';
 
 const CALM = { 'water.potablePerCapitaPerTick': 0, 'air.contaminantPerCapitaPerTick': 0 };
 
@@ -21,8 +21,10 @@ async function withPorter(layout, options = {}) {
   return { run, station, porter };
 }
 
+/** Set the porter's route's stops, giving them a route of their own first if they have none. */
 function route(run, porter, stops) {
-  dispatch(run.state, run.ctx, { type: 'player:setRoute', workerId: porter.id, stops });
+  if (porter.routeId === null) dispatch(run.state, run.ctx, { type: 'player:createRoute', workerId: porter.id });
+  dispatch(run.state, run.ctx, { type: 'player:setRoute', routeId: porter.routeId, stops });
 }
 
 test('a porter is hired at a station and waits there with no route', async () => {
@@ -163,9 +165,9 @@ test('a route with a malformed stop is refused whole', async () => {
     { instanceId: depot.instanceId, action: 'pickup', goodId: 'food', qty: 'all' },
     { instanceId: depot.instanceId, action: 'steal', goodId: 'food', qty: 'all' },
   ]);
-  assert.equal(porter.route.length, 1);
+  assert.equal(stopsOf(run.state, porter).length, 1);
   route(run, porter, [{ instanceId: 'b999', action: 'pickup', goodId: 'food', qty: 'all' }]);
-  assert.equal(porter.route[0].instanceId, depot.instanceId);
+  assert.equal(stopsOf(run.state, porter)[0].instanceId, depot.instanceId);
 });
 
 test('a drop-off with a share leaves that share of what the porter holds, and carries the rest on', async () => {
@@ -187,13 +189,97 @@ test('a pick-up of 0 takes nothing, and a share is only for drop-offs', async ()
   const depot = instanceOf(run, 'depot');
   depot.stock = { scrap: 100 };
   route(run, porter, [{ instanceId: depot.instanceId, action: 'pickup', goodId: 'scrap', qty: 0 }]);
-  assert.equal(porter.route[0].qty, 0);
+  assert.equal(stopsOf(run.state, porter)[0].goods[0].qty, 0);
   ticks(run, 30);
   assert.equal(depot.stock.scrap, 100);
   assert.equal(porter.carrying.scrap ?? 0, 0);
 
   route(run, porter, [{ instanceId: depot.instanceId, action: 'pickup', goodId: 'scrap', qty: 'all', share: 0.5 }]);
-  assert.equal(porter.route[0].qty, 0, 'refused: a pick-up has no share');
+  assert.equal(stopsOf(run.state, porter)[0].goods[0].qty, 0, 'refused: a pick-up has no share');
   route(run, porter, [{ instanceId: depot.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all', share: 1.5 }]);
-  assert.equal(porter.route[0].action, 'pickup', 'refused: a share is at most 1');
+  assert.equal(stopsOf(run.state, porter)[0].goods[0].action, 'pickup', 'refused: a share is at most 1');
+});
+
+test('routes are named, shared by the porters assigned to them, and let go when deleted', async () => {
+  const { run, station, porter } = await withPorter([['depot', 20], ['depot', 21]]);
+  dispatch(run.state, run.ctx, { type: 'player:hirePorter', instanceId: station.instanceId });
+  const second = run.state.population.workers.at(-1);
+  const [from, to] = run.state.buildings.filter((b) => b.buildingId === 'depot');
+  from.stock = { scrap: 300 };
+
+  dispatch(run.state, run.ctx, { type: 'player:createRoute', name: '  Scrap run  ' });
+  const made = run.state.haulage.routes.at(-1);
+  assert.equal(made.name, 'Scrap run');
+  assert.equal(made.stops.length, 0);
+  dispatch(run.state, run.ctx, { type: 'player:renameRoute', routeId: made.id, name: '   ' });
+  assert.equal(made.name, 'Scrap run', 'a blank name is refused');
+  dispatch(run.state, run.ctx, { type: 'player:renameRoute', routeId: made.id, name: 'Down the stairs' });
+  assert.equal(made.name, 'Down the stairs');
+
+  dispatch(run.state, run.ctx, { type: 'player:setRoute', routeId: made.id, stops: [
+    { instanceId: from.instanceId, action: 'pickup', goodId: 'scrap', qty: 'all' },
+    { instanceId: to.instanceId, action: 'dropoff', goodId: 'scrap', qty: 'all' },
+  ] });
+  for (const w of [porter, second]) dispatch(run.state, run.ctx, { type: 'player:assignRoute', workerId: w.id, routeId: made.id });
+  assert.deepEqual(portersOn(run.state, made.id).map((w) => w.id), [porter.id, second.id]);
+  dispatch(run.state, run.ctx, { type: 'player:assignRoute', workerId: porter.id, routeId: 'r999' });
+  assert.equal(porter.routeId, made.id, 'an unknown route is refused');
+
+  ticks(run, 120);
+  assert.equal(to.stock.scrap, 300, 'both porters walk the one route');
+  assert.ok(porter.levelsWalked > 0 && second.levelsWalked > 0);
+
+  dispatch(run.state, run.ctx, { type: 'player:deleteRoute', routeId: made.id });
+  assert.equal(run.state.haulage.routes.length, 0);
+  assert.equal(porter.routeId, null);
+  assert.equal(second.routeId, null);
+  ticks(run, 60);
+  assert.equal(porterStatus(run.state, porter), 'idle');
+  assert.equal(porter.at, station.instanceId, 'a porter with no route goes home');
+});
+
+test('a new route can be made for a porter in the same command', async () => {
+  const { run, porter } = await withPorter([]);
+  dispatch(run.state, run.ctx, { type: 'player:createRoute', workerId: porter.id });
+  assert.equal(porter.routeId, run.state.haulage.routes.at(-1).id);
+  assert.equal(run.state.haulage.routes.at(-1).name, 'Route 1');
+});
+
+test('a stop handles several goods, each with its own amount: drop-offs first, then pick-ups', async () => {
+  const { run, porter } = await withPorter([['depot', 20], ['depot', 21]]);
+  const [a, b] = run.state.buildings.filter((x) => x.buildingId === 'depot');
+  const cap = run.ctx.config.haulage.porterCapacity;
+  a.stock = { scrap: 100, coal: 100 };
+  b.stock = { coal: cap };
+  route(run, porter, [
+    { instanceId: a.instanceId, goods: [
+      { action: 'pickup', goodId: 'scrap', qty: 'all' },
+      { action: 'pickup', goodId: 'coal', qty: 30 },
+    ] },
+    { instanceId: b.instanceId, goods: [
+      { action: 'pickup', goodId: 'coal', qty: cap },
+      { action: 'dropoff', goodId: 'scrap', qty: 'all', share: 0.5 },
+      { action: 'dropoff', goodId: 'coal', qty: 'all' },
+    ] },
+  ]);
+  const stop = stopsOf(run.state, porter)[1];
+  assert.equal(stop.goods.length, 3);
+  // Until the porter has been round once and set off back to the first stop.
+  while (!(b.stock.scrap && porter.stop === 0 && porter.tripId !== null)) ticks(run, 1);
+  assert.equal(a.stock.scrap ?? 0, 0, 'all the scrap was taken');
+  assert.equal(a.stock.coal, 70, 'and 30 of the coal');
+  assert.equal(b.stock.scrap, 50, 'half the scrap was left at the second stop');
+  assert.equal(porter.carrying.scrap, 50, 'and the other half carried on');
+  // The coal was dropped before the pick-up, so it went into a full depot's
+  // room only as far as there was room, and then the porter filled their arms.
+  assert.ok(porter.carrying.coal > 0);
+});
+
+test('a stop in the old one-good form is still taken, as a stop with that one good', async () => {
+  const { run, porter } = await withPorter([['depot', 20]]);
+  const depot = instanceOf(run, 'depot');
+  route(run, porter, [{ instanceId: depot.instanceId, action: 'pickup', goodId: 'scrap', qty: 5 }]);
+  assert.deepEqual(stopsOf(run.state, porter), [{ instanceId: depot.instanceId, goods: [{ action: 'pickup', goodId: 'scrap', qty: 5 }] }]);
+  route(run, porter, [{ instanceId: depot.instanceId, goods: [] }]);
+  assert.equal(stopsOf(run.state, porter)[0].goods[0].qty, 5, 'refused: a stop needs a good');
 });

@@ -272,6 +272,8 @@ body {
 .minimap-stop circle { stroke: var(--rock); stroke-width: 1; }
 .minimap-stop.route-pickup circle { fill: var(--amber); }
 .minimap-stop.route-dropoff circle { fill: var(--terminal-lit); }
+/* A stop that both loads and unloads: the pick-up colour, ringed in the drop-off one. */
+.minimap-stop.route-mixed circle { fill: var(--amber); stroke: var(--terminal-lit); stroke-width: 2; }
 .minimap-stop text { font: 700 8px var(--font-mono); text-anchor: middle; fill: var(--rock); }
 
 .minimap-window {
@@ -719,11 +721,14 @@ body {
 
 .route-layer { pointer-events: none; }
 .route-marker rect { stroke: var(--rock); stroke-width: 1; }
-.route-marker text { font: 700 8px var(--font-mono); text-anchor: middle; }
-.route-pickup rect { fill: var(--amber); }
-.route-pickup text { fill: var(--rock); }
-.route-dropoff rect { fill: var(--terminal-lit); }
-.route-dropoff text { fill: var(--rock); }
+.route-marker text { font: 700 8px var(--font-mono); text-anchor: middle; fill: var(--rock); }
+.route-marker .route-tag { fill: var(--panel); }
+.route-pickup .route-tag-num { fill: var(--amber); }
+.route-dropoff .route-tag-num { fill: var(--terminal-lit); }
+.route-mixed .route-tag-num { fill: var(--amber); }
+.route-marker .route-tag-num-half { fill: var(--terminal-lit); stroke: none; }
+.route-marker .route-tag-text { font: 500 7px var(--font-mono); text-anchor: start; fill: var(--sign-ink); }
+.route-tag-icon { image-rendering: pixelated; }
 .route-marker .route-marker-band { stroke: none; }
 .route-marker-remove { pointer-events: auto; cursor: pointer; }
 .route-marker-remove rect { fill: var(--panel); stroke: var(--rock); }
@@ -806,6 +811,7 @@ body {
 }
 .route-n.route-pickup { background: var(--amber); }
 .route-n.route-dropoff { background: var(--terminal-lit); }
+.route-n.route-mixed { background: linear-gradient(var(--amber) 50%, var(--terminal-lit) 50%); }
 .route-remove {
   width: 1.1rem;
   height: 1.1rem;
@@ -824,7 +830,12 @@ body {
 .route-pick .route-room { flex: 1 1 auto; min-width: 0; }
 .route-controls { display: flex; gap: var(--space-1); }
 .route-controls .icon-button { min-width: 1.5rem; padding: 0 var(--space-1); }
-.route-what { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.route-good { grid-column: 2 / -1; display: flex; flex-direction: column; gap: var(--space-1); }
+.route-good + .route-good { padding-top: var(--space-1); border-top: 1px dashed var(--panel-edge); }
+.route-add-good { grid-column: 2 / -1; justify-self: start; font-size: var(--size-xs); }
+.route-what { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.route-what .inspect-select { flex: 1 1 0; min-width: 0; }
+.route-what .route-remove { flex: none; }
 .route-stop .inspect-select { font-size: var(--size-xs); }
 .route-amount {
   grid-column: 2 / -1;
@@ -889,7 +900,37 @@ body {
   .route-flow[data-part="flow"] { animation: none; }
 }
 
-/* The porters whose routes call at the inspected building. */
+/* The route editor's name field, and the porters on the route. */
+.route-name {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel-raised);
+  border: var(--border);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+.route-name:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.route-crew { margin: var(--space-2) 0; }
+.route-crew-row { grid-template-columns: 1fr auto; }
+.route-assign { font-size: var(--size-xs); flex: 0 1 auto; }
+
+/* The Routes tab: one card per route. */
+.route-overview { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.route-card { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); border: var(--border); }
+.route-card.viewing { border-color: var(--amber); }
+.route-card-head { display: grid; grid-template-columns: 1fr auto auto auto; gap: var(--space-1) var(--space-2); align-items: center; }
+.route-card-head .route-card-name { grid-column: 1 / -1; }
+.route-card-head .text-button[aria-pressed="true"] { color: var(--sign-ink); border-color: var(--amber); }
+.route-card-head .text-button.danger { margin-top: 0; }
+.route-card-name { font-weight: 500; overflow-wrap: anywhere; }
+.route-card-crew { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.route-card-crew .route-assign { width: auto; max-width: 12rem; }
+.route-chip { display: inline-flex; align-items: center; gap: 2px; }
+.route-card-goods { justify-self: start; }
+
+/* The routes that call at the inspected building. */
 .inspect-visitors { margin: var(--space-2) 0; }
 .visitor-row {
   display: grid;
@@ -917,7 +958,9 @@ body {
 .visitor-icon-missing { font-size: 9px; color: var(--ink); }
 .visitor-doing { grid-column: 1 / -1; }
 .inspect-store, .inspect-station { margin: var(--space-2) 0; }
-.porter-row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-1); align-items: center; margin-bottom: var(--space-1); }
+.porter-row { display: grid; grid-template-columns: 1fr minmax(0, 9rem) auto auto; gap: var(--space-1); align-items: center; margin-bottom: var(--space-1); }
+.porter-route { font-size: var(--size-xs); min-width: 0; }
+.porter-row .text-button.danger { margin-top: 0; }
 .porter-name { font-size: var(--size-sm); }
 .porter-doing { grid-column: 1 / -1; }
 

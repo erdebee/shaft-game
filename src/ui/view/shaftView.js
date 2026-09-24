@@ -784,6 +784,12 @@ function attachInteraction(view, state, ctx) {
     const hit = document.elementFromPoint(event.clientX, event.clientY);
     const plate = hit?.closest?.('.stock-popover');
     const node = hit?.closest?.('.building') ?? (plate ? view.buildingNodes.get(plate.dataset.instance) : null);
+    // A route only being viewed from the Routes list closes at the first
+    // click in the shaft, and the click does nothing else.
+    if (selection.get().viewing && !selection.get().editing) {
+      selection.viewRoute(null);
+      return;
+    }
     // While a route is open, a room is a stop to add and a marker's ✕ a stop
     // to remove (routeLayer.js), not something to inspect.
     if (selection.get().editing && view.routes.pick(state, hit, node, event)) return;

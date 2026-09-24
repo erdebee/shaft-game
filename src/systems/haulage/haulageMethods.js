@@ -3,13 +3,17 @@
  * The `haulage` system: porters, and nothing but porters, move goods between
  * buildings' stores (systems/resources/stores.js).
  *
- * A porter works a ROUTE the player sets: a loop of stops, each naming a
- * building, an action (pick up or drop off), a good, and a quantity ('all',
- * or a number per visit, 0 included). A drop-off may also carry a SHARE: the
- * fraction, 0 to 1, of what the porter holds of that good on arrival that they
- * leave there — so a route can split one load between several rooms. The
- * porter walks the stairwell to the stop's level, does what the stop says,
- * and goes on to the next; after the last stop, the first again. A pick-up
+ * A porter works a ROUTE the player defines: a named loop of stops, kept in
+ * state.haulage.routes and shared — any number of porters may be assigned to
+ * one, each walking it from their own place in the loop. Each stop names a
+ * building and the GOODS handled there: one or more, each with an action (pick
+ * up or drop off), a good, and a quantity ('all', or a number per visit, 0
+ * included). A drop-off may also carry a SHARE: the fraction, 0 to 1, of what
+ * the porter holds of that good on arrival that they leave there — so a route
+ * can split one load between several rooms. The porter walks the stairwell to
+ * the stop's level, handles its goods one after another — every drop-off
+ * before any pick-up, so what they leave makes room for what they take — and
+ * goes on to the next stop; after the last stop, the first again. A pick-up
  * takes what is there, up to the quantity and the room in the porter's arms;
  * a drop-off leaves its share (all, if it has none), up to the quantity and
  * what the building has room for, and carries the rest on. A stop at a
@@ -38,12 +42,12 @@
  * The freight elevator and dumbwaiter carry nothing yet: lift cars come with
  * their own art, and until then every porter walks.
  *
- * Owns state.haulage and each porter's level, route position, load and
- * fatigue from walking.
+ * Owns state.haulage (trips and routes) and each porter's level, route
+ * position (the stop, and the good within it), load and fatigue from walking.
  */
 
 import { clamp } from '../../utils/math.js';
-import { amount, put, take } from '../resources/stores.js';
+import { put, take } from '../resources/stores.js';
 
 export function tick(state, ctx) {
   arriveTrips(state, ctx);
@@ -69,6 +73,22 @@ export function load(porter) {
   return sum;
 }
 
+/** The route a porter is assigned to, or null. */
+export function routeOf(state, porter) {
+  if (porter?.routeId == null) return null;
+  return state.haulage.routes.find((r) => r.id === porter.routeId) ?? null;
+}
+
+/** The stops a porter walks: their route's, or none. */
+export function stopsOf(state, porter) {
+  return routeOf(state, porter)?.stops ?? [];
+}
+
+/** The porters assigned to a route, in hire order. */
+export function portersOn(state, routeId) {
+  return porters(state).filter((w) => w.routeId === routeId);
+}
+
 /**
  * What a porter is doing, for the panel: 'walking', 'loading', 'unloading',
  * 'resting', 'idle' (no route), or 'working' (at a stop).
@@ -77,14 +97,18 @@ export function porterStatus(state, porter) {
   if (porter.tripId !== null) return 'walking';
   if (porter.handling) return porter.handling.action === 'pickup' ? 'loading' : 'unloading';
   if (porter.resting) return 'resting';
-  if (!porter.route?.length) return 'idle';
+  if (!stopsOf(state, porter).length) return 'idle';
   return 'working';
 }
 
 /**
- * Check a route before it is set. Each stop needs a standing building, an
- * action, a physical good, and 'all' or a quantity of 0 or more; a drop-off's
- * share, if it has one, is a fraction from 0 to 1. Returns the cleaned stops,
+ * Check a route before it is set. Each stop needs a standing building and at
+ * least one good; each good an action, a physical good, and 'all' or a
+ * quantity of 0 or more; a drop-off's share, if it has one, is a fraction from
+ * 0 to 1. A stop in the older one-good form — its action, good and quantity
+ * on the stop itself — is taken as a stop with that one good. A stop's goods
+ * are kept in the order they are handled (handlingOrder), so every view of a
+ * route lists them the way the porter works them. Returns the cleaned stops,
  * or null if any stop is malformed.
  */
 export function validRoute(state, ctx, stops) {
@@ -92,18 +116,36 @@ export function validRoute(state, ctx, stops) {
   const out = [];
   for (const stop of stops) {
     if (!state.buildings.some((b) => b.instanceId === stop?.instanceId)) return null;
-    if (stop.action !== 'pickup' && stop.action !== 'dropoff') return null;
-    const good = ctx.catalog.stocks.byId[stop.goodId] || ctx.catalog.minerals.byId[stop.goodId] || ctx.catalog.components.byId[stop.goodId];
-    if (!good) return null;
-    if (stop.qty !== 'all' && !(Number.isFinite(stop.qty) && stop.qty >= 0)) return null;
-    const clean = { instanceId: stop.instanceId, action: stop.action, goodId: stop.goodId, qty: stop.qty };
-    if (stop.share !== undefined) {
-      if (stop.action !== 'dropoff' || !(Number.isFinite(stop.share) && stop.share >= 0 && stop.share <= 1)) return null;
-      clean.share = stop.share;
+    const goods = Array.isArray(stop.goods) ? stop.goods : [stop];
+    if (goods.length === 0) return null;
+    const clean = [];
+    for (const item of goods) {
+      const good = validItem(ctx, item);
+      if (!good) return null;
+      clean.push(good);
     }
-    out.push(clean);
+    out.push({ instanceId: stop.instanceId, goods: handlingOrder({ goods: clean }) });
   }
   return out;
+}
+
+/** One good at a stop, cleaned, or null if it is malformed. */
+function validItem(ctx, item) {
+  if (item?.action !== 'pickup' && item?.action !== 'dropoff') return null;
+  const good = ctx.catalog.stocks.byId[item.goodId] || ctx.catalog.minerals.byId[item.goodId] || ctx.catalog.components.byId[item.goodId];
+  if (!good) return null;
+  if (item.qty !== 'all' && !(Number.isFinite(item.qty) && item.qty >= 0)) return null;
+  const clean = { action: item.action, goodId: item.goodId, qty: item.qty };
+  if (item.share !== undefined) {
+    if (item.action !== 'dropoff' || !(Number.isFinite(item.share) && item.share >= 0 && item.share <= 1)) return null;
+    clean.share = item.share;
+  }
+  return clean;
+}
+
+/** A stop's goods in the order they are handled: drop-offs, then pick-ups. */
+export function handlingOrder(stop) {
+  return [...stop.goods.filter((g) => g.action === 'dropoff'), ...stop.goods.filter((g) => g.action === 'pickup')];
 }
 
 /** Complete trips whose arrival tick has come. */
@@ -145,32 +187,41 @@ function act(state, ctx, porter) {
     return;
   }
 
-  const route = porter.route ?? [];
+  const route = stopsOf(state, porter);
   if (route.length === 0) {
     if (station && porter.at !== station.instanceId) walk(state, ctx, porter, station);
     return;
   }
 
-  // Skip stops at buildings that are gone, but never loop forever on a route
-  // whose every stop is gone.
-  for (let tries = 0; tries < route.length; tries++) {
+  // Skip stops at buildings that are gone, and go straight on from a stop
+  // whose goods are all handled, but never loop forever on a route whose
+  // every stop is gone.
+  for (let tries = 0; tries <= route.length; tries++) {
     const stop = route[porter.stop % route.length];
     const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
-    if (!building) {
-      porter.stop = (porter.stop + 1) % route.length;
-      continue;
-    }
-    if (porter.at !== building.instanceId) {
+    if (building && porter.at !== building.instanceId) {
       walk(state, ctx, porter, building);
       return;
     }
-    work(state, ctx, porter, stop, building);
+    if (building) {
+      // One good at a time: each one moved takes its own handling time, and
+      // the next is picked up when that is done.
+      const goods = handlingOrder(stop);
+      while ((porter.item ?? 0) < goods.length) {
+        const moved = work(state, ctx, porter, goods[porter.item ?? 0], building);
+        porter.item = (porter.item ?? 0) + 1;
+        if (moved) return;
+      }
+    }
+    porter.item = 0;
     porter.stop = (porter.stop + 1) % route.length;
-    return;
   }
 }
 
-/** Do what a stop says, at the building the porter is standing at. */
+/**
+ * Do what one good at a stop says, at the building the porter is standing
+ * at. Returns how much changed hands.
+ */
 function work(state, ctx, porter, stop, building) {
   const def = ctx.catalog.buildings.byId[building.buildingId];
   porter.carrying ??= {};
@@ -209,6 +260,7 @@ function work(state, ctx, porter, stop, building) {
       untilTick: startTick + Math.max(1, Math.ceil(cfg.handleTicks + moved / cfg.handlePerTick)),
     };
   }
+  return moved;
 }
 
 /** Where on its level's floor a room's middle is, in slots from the stairhead. */
@@ -258,10 +310,4 @@ function walk(state, ctx, porter, target) {
   state.haulage.nextTripId += 1;
   state.haulage.trips.push(trip);
   porter.tripId = trip.id;
-}
-
-/** What a stop would move right now — for the route editor's preview. */
-export function stopAvailable(state, stop) {
-  const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
-  return building ? amount(building, stop.goodId) : 0;
 }

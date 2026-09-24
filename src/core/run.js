@@ -124,8 +124,8 @@ function layOpeningNetworks(state, ctx, dispatch) {
 }
 
 /**
- * The porters the Shaft opens with, each hired at their station and given
- * their route, through the same commands the player uses. Stops name
+ * The porters the Shaft opens with, each hired at their station and put on a
+ * route of their own, named `name`, through the same commands the player uses. Stops name
  * [buildingId, level, nth]; a stop that names nothing placed is an error in
  * the data, and says so.
  */
@@ -142,8 +142,9 @@ function hireOpeningPorters(state, ctx, dispatch) {
       goodId: stop.pickup ?? stop.dropoff,
       qty: stop.qty ?? 'all',
     }));
-    dispatch(state, ctx, { type: 'player:setRoute', workerId: porter.id, stops });
-    if (porter.route.length !== stops.length) throw new Error(`opening: porter ${before} has a malformed route`);
+    const routes = state.haulage.routes.length;
+    dispatch(state, ctx, { type: 'player:createRoute', name: entry.name, stops, workerId: porter.id });
+    if (state.haulage.routes.length === routes) throw new Error(`opening: porter ${before} has a malformed route`);
   }
 }
 

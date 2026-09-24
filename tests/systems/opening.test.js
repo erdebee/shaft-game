@@ -37,6 +37,8 @@ test('every opening porter is hired at a station and walking a route', async () 
   assert.equal(porters.length, ctx.shaft.openingPorters.length);
   for (const p of porters) {
     assert.ok(state.buildings.some((b) => b.instanceId === p.stationId), `${p.name} has a station`);
-    assert.ok(p.route.length > 0, `${p.name} has a route`);
+    const route = state.haulage.routes.find((r) => r.id === p.routeId);
+    assert.ok(route?.stops.length > 0, `${p.name} has a route`);
+    assert.ok(!/^Route \d+$/.test(route.name), `${p.name}'s route is named in the data`);
   }
 });

@@ -12,7 +12,7 @@
  * judged by the same function as the inspector's status lines
  * (buildingStatus.js). It is instrument chrome, not a panel: it appears while
  * the view moves, fades once it stops, and stays while the pointer is on it
- * — or while a porter's route or a network is open, which it then draws.
+ * — or while a route or a network is open, which it then draws.
  *
  * Reads state. Never writes it.
  */
@@ -21,7 +21,8 @@ import { pan, panX, focusLevel, overflowsX } from './viewport.js';
 import { SHAFT_WIDTH, BUILD_X, roomRect } from './interpolate.js';
 import { severityOf } from '../buildingStatus.js';
 import * as selection from '../selection.js';
-import { segmentsOf } from '../routePlan.js';
+import { segmentsOf, stopAction } from '../routePlan.js';
+import { drawLeg } from './routeLines.js';
 import { readNetwork, colorOf, linesWith } from '../networkStatus.js';
 import { isHub, networkDef } from '../../systems/infrastructure/networkGraph.js';
 
@@ -182,16 +183,16 @@ export function createShaftScroll(host, view, state, ctx) {
       hthumb.style.width = pct(viewWidth / SHAFT_WIDTH);
     }
 
-    const { editing } = selection.get();
-    const porter = editing ? currentState.population.workers.find((w) => w.id === editing) : null;
-    host.classList.toggle('route-open', !!porter);
-    syncRoute(currentState, porter);
+    const shown = selection.shownRoute();
+    const route = shown ? currentState.haulage.routes.find((r) => r.id === shown) ?? null : null;
+    host.classList.toggle('route-open', !!route);
+    syncRoute(currentState, route);
 
     const { network } = selection.get();
-    host.classList.toggle('network-open', !!network && !porter);
-    syncNetwork(currentState, currentCtx, porter ? null : network);
+    host.classList.toggle('network-open', !!network && !route);
+    syncNetwork(currentState, currentCtx, route ? null : network);
 
-    const show = !!porter || !!network || scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
+    const show = !!route || !!network || scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
     if (show !== scroll.shown) {
       scroll.shown = show;
       host.classList.toggle('scrolling', show);
@@ -214,14 +215,14 @@ export function createShaftScroll(host, view, state, ctx) {
    * minimap's size change. Drawn in the overlay's own pixels, so the numbers
    * and chevrons keep their size however tall the shaft is.
    */
-  function syncRoute(currentState, porter) {
+  function syncRoute(currentState, route) {
     const w = routeBox.clientWidth;
     const h = routeBox.clientHeight;
-    const key = porter ? JSON.stringify([porter.route, view.builtSignature, w, h]) : '';
+    const key = route ? JSON.stringify([route.stops, view.builtSignature, w, h]) : '';
     if (key === routeKey) return;
     routeKey = key;
     routeSvg.replaceChildren();
-    if (!porter || w <= 0 || h <= 0) return;
+    if (!route || w <= 0 || h <= 0) return;
     routeSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
     // Each stop goes where its room is, then moves to the nearest spot clear
@@ -239,7 +240,7 @@ export function createShaftScroll(host, view, state, ctx) {
       for (let dx = -w; dx <= w; dx++) offsets.push([dx, dy, dx * dx + 4 * dy * dy]);
     }
     offsets.sort((a, b) => a[2] - b[2]);
-    porter.route.forEach((stop, i) => {
+    route.stops.forEach((stop, i) => {
       const b = currentState.buildings.find((x) => x.instanceId === stop.instanceId);
       if (!b) return;
       const r = roomRect(b, currentState.buildings);
@@ -252,21 +253,15 @@ export function createShaftScroll(host, view, state, ctx) {
     });
 
     const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    for (const seg of segmentsOf(currentState, porter.route)) {
+    for (const seg of segmentsOf(currentState, route.stops)) {
       const a = at.get(seg.i);
       const b = at.get(seg.to);
-      if (!a || !b || Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) continue;
-      const d = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
-      const g = svgEl(routeSvg, 'g', 'route-line');
-      g.style.setProperty('--seg', seg.color);
-      svgEl(g, 'path', 'route-line-under').setAttribute('d', d);
-      svgEl(g, 'path', 'route-line-over').setAttribute('d', d);
-      chevrons(g, d, Math.hypot(b[0] - a[0], b[1] - a[1]), calm);
+      if (a && b) drawLeg(routeSvg, a, b, seg.color, { every: CHEVRON_EVERY, speed: FLOW_SPEED, calm });
     }
-    porter.route.forEach((stop, i) => {
+    route.stops.forEach((stop, i) => {
       const p = at.get(i);
       if (!p) return;
-      const g = svgEl(routeSvg, 'g', `minimap-stop route-${stop.action}`);
+      const g = svgEl(routeSvg, 'g', `minimap-stop route-${stopAction(stop)}`);
       g.setAttribute('transform', `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`);
       svgEl(g, 'circle').setAttribute('r', '5.5');
       const t = svgEl(g, 'text');
@@ -449,36 +444,6 @@ function div(parent, className) {
   d.className = className;
   parent.appendChild(d);
   return d;
-}
-
-/**
- * Chevrons riding a path in its direction, evenly spaced and all moving at one
- * speed however long the leg. With reduced motion they stand still, spread
- * along the path, which still says which way it runs.
- */
-function chevrons(parent, d, length, calm) {
-  const count = Math.max(1, Math.round(length / CHEVRON_EVERY));
-  const dur = Math.max(0.5, length / FLOW_SPEED);
-  for (let k = 0; k < count; k++) {
-    const c = svgEl(parent, 'path', 'route-chevron');
-    c.setAttribute('d', 'M-3 -3L2 0L-3 3z');
-    const motion = svgEl(c, 'animateMotion');
-    motion.setAttribute('path', d);
-    motion.setAttribute('rotate', 'auto');
-    motion.setAttribute('calcMode', 'linear');
-    if (calm) {
-      // Frozen at its share of the way along.
-      const at = ((k + 0.5) / count).toFixed(3);
-      motion.setAttribute('keyPoints', `${at};${at}`);
-      motion.setAttribute('keyTimes', '0;1');
-      motion.setAttribute('dur', '1s');
-      motion.setAttribute('fill', 'freeze');
-    } else {
-      motion.setAttribute('dur', `${dur.toFixed(2)}s`);
-      motion.setAttribute('begin', `${(-(k / count) * dur).toFixed(2)}s`);
-      motion.setAttribute('repeatCount', 'indefinite');
-    }
-  }
 }
 
 function svgEl(parent, tag, className = '') {

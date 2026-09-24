@@ -1,13 +1,18 @@
 /**
  * selection.js
  * What the player has picked in the shaft: a building to inspect, or a level
- * to build on — and, while a porter's route is being edited, which porter.
+ * to build on — and, while a route is being edited, which route.
  * UI state, not game state — it is never saved and never replayed, because
  * choosing to look at something changes nothing.
  *
- * While `editing` names a porter, a click on a building in the shaft offers
- * to add it to that porter's route (src/ui/view/shaftView.js) instead of
+ * While `editing` names a route, a click on a building in the shaft offers
+ * to add it to that route (src/ui/view/shaftView.js) instead of
  * opening it in the inspector.
+ *
+ * `viewing` names a route the player is only looking at, from the Routes
+ * list: the shaft and the minimap draw it as they draw one being edited, but
+ * the list stays in the panel and the first click in the shaft closes it.
+ * Opening a route in the editor ends the viewing.
  *
  * `follow` names a porter the shaft view keeps centred on, until the player
  * pans the view themselves.
@@ -27,7 +32,7 @@
  * drawn lit there and on the minimap, and its sockets offer to take it out.
  */
 
-let current = { instanceId: null, level: null, editing: null, follow: null, placing: null, network: null, linkFrom: null, highlight: null };
+let current = { instanceId: null, level: null, editing: null, viewing: null, follow: null, placing: null, network: null, linkFrom: null, highlight: null };
 const listeners = new Set();
 
 export function get() {
@@ -45,12 +50,33 @@ export function clear() {
 }
 
 /**
- * Start editing a porter's route, or stop with null. `follow` also brings the
- * porter into view and keeps them there.
+ * Start editing a route, or stop with null. `follow` names a porter to bring
+ * into view and keep there.
  */
-export function editRoute(workerId, { follow = false } = {}) {
-  current = { ...current, editing: workerId, follow: workerId && follow ? workerId : null };
+export function editRoute(routeId, { follow = null } = {}) {
+  current = { ...current, editing: routeId, viewing: null, follow: routeId ? follow : null };
   notify('route');
+}
+
+/**
+ * Show a route in the shaft without opening it, or stop with null. Asking to
+ * view the route already shown stops showing it.
+ */
+export function viewRoute(routeId) {
+  const next = routeId && routeId === current.viewing ? null : routeId;
+  if (next === current.viewing) return;
+  current = { ...current, viewing: next };
+  notify('view');
+}
+
+/** The route the shaft draws: the one being edited, or else the one viewed. */
+export function shownRoute() {
+  return current.editing ?? current.viewing;
+}
+
+/** Follow a porter in the shaft, or nobody with null, without opening anything. */
+export function followPorter(workerId) {
+  current = { ...current, follow: workerId };
 }
 
 /**
@@ -103,7 +129,7 @@ export function subscribe(fn) {
   return () => listeners.delete(fn);
 }
 
-/** Listeners hear what changed: 'select', 'route' or 'network'. */
+/** Listeners hear what changed: 'select', 'route', 'view' or 'network'. */
 function notify(kind = 'select') {
   for (const fn of listeners) fn(current, kind);
 }

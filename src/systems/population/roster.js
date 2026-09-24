@@ -48,8 +48,9 @@ export function hire(state, ctx, job, level = 1, stationId = null) {
     tripId: null,
     levelsWalked: 0,
     stationId,      // porters: the station they live at, rest at and wait at
-    route: [],      // porters: the stops they walk, in order (haulage/haulageMethods.js)
-    stop: 0,        // porters: the next stop on the route
+    routeId: null,  // porters: the route they walk (state.haulage.routes), or none
+    stop: 0,        // porters: their next stop on it
+    item: 0,        // porters: the next of that stop's goods to handle
     carrying: {},   // porters: goods in hand, by id
     at: stationId,  // porters: the room they stand in (null: on the stairs)
     handling: null, // porters: the load they are moving at a stop, and until when

@@ -1,8 +1,8 @@
 /**
  * routePlan.js
- * What the route UI needs to know about a porter's route, shared by the route
- * editor (screens/routeEditor.js), the inspector's list of porters calling at
- * a building (screens/inspect.js), the route drawn in the shaft
+ * What the route UI needs to know about a route, shared by the route editor
+ * (screens/routeEditor.js), the list of routes (screens/routes.js), the
+ * inspector's list of routes calling at a building (screens/inspect.js), the route drawn in the shaft
  * (view/shaftView.js) and on the minimap (view/shaftScroll.js).
  *
  * A route is a loop, so it is drawn as SEGMENTS: stop i to stop i + 1, and the
@@ -15,6 +15,7 @@
  */
 
 import { amount, capacity, inputsOf, outputsOf, isStorage } from '../systems/resources/stores.js';
+import { portersOn } from '../systems/haulage/haulageMethods.js';
 
 /** How many distinct segment colours there are (tokens.css, --route-N). */
 export const ROUTE_COLORS = 8;
@@ -53,50 +54,111 @@ export function removeStop(route, index) {
 }
 
 /**
- * Every porter whose route calls at a building, and what they do there: the
- * goods they bring (drop off) and the goods they take away (pick up).
+ * Every route that calls at a building, the porters walking it, and what it
+ * does there: the goods it brings (drop off) and the goods it takes away
+ * (pick up).
  */
 export function visitorsOf(state, instanceId) {
   const out = [];
-  for (const porter of state.population.workers) {
-    if (porter.job !== 'porter' || !porter.route?.length) continue;
-    const here = porter.route.map((stop, i) => ({ ...stop, i })).filter((s) => s.instanceId === instanceId);
+  for (const route of state.haulage.routes) {
+    const here = route.stops.map((stop, i) => ({ ...stop, i })).filter((s) => s.instanceId === instanceId);
     if (!here.length) continue;
-    const goods = (action) => [...new Set(here.filter((s) => s.action === action).map((s) => s.goodId))];
-    out.push({ porter, stops: here.map((s) => s.i), brings: goods('dropoff'), takes: goods('pickup') });
+    const goods = (action) => [...new Set(here.flatMap((s) => s.goods).filter((g) => g.action === action).map((g) => g.goodId))];
+    out.push({ route, porters: portersOn(state, route.id), stops: here.map((s) => s.i), brings: goods('dropoff'), takes: goods('pickup') });
   }
   return out;
 }
 
 /**
- * The stop a building most likely means. A building with goods to collect:
- * pick up the one it holds most of. Otherwise one that needs goods: drop off
- * the one it is shortest of. A depot or storehouse: drop off what the route
- * already picks up elsewhere, or else pick up what it holds most of.
- *
- * Never null: a building with nothing to move gets a pick-up of the first good
- * it could hold, which the player then changes.
+ * The goods a route moves, in the order it first meets them, each with
+ * whether it is picked up and where it is dropped off: the route overview.
+ */
+export function goodsOf(route) {
+  const byId = new Map();
+  for (const item of route.stops.flatMap((stop) => stop.goods)) {
+    const good = byId.get(item.goodId) ?? { goodId: item.goodId, pickups: 0, dropoffs: 0 };
+    if (item.action === 'pickup') good.pickups += 1;
+    else good.dropoffs += 1;
+    byId.set(item.goodId, good);
+  }
+  return [...byId.values()];
+}
+
+/**
+ * What a stop at a building does, taken together: 'pickup' or 'dropoff' when
+ * all its goods go one way, 'mixed' when it does both. The colour its number
+ * is drawn in.
+ */
+export function stopAction(stop) {
+  const actions = new Set(stop.goods.map((g) => g.action));
+  return actions.size === 1 ? [...actions][0] : 'mixed';
+}
+
+/**
+ * The stop a building most likely means, with the one good it most likely
+ * handles (itemFor).
  */
 export function stopFor(state, ctx, building, route) {
+  return { instanceId: building.instanceId, goods: [itemFor(state, ctx, building, route)] };
+}
+
+/**
+ * The good a building most likely means, as one line of a stop. A building
+ * with goods to collect: pick up the one it holds most of. Otherwise one that
+ * needs goods: drop off the one it is shortest of. A depot or storehouse: drop
+ * off what the route already picks up elsewhere, or else pick up what it
+ * holds most of. Goods in `skip` — the ones the stop already handles — are
+ * passed over, so a second good added to a stop is a different one.
+ *
+ * With nothing to skip, never null: a building with nothing to move gets a
+ * pick-up of the first good it could hold, which the player then changes.
+ * With goods to skip, null when the building deals in nothing else.
+ */
+export function itemFor(state, ctx, building, route, skip = []) {
   const def = ctx.catalog.buildings.byId[building.buildingId];
-  const base = { instanceId: building.instanceId, qty: 'all' };
-  const most = (ids) => [...ids].sort((a, b) => amount(building, b) - amount(building, a))[0];
+  const fresh = (ids) => [...ids].filter((id) => !skip.includes(id));
+  const most = (ids) => fresh(ids).sort((a, b) => amount(building, b) - amount(building, a))[0];
+  const base = { qty: 'all' };
 
   if (isStorage(def)) {
-    const carried = route.filter((s) => s.action === 'pickup' && s.instanceId !== building.instanceId).map((s) => s.goodId);
+    const carried = fresh(route.filter((s) => s.instanceId !== building.instanceId)
+      .flatMap((s) => s.goods).filter((g) => g.action === 'pickup').map((g) => g.goodId));
     if (carried.length) return { ...base, action: 'dropoff', goodId: carried.at(-1) };
-    const held = Object.keys(building.stock ?? {});
-    if (held.length) return { ...base, action: 'pickup', goodId: most(held) };
+    const held = most(Object.keys(building.stock ?? {}));
+    if (held) return { ...base, action: 'pickup', goodId: held };
   } else {
-    const outputs = outputsOf(def, ctx);
-    if (outputs.size) return { ...base, action: 'pickup', goodId: most(outputs) };
-    const inputs = [...inputsOf(def, ctx), ...Object.keys(def.storeCapacity ?? {})];
+    const outputs = most(outputsOf(def, ctx));
+    if (outputs) return { ...base, action: 'pickup', goodId: outputs };
+    const inputs = fresh([...inputsOf(def, ctx), ...Object.keys(def.storeCapacity ?? {})]);
     if (inputs.length) {
       const fill = (id) => amount(building, id) / Math.max(1e-9, capacity(building, def, ctx, id));
       return { ...base, action: 'dropoff', goodId: inputs.sort((a, b) => fill(a) - fill(b))[0] };
     }
   }
-  return { ...base, action: 'pickup', goodId: goodsFor(ctx, building)[0] ?? ctx.catalog.stocks.ids[0] };
+  const any = skip.length ? fresh(goodsFor(ctx, building))[0] : goodsFor(ctx, building)[0] ?? ctx.catalog.stocks.ids[0];
+  return any ? { ...base, action: 'pickup', goodId: any } : null;
+}
+
+/**
+ * The most a pick-up here could ever take in one visit: the smaller of what
+ * the building can hold of the good and what a porter can carry. The route
+ * editor's slider runs up to it, and "all" means it.
+ */
+export function pickupMax(ctx, building, goodId) {
+  const carry = ctx.config.haulage.porterCapacity;
+  const def = building && ctx.catalog.buildings.byId[building.buildingId];
+  const held = def ? capacity(building, def, ctx, goodId) : 0;
+  return Math.max(1, Math.round(held > 0 ? Math.min(held, carry) : carry));
+}
+
+/**
+ * How much of its whole one good at a stop moves, 0 to 1: a pick-up's
+ * quantity against pickupMax, a drop-off's share of what the porter carries.
+ */
+export function itemShare(ctx, building, item) {
+  if (item.action === 'dropoff') return item.share ?? 1;
+  if (item.qty === 'all') return 1;
+  return Math.min(1, item.qty / pickupMax(ctx, building, item.goodId));
 }
 
 /** Goods worth offering for a stop at this building, `current` first if given. */

@@ -56,15 +56,17 @@ async function newRun(seed = 4242) {
   // between local stores as well as the systems that fill and empty them.
   const at = (id) => run.state.buildings.find((b) => b.buildingId === id).instanceId;
   for (let i = 0; i < 3; i++) dispatch(run.state, run.ctx, { type: 'player:hirePorter', instanceId: at('porter-station'), inherited: true });
+  dispatch(run.state, run.ctx, {
+    type: 'player:createRoute',
+    name: 'Food run',
+    stops: [
+      { instanceId: at('hydroponics-bay'), action: 'pickup', goodId: 'food', qty: 'all' },
+      { instanceId: at('canteen'), action: 'dropoff', goodId: 'food', qty: 'all' },
+    ],
+  });
+  const food = run.state.haulage.routes.at(-1).id;
   for (const porter of run.state.population.workers) {
-    dispatch(run.state, run.ctx, {
-      type: 'player:setRoute',
-      workerId: porter.id,
-      stops: [
-        { instanceId: at('hydroponics-bay'), action: 'pickup', goodId: 'food', qty: 'all' },
-        { instanceId: at('canteen'), action: 'dropoff', goodId: 'food', qty: 'all' },
-      ],
-    });
+    dispatch(run.state, run.ctx, { type: 'player:assignRoute', workerId: porter.id, routeId: food });
   }
   return run;
 }
