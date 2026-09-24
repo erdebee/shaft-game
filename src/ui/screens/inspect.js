@@ -27,7 +27,7 @@ import { renderStation } from './porters.js';
 import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
 import { visitorsOf } from '../routePlan.js';
-import { graphOf, hubFor, isHub, networksOf, networkDef } from '../../systems/infrastructure/networkGraph.js';
+import { graphOf, feederOf, isHub, isUser, networksOf, networkDef } from '../../systems/infrastructure/networkGraph.js';
 import { airingOf } from '../networkStatus.js';
 import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { fanMode, SUCK, BLOW } from '../../systems/airQuality/airflow.js';
@@ -81,7 +81,7 @@ export function mount(root, state, ctx, dispatch) {
 
     // A junction's priority on the grid, 1 served first.
     let priorityButtons = null;
-    if (isHub(currentCtx, 'power-grid', def.id)) {
+    if (isHub(currentCtx, 'power-lines', def.id)) {
       const row = el('div', 'inspect-row net-priority');
       row.appendChild(el('span', 'meter-label', 'Grid priority'));
       priorityButtons = [];
@@ -378,16 +378,14 @@ function goodIcon(ctx, id) {
 function networkLines(state, ctx, instance, def, draw) {
   const lines = [];
   const levelOf = (hub) => (hub && hub !== '*' ? `level ${hub.level}` : null);
-  if (draw > 0 || def.powerDraw > 0) {
-    const hub = hubFor(graphOf(state, ctx, 'power-grid'), ctx, instance.level, { usable: (h) => !h.brokenDown });
-    if (hub) lines.push(hub === '*' ? 'Power from the grid' : `Power via the junction on ${levelOf(hub)} (priority ${priorityOf(hub, ctx)})`);
+  const usable = (h) => !h.brokenDown;
+  if (isUser(ctx, 'power-lines', def.id)) {
+    const hub = feederOf(graphOf(state, ctx, 'power-lines'), graphOf(state, ctx, 'power-grid'), ctx, instance, { usable });
+    lines.push(!hub ? 'Wired to no junction: no power' : hub === '*' ? 'Power from the grid' : `Power via the junction on ${levelOf(hub)} (priority ${priorityOf(hub, ctx)})`);
   }
-  if ((def.consumes ?? []).some((c) => c.id === 'water')) {
-    const mains = graphOf(state, ctx, 'water-mains');
-    const hub = hubFor(mains, ctx, instance.level, { usable: (h) => !h.brokenDown });
-    // A room on the mains is watered through its own pipes, not by a cistern's reach.
-    if (mains.enforced && mains.byId.has(instance.instanceId)) lines.push(`Water by pipe: ${Math.round((instance.waterShare ?? 1) * 100)}% of what it needs`);
-    else if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
+  if (isUser(ctx, 'water-feeds', def.id)) {
+    const hub = feederOf(graphOf(state, ctx, 'water-feeds'), graphOf(state, ctx, 'water-mains'), ctx, instance, { usable });
+    lines.push(!hub ? 'On no feed line: no water' : hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
   }
   // The air it stands in, and whether the loop airs it.
   const level = state.levels[instance.level - 1];

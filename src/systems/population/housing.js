@@ -31,22 +31,36 @@ export function unhoused(state, ctx) {
  * size; overflow spreads over levels 1..deepestHabitedLevel.
  */
 export function residentsByLevel(state, ctx) {
-  const byLevel = new Array(state.levels.length + 1).fill(0);
+  const { homes, overflow } = residentsByHome(state, ctx);
+  const byLevel = [...overflow];
+  for (const { instance, residents } of homes) byLevel[instance.level] += residents;
+  return byLevel;
+}
+
+/**
+ * Who lives where, home by home: `homes` is [{ instance, residents }] for
+ * every standing home, filled in proportion to its size, and `overflow` the
+ * people with no home, by level as residentsByLevel has them. The water
+ * system reads it: a home's residents drink through the home's own feed line.
+ */
+export function residentsByHome(state, ctx) {
+  const overflow = new Array(state.levels.length + 1).fill(0);
   const headcount = state.population.headcount;
   const capacity = housingCapacity(state, ctx);
 
   const occupancy = capacity > 0 ? Math.min(1, headcount / capacity) : 0;
+  const homes = [];
   for (const instance of state.buildings) {
     if (instance.brokenDown) continue;
     const places = ctx.catalog.buildings.byId[instance.buildingId]?.housing ?? 0;
-    if (places > 0) byLevel[instance.level] += places * occupancy;
+    if (places > 0) homes.push({ instance, residents: places * occupancy });
   }
 
-  const overflow = Math.max(0, headcount - capacity);
-  if (overflow > 0) {
+  const homeless = Math.max(0, headcount - capacity);
+  if (homeless > 0) {
     const deepest = Math.min(ctx.shaft.layout?.deepestHabitedLevel ?? state.levels.length, state.levels.length);
-    for (let level = 1; level <= deepest; level++) byLevel[level] += overflow / deepest;
+    for (let level = 1; level <= deepest; level++) overflow[level] += homeless / deepest;
   }
 
-  return byLevel;
+  return { homes, overflow };
 }

@@ -3,11 +3,12 @@
  * The `power` system: the grid the player cables together, and who stays lit
  * when it cannot carry everyone.
  *
- *   Generator ──cable── junction ──cable── junction …      battery ──cable── junction
- *                          │ lights every room within its reach
+ *   generator ══HV══ junction ──LV── room          generator ══HV══ battery ══HV══ junction
+ *            ══HV══ junction ──LV── room, room …
  *
- * A room draws through the nearest junction that reaches it (serviceRadius-
- * Levels), preferring one that is cabled to something. A junction carries at
+ * A room draws through the junction its low-voltage wire is plugged into
+ * (the power-lines network); a room on no wire is off the grid. A junction
+ * is fed by the one high-voltage cable in its input socket. A junction carries at
  * most its network.capacity. Each cabled-together component of the grid is
  * settled on its own: its generators' output goes to its junctions in the
  * player's JUNCTION PRIORITY order (1 first, then 2 … 5), and within one
@@ -16,7 +17,8 @@
  * partial power: a room either runs or it does not.
  *
  * When the generators fall short, a battery covers the rooms still dark on
- * the junctions it is cabled to, and no others, until it is flat. A surplus
+ * the junction its chain feeds — batteries sit in line, one cable in and
+ * one out, and chain in series — and no others, until it is flat. A surplus
  * charges the component's batteries, a little a tick.
  *
  * Runs FIRST in SYSTEM_ORDER, because everything downstream needs to know what
@@ -25,14 +27,15 @@
  * "systems write only their own domain", and it exists because whether a
  * building has power is a property of the grid, not of the building.
  *
- * Transmission loss scales with the cable run from the generator to the
- * junction, plus the drop from the junction to the room.
+ * Transmission loss scales with the high-voltage run from the generator to
+ * the junction, plus the low-voltage wire from the junction to the room.
  */
 
 import { outputScale, powerDemand } from '../buildings/buildingRegistry.js';
-import { graphOf, hubFor, runFrom, VIRTUAL } from '../infrastructure/networkGraph.js';
+import { graphOf, feederOf, runFrom, VIRTUAL } from '../infrastructure/networkGraph.js';
 
 const GRID = 'power-grid';
+const LINES = 'power-lines';
 
 /**
  * The ladder in force: whatever the Accord's Order of Supply article set, or
@@ -63,7 +66,7 @@ export function initialPower() {
     demand: 0,
     available: 0,
     brownedOut: [],
-    offGrid: [],      // drawing, but no junction reaches them
+    offGrid: [],      // drawing, but wired to no junction
     batteries: {},    // charge by battery instanceId
     junctions: {},    // by junction instanceId: { load, capacity, dark }
     batteryDraw: 0,
@@ -77,6 +80,7 @@ export function tick(state, ctx) {
   Object.assign(flow, { ...initialPower(), batteries: flow.batteries ?? {} });
 
   const graph = graphOf(state, ctx, GRID);
+  const lines = graphOf(state, ctx, LINES);
   const def = (i) => ctx.catalog.buildings.byId[i.buildingId];
   const ladder = currentLadder(state, ctx);
   const rank = new Map(ladder.map((cls, i) => [cls, i]));
@@ -117,7 +121,6 @@ export function tick(state, ctx) {
   // --- who draws, and through which junction -----------------------------
   const lossPerLevel = ctx.config.power.transmissionLossPerLevel;
   const fallbackLevel = ctx.shaft.layout?.generatorLevel ?? 1;
-  const hubCache = new Map();
   const consumers = [];
   for (const instance of state.buildings) {
     const d = def(instance);
@@ -130,8 +133,7 @@ export function tick(state, ctx) {
       instance.powered = true;
       continue;
     }
-    if (!hubCache.has(instance.level)) hubCache.set(instance.level, hubFor(graph, ctx, instance.level, { usable, live }));
-    const hub = hubCache.get(instance.level);
+    const hub = feederOf(lines, graph, ctx, instance, { usable, live });
     if (!hub) {
       instance.powered = false;
       flow.offGrid.push(instance.instanceId);
@@ -191,7 +193,7 @@ export function tick(state, ctx) {
 
     // Then the batteries, each only for the junctions it is cabled to.
     for (const battery of part.batteries) {
-      const cabled = new Set((graph.neighbours.get(battery.instanceId) ?? []).map((n) => n.id));
+      const cabled = backedBy(graph, battery);
       for (const j of junctions) {
         const backed = j.hub === VIRTUAL || cabled.has(j.hub.instanceId);
         if (!backed || !unmet.has(j)) continue;
@@ -251,6 +253,27 @@ export function tick(state, ctx) {
       levels: [...new Set(dark.map((c) => c.instance.level))].sort((a, b) => a - b),
     });
   }
+}
+
+/**
+ * The junctions a battery backs: the ones its chain of batteries, wired in
+ * series, is cabled to — every battery in a chain backs the junction at its
+ * end, and no other.
+ */
+function backedBy(graph, battery) {
+  const isBattery = (id) => graph.byId.get(id)?.buildingId === battery.buildingId;
+  const seen = new Set([battery.instanceId]);
+  const queue = [battery.instanceId];
+  const junctions = new Set();
+  while (queue.length) {
+    for (const { id } of graph.neighbours.get(queue.shift()) ?? []) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (isBattery(id)) queue.push(id);
+      else junctions.add(id);
+    }
+  }
+  return junctions;
 }
 
 /** Generation from every power-producing instance, scaled by its condition. */

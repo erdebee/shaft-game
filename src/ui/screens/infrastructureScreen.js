@@ -1,20 +1,19 @@
 /**
  * infrastructureScreen.js
- * The Infrastructure panel: where the player lays the Shaft's networks —
- * power, water, sewage and air (its two duct lines on one page). The junctions, cisterns,
- * fans and the rest are built from the Buildings tab like any other room;
- * here they are joined up.
+ * The Infrastructure panel: where the player lays the Shaft's networks, a
+ * page per loop — power (the high-voltage cables and the low-voltage
+ * wires), water (the mains, the sewer and the feed lines) and air (its two
+ * duct lines). The junctions, cisterns, fans and the rest are built from the
+ * Buildings tab like any other room; here they are joined up.
  *
- * One network is open at a time, and the shaft draws it while it is
- * (view/networkLayer.js): its links, what each hub reaches, and what nothing
- * reaches. The panel shows how the network is doing, what nothing reaches,
- * and every node grouped by what it is linked to.
- *
- * Laying a link: "Link" on a node, or a click on it in the shaft, starts
- * one; "Link here", or a click on a second node, lays it, and carries on
- * from there, so a chain of junctions is a run of clicks. Esc, or clicking
- * the first node again, stops (the shaft's network layer listens for both). Every link goes through player:link;
- * priorities through player:setPriority.
+ * One page is open at a time, and the shaft draws its lines while it is
+ * (view/networkLayer.js), with every socket on them: the player lays a link
+ * by clicking a free socket and then the socket (or room) it goes to, and
+ * takes one out by clicking a used socket. The panel shows how the loop is
+ * doing, what nothing reaches, and every node on the chosen line grouped by
+ * what it is linked to, with its sockets in use and a ✕ on each link.
+ * Priorities go through player:setPriority, fans through player:setFanMode,
+ * links out through player:unlink.
  *
  * Rebuilds its lists only when the network's shape changes; per frame it
  * refreshes the readouts.
@@ -22,31 +21,26 @@
 
 import * as selection from '../selection.js';
 import { el, button } from '../components/dom.js';
-import { readNetwork, networkIds, colorOf, roleOf, describe, airingOf } from '../networkStatus.js';
-import { canLink, isHub, networkDef, reachOf } from '../../systems/infrastructure/networkGraph.js';
+import { readNetwork, colorOf, roleOf, describe, airingOf, PAGES, pageOf } from '../networkStatus.js';
+import { isHub, networkDef, reachOf, socketsOf, socketUse } from '../../systems/infrastructure/networkGraph.js';
 import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { cisternCapacity } from '../../systems/water/greywaterLoop.js';
-import { inStorehouses, nameOf } from '../../systems/resources/stores.js';
 import { outputScale } from '../../systems/buildings/buildingRegistry.js';
 import { fanMode, SUCK, BLOW, AIR_LINES, FOUL, FRESH, isOutside } from '../../systems/airQuality/airflow.js';
 
-/** The one page both air lines share: they are one loop. */
-const AIR = 'air';
-
-/** Which page was open last, and which air line was being laid, kept across tab switches. */
-let lastMode = 'power-grid';
-let lastLine = FOUL;
-
-const REFUSED = {
-  'cannot-join': 'cannot join these',
-  'too-long': 'too far',
-  linked: 'already linked',
-  same: '',
-  cost: 'cannot afford',
+/** What each page is for, in a paragraph. */
+const ABOUT = {
+  power: 'The generators\' high-voltage cables run to the junctions — a generator has six outputs, a junction one input, and a battery sits on the way with one of each — and each junction\'s low-voltage wires run to the rooms it lights, one wire to a room and twelve to a junction, no more than four levels. A room on no wire is dark. When the generators run short, junctions are served in priority order.',
+  water: 'Pumps push water up the mains, down the left of the stairwell, to the cisterns; the sewer carries what is used down the right-hand side, downhill only, to a reclamation plant, whose recovered water a pump sends back up the mains. Each cistern waters the rooms plugged into its feed sleeves — a double line, water in and the used water back — ten to a cistern, no more than four levels away. A home\'s residents drink through its feed line.',
+  air: 'Sucking fans draw the foul air off their levels into the foul-air ducts, up the right-hand side; a scrubber cleans it, an oxygen garden on the way freshens it, and the fresh-air ducts, down the left of the stairwell, carry it on to the blowing fans. Between a blower and a sucker the air has to go through the Shaft, and it airs every level it crosses: nothing flows past a level beyond the last fan, or between two fans turning the same way. Keep every room\'s oxygen up and its pollution down.',
 };
 
-/** The network a page lays: the air page lays whichever line is chosen. */
-const networkOfMode = (mode) => (mode === AIR ? lastLine : mode);
+/** Which page was open last, and which line each page was listing, kept across tab switches. */
+let lastMode = 'power';
+const lastLine = { power: 'power-lines', water: 'water-feeds', air: FOUL };
+
+/** The line a page lists. */
+const networkOfMode = (mode) => lastLine[mode];
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -55,13 +49,12 @@ export function mount(root, state, ctx, dispatch) {
   const body = el('div', 'net-body');
   root.append(picker, body);
 
-  const modes = [...new Set(networkIds(ctx).map((id) => (AIR_LINES.includes(id) ? AIR : id)))];
+  const modes = PAGES.filter((p) => p.lines.every((l) => networkDef(ctx, l))).map((p) => p.id);
   const tabs = new Map();
   for (const mode of modes) {
-    const def = mode === AIR ? null : networkDef(ctx, mode);
-    const label = def ? def.short ?? def.name : 'Air';
-    const b = button(label, def ? `Lay the ${def.name.toLowerCase()}` : 'Lay the air ducts', () => open(mode), 'net-tab');
-    b.style.setProperty('--net', colorOf(networkOfMode(mode)));
+    const { name, lines } = PAGES.find((p) => p.id === mode);
+    const b = button(name, `Lay the ${name.toLowerCase()}`, () => open(mode), 'net-tab');
+    b.style.setProperty('--net', colorOf(lines[0]));
     tabs.set(mode, b);
     picker.appendChild(b);
   }
@@ -73,12 +66,15 @@ export function mount(root, state, ctx, dispatch) {
     for (const [m, b] of tabs) b.setAttribute('aria-pressed', String(m === mode));
     body.replaceChildren();
     selection.showNetwork(networkOfMode(mode));
-    page = mode === AIR ? airPage(body, state, ctx, dispatch) : networkPage(body, state, ctx, dispatch, mode);
+    page = sharedPage(body, state, ctx, dispatch, mode);
   }
   open(modes.includes(lastMode) ? lastMode : modes[0]);
 
   return {
     update(currentState, currentCtx) {
+      // A socket clicked on another of the page's lines opens that line.
+      const { network } = selection.get();
+      if (network && network !== networkOfMode(lastMode) && pageOf(network)?.id === lastMode) page?.chooseLine(network);
       // Something else closed the network (a room opened in the inspector
       // and back): put ours back.
       if (selection.get().network !== networkOfMode(lastMode)) selection.showNetwork(networkOfMode(lastMode));
@@ -88,26 +84,30 @@ export function mount(root, state, ctx, dispatch) {
 }
 
 /**
- * The air: both duct lines on one page. What the loop is for comes first —
- * the oxygen and the pollution in every room — then which line to lay, and
- * that line's nodes.
+ * A page: the loop's headline numbers first — on the air, the oxygen and
+ * the pollution in every room — then which of its lines to list, and that
+ * line's nodes.
  */
-function airPage(parent, state, ctx, dispatch) {
+function sharedPage(parent, state, ctx, dispatch, mode) {
+  const { name, lines } = PAGES.find((p) => p.id === mode);
   const card = el('section', 'card net-card');
-  card.style.setProperty('--net', colorOf(FRESH));
-  const about = el('p', 'meter-label net-about', 'Sucking fans draw the foul air off their levels into the foul-air ducts, up the right-hand wall; a scrubber cleans it, an oxygen garden on the way freshens it, and the fresh-air ducts, down the stairwell, carry it on to the blowing fans. Between a blower and a sucker the air has to go through the Shaft, and it airs every level it crosses: nothing flows past a level beyond the last fan, or between two fans turning the same way. Keep every room\'s oxygen up and its pollution down.');
+  card.style.setProperty('--net', colorOf(mode === 'air' ? FRESH : lines[0]));
+  const about = el('p', 'meter-label net-about', ABOUT[mode] ?? '');
   const status = el('div', 'net-status');
+  const hint = el('div', 'net-hint');
   const lineNav = el('div', 'net-priority net-lines');
-  const levels = el('div', 'air-levels');
-  card.append(el('h2', 'net-title', 'Air'), about, status, el('h3', 'build-zone', 'Oxygen and pollution'), levels, lineNav);
+  const levels = mode === 'air' ? el('div', 'air-levels') : null;
+  card.append(el('h2', 'net-title', name), about, status, hint);
+  if (levels) card.append(el('h3', 'build-zone', 'Oxygen and pollution'), levels);
+  card.append(lineNav);
   const lineBody = el('div');
   parent.append(card, lineBody);
 
-  lineNav.appendChild(el('span', 'meter-label', 'Laying'));
+  lineNav.appendChild(el('span', 'meter-label', 'Showing'));
   const lineButtons = new Map();
-  for (const line of AIR_LINES) {
+  for (const line of lines) {
     const def = networkDef(ctx, line);
-    const b = button(def.name, `Lay ${def.name.toLowerCase()}`, () => chooseLine(line), 'net-prio net-line');
+    const b = button(def.name, `List the ${def.name.toLowerCase()}`, () => chooseLine(line), 'net-prio net-line');
     b.style.setProperty('--net', colorOf(line));
     lineButtons.set(line, b);
     lineNav.appendChild(b);
@@ -115,23 +115,31 @@ function airPage(parent, state, ctx, dispatch) {
 
   let linePage = null;
   function chooseLine(line) {
-    lastLine = line;
+    lastLine[mode] = line;
     for (const [l, b] of lineButtons) b.setAttribute('aria-pressed', String(l === line));
     lineBody.replaceChildren();
-    selection.showNetwork(line);
+    // Keep a link in hand if it is on this line.
+    if (selection.get().network !== line) selection.showNetwork(line);
     linePage = networkPage(lineBody, state, ctx, dispatch, line);
   }
-  chooseLine(lastLine);
+  chooseLine(lastLine[mode]);
 
   let rowsKey = null;
   let rows = [];
   return {
+    chooseLine,
     update(currentState, currentCtx) {
-      status.replaceChildren(...statusLines(currentState, currentCtx, AIR).map(([text, band]) => {
+      hint.textContent = hintOf(currentState, currentCtx);
+      hint.dataset.active = String(!!selection.get().linkFrom);
+      status.replaceChildren(...statusLines(currentState, currentCtx, mode).map(([text, band]) => {
         const line = el('div', 'inspect-status', text);
         line.dataset.state = band;
         return line;
       }));
+      if (!levels) {
+        linePage?.update(currentState, currentCtx);
+        return;
+      }
 
       // A row per built level: its rooms, then its oxygen and pollution.
       const key = currentState.buildings.map((b) => `${b.instanceId}@${b.level}`).join();
@@ -176,27 +184,27 @@ function airPage(parent, state, ctx, dispatch) {
   };
 }
 
-/** One network's page: status, what nothing reaches, the nodes. */
+/**
+ * One line's list: what it is, what nothing reaches, and its nodes, each
+ * with its sockets in use and its links.
+ */
 function networkPage(parent, state, ctx, dispatch, networkId) {
   const net = networkDef(ctx, networkId);
   const card = el('section', 'card net-card');
   card.style.setProperty('--net', colorOf(networkId));
   const title = el('h2', 'net-title', net.name);
   const about = el('p', 'meter-label net-about', describe(ctx, networkId));
-  const status = el('div', 'net-status');
-  const hint = el('div', 'net-hint');
   const gaps = el('div', 'net-gaps');
   const nodes = el('div', 'net-nodes');
-  card.append(title, about, status, hint, gaps, nodes);
+  card.append(title, about, gaps, nodes);
   parent.appendChild(card);
-
 
   let signature = null;
   let readouts = [];
 
   function rebuild(currentState, currentCtx, view) {
     const { linkFrom } = selection.get();
-    const from = linkFrom ? currentState.buildings.find((b) => b.instanceId === linkFrom) : null;
+    const from = linkFrom?.network === networkId ? currentState.buildings.find((b) => b.instanceId === linkFrom.instanceId) : null;
 
     // What nothing reaches.
     gaps.replaceChildren();
@@ -221,7 +229,7 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
       const alone = group.nodes.length === 1;
       const heading = alone
         ? (group.live ? 'On its own' : 'Not connected')
-        : `${networkId === 'power-grid' ? 'Grid' : 'Group'} ${letters[lettered++] ?? '?'} · ${group.live ? 'live' : 'nothing feeding it'}`;
+        : `${networkId.startsWith('power') ? 'Grid' : 'Group'} ${letters[lettered++] ?? '?'} · ${group.live ? 'live' : 'nothing feeding it'}`;
       const head = el('h3', 'build-zone net-group', heading);
       head.dataset.live = String(group.live);
       nodes.appendChild(head);
@@ -242,24 +250,14 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
     const reading = el('span', 'meter-label net-reading');
     readouts.push({ node, reading });
 
-    const actions = el('span', 'net-actions');
-    if (!from) {
-      actions.appendChild(button('Link', `Start a ${net.link} from the ${def.name.toLowerCase()} on level ${node.level}`, () => selection.startLink(node.instanceId), 'text-button'));
-    } else if (from.instanceId === node.instanceId) {
-      actions.appendChild(button('Cancel', 'Stop laying', () => selection.startLink(null), 'text-button'));
-    } else {
-      const check = canLink(currentState, currentCtx, networkId, from.instanceId, node.instanceId);
-      const afford = check.cost.every((c) => inStorehouses(currentState, currentCtx, c.id) >= c.qty);
-      const cost = check.cost.map((c) => `${c.qty} ${nameOf(currentCtx, c.id).toLowerCase()}`).join(', ');
-      const why = !check.ok ? REFUSED[check.reason] ?? check.reason : !afford ? REFUSED.cost : '';
-      const lay = button(why ? `✕ ${why}` : `Link here · ${cost}`, why ? `Cannot link: ${why}` : `Lay a ${check.span}-level ${net.link} for ${cost}`, () => layTo(node.instanceId), 'text-button net-lay');
-      lay.disabled = !!why;
-      actions.appendChild(lay);
-    }
-    row.append(tag, name, reading, actions);
+    // Its sockets on this line: how many of each kind are in use.
+    const use = socketUse(currentState, currentCtx, networkId, node);
+    const plugs = el('span', 'meter-label net-sockets', socketsOf(currentCtx, networkId, node.buildingId)
+      .map((k) => `${k.label} ${use.get(k.id)?.length ?? 0}/${k.count}`).join(' · '));
+    row.append(tag, name, reading, plugs);
 
     // Junction priority, 1 served first.
-    if (networkId === 'power-grid' && isHub(currentCtx, networkId, node.buildingId)) {
+    if (networkId.startsWith('power') && isHub(currentCtx, 'power-lines', node.buildingId)) {
       const prio = el('div', 'net-priority');
       prio.appendChild(el('span', 'meter-label', 'Priority'));
       const current = priorityOf(node, currentCtx);
@@ -295,14 +293,16 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
     if (mine.length) {
       const list = el('div', 'net-links');
       for (const link of mine) {
-        const other = link.from === node.instanceId ? link.b : link.a;
-        const otherDef = currentCtx.catalog.buildings.byId[other.buildingId];
-        const span = Math.abs(other.level - node.level);
-        const downhill = net.flowsDownhill ? (other.level > node.level ? ' ↓' : other.level < node.level ? ' ↑' : '') : '';
+        // A tap ends in a tee on another run, not at a building.
+        const other = link.tap ? null : link.from === node.instanceId ? link.b : link.a;
+        const level = other?.level ?? link.tee?.level ?? node.level;
+        const what = other ? currentCtx.catalog.buildings.byId[other.buildingId].name : 'tee';
+        const span = Math.abs(level - node.level);
+        const downhill = net.flowsDownhill ? (level > node.level ? ' ↓' : level < node.level ? ' ↑' : '') : '';
         const item = el('span', 'net-link');
         item.append(
-          el('span', 'meter-label', `↔ ${otherDef.name} L${other.level} · ${span} lv${downhill}`),
-          button('✕', `Take out the ${net.link} to the ${otherDef.name.toLowerCase()} on level ${other.level}`, () => {
+          el('span', 'meter-label', `${link.tap ? '⊢' : '↔'} ${what} L${level} · ${span} lv${downhill}`),
+          button('✕', `Take out the ${net.link} to the ${what.toLowerCase()} on level ${level}`, () => {
             dispatch({ type: 'player:unlink', linkId: link.id });
             signature = null;
           }, 'route-remove'),
@@ -314,16 +314,6 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
     return row;
   }
 
-  function layTo(toId) {
-    const { linkFrom } = selection.get();
-    if (!linkFrom) return;
-    const before = state.infrastructure.links.length;
-    dispatch({ type: 'player:link', network: networkId, from: linkFrom, to: toId });
-    // Laid: carry on from the far end, so a chain is a run of clicks.
-    if (state.infrastructure.links.length > before) selection.startLink(toId);
-    signature = null;
-  }
-
   return {
     update(currentState, currentCtx) {
       const view = readNetwork(currentState, currentCtx, networkId);
@@ -332,31 +322,28 @@ function networkPage(parent, state, ctx, dispatch, networkId) {
         view.groups.map((g) => [g.key, g.live, g.nodes.map((n) => n.instanceId)]),
         view.links.map((l) => l.id),
         view.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}:${g.what}`),
-        linkFrom,
-        networkId === 'power-grid' ? currentState.buildings.map((b) => b.priority ?? '') : null,
+        linkFrom?.network === networkId ? linkFrom.instanceId : null,
+        networkId.startsWith('power') ? currentState.buildings.map((b) => b.priority ?? '') : null,
         AIR_LINES.includes(networkId) ? currentState.buildings.map((b) => b.fanMode ?? '') : null,
-        // Affordability of the offered links moves with the stores.
-        linkFrom ? (net.linkCost ?? []).map((c) => Math.floor(inStorehouses(currentState, currentCtx, c.id))) : null,
       ]);
       if (key !== signature) {
         signature = key;
         rebuild(currentState, currentCtx, view);
       }
-
-      const from = linkFrom ? currentState.buildings.find((b) => b.instanceId === linkFrom) : null;
-      hint.textContent = from
-        ? `Laying a ${net.link} from the ${currentCtx.catalog.buildings.byId[from.buildingId].name.toLowerCase()} on level ${from.level}: click where it goes, in the Shaft or below. Esc stops.`
-        : `Click a node in the Shaft, or Link below, to lay a ${net.link}. A ${net.link} spans at most ${net.maxSpanLevels} levels.`;
-      hint.dataset.active = String(!!from);
-
-      status.replaceChildren(...statusLines(currentState, currentCtx, networkId).map(([text, band]) => {
-        const line = el('div', 'inspect-status', text);
-        line.dataset.state = band;
-        return line;
-      }));
       for (const { node, reading } of readouts) reading.textContent = readingOf(currentState, currentCtx, networkId, node);
     },
   };
+}
+
+/** What to do next, in the shaft: start a link, or finish the one in hand. */
+function hintOf(state, ctx) {
+  const { network, linkFrom } = selection.get();
+  if (!linkFrom) return 'Click a free socket on a room in the Shaft to lay a line from it, or a joint on a pipe to tee a room into it. Click a line to pick it out; its sockets then offer ✕ to take it out.';
+  const net = networkDef(ctx, linkFrom.network);
+  if (linkFrom.tap) return `Teeing into a ${net?.link ?? network}: click a lit socket, or a room with one, to plug it in. Right-click or Esc stops.`;
+  const from = state.buildings.find((b) => b.instanceId === linkFrom.instanceId);
+  const name = from ? ctx.catalog.buildings.byId[from.buildingId].name.toLowerCase() : 'room';
+  return `Laying a ${net?.link ?? network} from the ${name} on level ${from?.level ?? '?'}: click a lit socket, or a room with one, to plug it in, or a run to tee into (at most ${net?.maxSpanLevels} levels). Right-click or Esc stops.`;
 }
 
 /** The network's headline numbers, as [text, band] lines. */
@@ -370,7 +357,7 @@ function statusLines(state, ctx, networkId) {
       lines.push([`Generating ${round(power.generation)} kW for ${round(power.demand)} kW asked`, power.generation >= power.demand ? 'ok' : 'warn']);
       if (power.storage > 0) lines.push([`Batteries ${round(power.stored)} of ${round(power.storage)} kW·ticks${power.batteryDraw > 0 ? `, giving ${round(power.batteryDraw)} kW` : ''}`, power.batteryDraw > 0 ? 'warn' : 'ok']);
       if (power.brownedOut.length) lines.push([`${power.brownedOut.length} rooms browned out`, 'critical']);
-      if (power.offGrid?.length) lines.push([`${power.offGrid.length} rooms on no junction`, 'critical']);
+      if (power.offGrid?.length) lines.push([`${power.offGrid.length} rooms wired to no junction`, 'critical']);
       break;
     }
     case 'water-mains': {
@@ -380,6 +367,14 @@ function statusLines(state, ctx, networkId) {
       if (water.peopleShare < 1) lines.push([`People get ${round(water.peopleShare * 100)}% of what they drink`, 'critical']);
       break;
     }
+    case 'power':
+      lines.push(...statusLines(state, ctx, 'power-grid'));
+      break;
+    case 'water':
+      lines.push(...statusLines(state, ctx, 'water-mains'), ...statusLines(state, ctx, 'sewer'));
+      if (water.unserved?.length) lines.push([`${water.unserved.length} rooms on no feed line`, 'critical']);
+      if (water.dryLevels?.length) lines.push([`Residents with no water on level${water.dryLevels.length > 1 ? 's' : ''} ${water.dryLevels.join(', ')}`, 'critical']);
+      break;
     case 'sewer': {
       const dumped = (water.spilled ?? []).reduce((a, b) => a + b, 0);
       lines.push([`Draining ${round(water.greywater)} a tick to reclamation`, 'ok']);
@@ -389,7 +384,7 @@ function statusLines(state, ctx, networkId) {
       }
       break;
     }
-    case AIR: {
+    case 'air': {
       const band = (q) => (q < ctx.config.air.qualityCriticalThreshold ? 'critical' : q < ctx.config.air.qualityWarnThreshold ? 'warn' : 'ok');
       const lived = state.levels.filter((l) => !isOutside(ctx, l) && state.buildings.some((b) => b.level === l.index));
       const worst = (field) => lived.reduce((w, l) => ((l[field] ?? 100) < (w[field] ?? 100) ? l : w), lived[0]);
@@ -418,9 +413,11 @@ function readingOf(state, ctx, networkId, node) {
   const span = reach ? `reaches L${Math.max(1, node.level - reach)}–${Math.min(state.levels.length, node.level + reach)}` : '';
   if (node.brokenDown) return 'broken down';
   switch (networkId) {
-    case 'power-grid': {
+    case 'power-grid':
+    case 'power-lines': {
       const j = power.junctions?.[node.instanceId];
-      if (j) return `${Math.round(j.load)}/${j.capacity} kW · ${j.consumers} rooms${j.dark ? ` · ${j.dark} dark` : ''} · ${span}`;
+      if (j) return `${Math.round(j.load)}/${j.capacity} kW · ${j.consumers} rooms${j.dark ? ` · ${j.dark} dark` : ''}`;
+      if (networkId === 'power-lines') return node.powered === false ? 'dark' : 'lit';
       if (power.batteries?.[node.instanceId] !== undefined) {
         const cap = (def.effects ?? []).find((e) => e.op === 'buffer.add')?.value ?? 1;
         return `charge ${Math.round((power.batteries[node.instanceId] / cap) * 100)}%`;
@@ -429,15 +426,13 @@ function readingOf(state, ctx, networkId, node) {
       return made ? `${Math.round(made.qty * outputScale({ ...node, powered: true }, def, ctx))} kW` : '';
     }
     case 'water-mains':
-    case 'sewer': {
+    case 'sewer':
+    case 'water-feeds': {
       const cap = cisternCapacity(def);
-      if (cap > 0) return `${Math.round(water.cisterns?.[node.instanceId] ?? 0)}/${cap} · ${span}`;
+      if (cap > 0) return `${Math.round(water.cisterns?.[node.instanceId] ?? 0)}/${cap} held`;
+      if (networkId === 'water-feeds') return `${Math.round((node.waterShare ?? 1) * 100)}% of its water`;
       if (water.sewage?.[node.instanceId] !== undefined) return `${Math.round(water.sewage[node.instanceId])} a tick coming in`;
       if (water.lift?.[node.instanceId] !== undefined) return `pushing water up ${Math.round(water.lift[node.instanceId])} levels`;
-      if ((def.consumes ?? []).some((c) => c.id === 'water')) {
-        if (networkId === 'sewer') return (water.spilled?.[node.level] ?? 0) > 0.01 ? 'dumping sewage on its level' : '';
-        return `watered ${Math.round((node.waterShare ?? 1) * 100)}%`;
-      }
       return '';
     }
     case 'foul-ducts':

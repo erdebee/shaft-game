@@ -81,7 +81,7 @@ test('a pump draws more power the higher people live', async () => {
   assert.ok(draw(high) > draw(low));
 });
 
-test('residents foul their own level, and an unducted scrubber cleans only its own', async () => {
+test('residents foul their own level, and a scrubber on no loop cleans nothing', async () => {
   const run = await runWith([...POWERED, ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 22]], {
     keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 },
     networks: ['foul-ducts', 'fresh-ducts'],
@@ -90,8 +90,8 @@ test('residents foul their own level, and an unducted scrubber cleans only its o
   run.state.population.headcount = 160;
   ticks(run, 60);
   const air = (i) => run.state.levels[i - 1].airQuality;
-  assert.ok(air(20) > 95, `the scrubbed level should stay clean, got ${air(20)}`);
-  assert.ok(air(22) < air(20), 'the crowded level two floors down should be worse');
+  assert.ok(air(20) < 90, `the scrubber's own level is not cleaned, got ${air(20)}`);
+  assert.ok(air(22) < 90, 'nor the crowded level two floors down');
 });
 
 test('a sealed level loses its air even with a scrubber next door', async () => {

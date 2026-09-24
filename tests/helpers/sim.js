@@ -92,6 +92,21 @@ export function link(run, network, from, to) {
   if (run.state.infrastructure.links.length === before) throw new Error(`link: ${network} ${from} to ${to} refused`);
 }
 
+/**
+ * Tee a line from the first placed `from` building (by id, or [id, level])
+ * into the middle of link `linkId`, free, as the opening does. Returns the
+ * new link.
+ */
+export function tap(run, network, from, linkId) {
+  const [id, level] = Array.isArray(from) ? from : [from, null];
+  const found = run.state.buildings.find((b) => b.buildingId === id && (level === null || b.level === level));
+  if (!found) throw new Error(`tap: no ${id}${level ? ` on level ${level}` : ''}`);
+  const before = run.state.infrastructure.links.length;
+  dispatch(run.state, run.ctx, { type: 'player:link', network, from: found.instanceId, tap: linkId, inherited: true });
+  if (run.state.infrastructure.links.length === before) throw new Error(`tap: ${network} ${from} into ${linkId} refused`);
+  return run.state.infrastructure.links.at(-1);
+}
+
 /** The shared dataset with no networks enforced, built once. */
 let unlaid = null;
 

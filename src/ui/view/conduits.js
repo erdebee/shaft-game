@@ -151,6 +151,14 @@ export function wire(parent, d, lit) {
   core.dataset.lit = String(lit);
 }
 
+/** A cistern's thin pipe to a room, or the drain back. `lit` is whether water reaches it. */
+export function feedPipe(parent, d, network, lit) {
+  svg(parent, 'path', 'feed-pipe-edge').setAttribute('d', d);
+  const core = svg(parent, 'path', `feed-pipe feed-${network}`);
+  core.setAttribute('d', d);
+  core.dataset.lit = String(lit);
+}
+
 /** A cable clamp where a wire leaves a drop or meets a room. */
 export function clamp(parent, x, y) {
   const c = svg(parent, 'rect', 'wire-clamp');

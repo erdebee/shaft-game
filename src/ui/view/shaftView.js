@@ -59,6 +59,12 @@ const PLATE_H = PLATE_PAD + ICON + BAR_GAP + BAR_H + PLATE_PAD;
 const MAX_SLOTS = 4;
 
 /**
+ * Where the plate sits in its room: along the bottom, clear of the ceiling,
+ * where the networks' sockets and runs are drawn (view/networkLayer.js).
+ */
+const PLATE_Y = ROOM_HEIGHT - PLATE_H - PLATE_PAD * 2;
+
+/**
  * @param art       the result of roomArt.loadRoomArt()
  * @param dispatch  sends a player command; used only by the open route's
  *                  clicks (routeLayer.js) and the open network's
@@ -359,7 +365,7 @@ function syncBuildings(view, state, ctx, tick) {
       const node = view.buildingNodes.get(instance.instanceId);
       node.setAttribute('transform', `translate(${r.x} ${r.y})`);
       node.foreground?.setAttribute('transform', `translate(${r.x} ${r.y})`);
-      node.popover?.setAttribute('transform', `translate(${r.x} ${r.y})`);
+      node.popover?.setAttribute('transform', `translate(${r.x} ${r.y + PLATE_Y})`);
     }
     for (const [id, node] of view.buildingNodes) {
       if (!seen.has(id)) {
@@ -568,8 +574,9 @@ function canRunShort(def, ctx) {
 }
 
 /**
- * A room's shortage popover: a plate along the top of the room carrying one
- * resource icon per good it is out of or running low on.
+ * A room's shortage popover: a plate along the bottom of the room carrying
+ * one resource icon per good it is out of or running low on. The bottom,
+ * because the top is where the networks hang their sockets and runs.
  *
  * A plate, not a tooltip. The player has to see it without pointing at
  * anything — noticing a building in trouble while looking somewhere else is

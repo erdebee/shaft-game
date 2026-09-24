@@ -69,9 +69,8 @@
       "produces": [],
       "repairCost": [{ "id": "concrete", "qty": 2 }, { "id": "glass", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.7, "breakdown": 0.35 },
-      "serviceRadiusLevels": 4,
       "effects": [{ "op": "buffer.add", "target": "water", "value": 200 }],
-      "_note": "The hub of the water mains: it stores water and supplies every room and resident within serviceRadiusLevels, and what they use drains back into it for the sewer. Free to run, which makes it the cheapest insurance in the game and the easiest thing to forget to build."
+      "_note": "The hub of the water mains: it stores water and supplies every room plugged into one of its feed sleeves (catalog/infrastructure/networks.json), and the residents of every home among them, and what they use drains back into it for the sewer. Free to run, which makes it the cheapest insurance in the game and the easiest thing to forget to build."
     }
   ]
 }

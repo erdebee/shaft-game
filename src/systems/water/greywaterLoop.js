@@ -3,12 +3,12 @@
  * The `water` system: the mains and the sewer the player pipes together.
  *
  *   deep pump ─pipe─ cistern ─pipe─ cistern …        (water mains)
- *   reclamation ─pipe─┘    │ supplies every room and resident within reach
+ *   reclamation ─pipe─┘    ╞═feed═ room, home …     (feed lines, water in and back)
  *   cistern ─drain─ cistern ─drain─ reclamation plant (sewer, downhill only)
  *
- * A room or a level's residents draw from the nearest cistern that reaches
- * them — except a room that is itself on the mains (the cultivation rooms),
- * which draws only through its pipes and drains only through its drains. Each piped-together component of the mains is settled on its own:
+ * A room draws from the cistern its feed line is plugged into, and a home's
+ * residents through the home's; people with no home drink at the nearest room
+ * with a working feed line. Each piped-together component of the mains is settled on its own:
  * what its reclamation plants recovered is used first, being already up here;
  * its pumps lift the rest, plus what its cisterns have room for — and the
  * aquifer yields what it yields, however many pumps are sunk into it, shared
@@ -29,12 +29,13 @@
 
 import { approach, clamp } from '../../utils/math.js';
 import { workScale, outputScale } from '../buildings/buildingRegistry.js';
-import { residentsByLevel } from '../population/housing.js';
+import { residentsByHome } from '../population/housing.js';
 import { cohortFactor } from '../population/demography.js';
-import { graphOf, hubFor, downhillFrom, isHub, pathTo, VIRTUAL } from '../infrastructure/networkGraph.js';
+import { graphOf, feederOf, downhillFrom, pathTo, byAge, linksOf, endsOf, VIRTUAL } from '../infrastructure/networkGraph.js';
 
 const MAINS = 'water-mains';
 const SEWER = 'sewer';
+const FEEDS = 'water-feeds';
 
 export function initialWater() {
   return {
@@ -60,8 +61,8 @@ export function initialWater() {
     spilled: [],   // by level: sewage dumped there this tick
     stranded: 0,   // recovered water no pump could push back into the mains
     pipes: {},     // by link id: { flow, to } along the mains and the sewer
-    dryLevels: [], // levels with residents no cistern reaches
-    unserved: [],  // buildings needing water that no cistern reaches
+    dryLevels: [], // levels with residents on no feed line
+    unserved: [],  // buildings needing water on no feed line
   };
 }
 
@@ -79,6 +80,7 @@ export function tick(state, ctx) {
 
   const mains = graphOf(state, ctx, MAINS);
   const sewer = graphOf(state, ctx, SEWER);
+  const feeds = graphOf(state, ctx, FEEDS);
 
   // --- the mains' parts, by component --------------------------------------
   const parts = new Map();
@@ -125,39 +127,44 @@ export function tick(state, ctx) {
     return !!p && (p.liftCapacity > 0 || p.stored > 0);
   };
   const usable = (hub) => !hub.brokenDown;
-  const hubCache = new Map();
-  const hubAt = (level) => {
-    if (!hubCache.has(level)) hubCache.set(level, hubFor(mains, ctx, level, { usable, live: hasWater }));
-    return hubCache.get(level);
-  };
+  const hubOf = (instance) => feederOf(feeds, mains, ctx, instance, { usable, live: hasWater });
   const keyOf = (hub) => (hub === VIRTUAL ? VIRTUAL : mains.component.get(hub.instanceId));
-  // A room on the mains itself (the cultivation rooms) is not served by a
-  // cistern's reach but by its pipes: it draws from its own component, and
-  // drains by its own drains. It stands as its own hub.
-  const piped = (instance) => mains.enforced && mains.byId.has(instance.instanceId)
-    && !isHub(ctx, MAINS, instance.buildingId) && !(def(instance).produces ?? []).some((p) => p.id === 'water');
-  const hubOf = (instance) => {
-    if (!piped(instance)) return hubAt(instance.level);
-    return hasWater(mains.component.get(instance.instanceId)) ? instance : null;
+  // People with no home drink at the nearest room with a working feed line.
+  let taps = null;
+  const levelCache = new Map();
+  const hubAtLevel = (level) => {
+    if (!feeds.enforced) return hubOf({ instanceId: null, level });
+    if (!levelCache.has(level)) {
+      taps ??= [...state.buildings].sort(byAge)
+        .filter((b) => feeds.byId.has(b.instanceId))
+        .map((b) => ({ level: b.level, hub: hubOf(b) }))
+        .filter((t) => t.hub);
+      let best = null;
+      for (const t of taps) if (!best || Math.abs(t.level - level) < Math.abs(best.level - level)) best = t;
+      levelCache.set(level, best?.hub ?? null);
+    }
+    return levelCache.get(level);
   };
 
   // --- demand, by the cistern that serves it --------------------------------
-  const residents = residentsByLevel(state, ctx);
+  const { homes, overflow } = residentsByHome(state, ctx);
   const perCapita = cfg.potablePerCapitaPerTick * cohortFactor(state, ctx, 'waterMultiplier');
   const drinkers = []; // { level, qty, hub }
   let peopleDemand = 0;
-  const dryLevels = [];
-  residents.forEach((n, level) => {
+  const dry = new Set();
+  const drink = (level, n, hub) => {
     if (!n || level < 1) return;
     const qty = n * perCapita;
     peopleDemand += qty;
-    const hub = hubAt(level);
-    if (!hub) { dryLevels.push(level); return; }
+    if (!hub) { dry.add(level); return; }
     drinkers.push({ level, qty, hub });
     const part = partOf(keyOf(hub));
     part.people += qty;
     part.levels.push({ level, qty });
-  });
+  };
+  for (const { instance, residents } of homes) drink(instance.level, residents, residents > 0 ? hubOf(instance) : null);
+  overflow.forEach((n, level) => { if (n > 0) drink(level, n, hubAtLevel(level)); });
+  const dryLevels = [...dry].sort((a, b) => a - b);
 
   let buildingDemand = 0;
   const unserved = [];
@@ -248,16 +255,17 @@ export function tick(state, ctx) {
 
   // --- the flow along the mains, for the view ------------------------------
   // Each plant sends what it recovered to its nearest pump; each pump's
-  // water goes up to the nearest cistern or piped room that takes it.
+  // water goes up to the cisterns, each taking its share.
   const pipes = {};
   const isPump = (n) => (def(n).produces ?? []).some((x) => x.id === 'water');
+  // Flow is booked against the end of each link it runs toward — a link
+  // split by tees is walked in several steps, all toward one of its ends.
+  const endsById = new Map([...linksOf(state, MAINS), ...linksOf(state, SEWER)].map((l) => [l.id, endsOf(l)]));
   const along = (graph, startId, steps, qty, towardEnd) => {
-    let at = startId;
-    for (const { linkId, to } of steps ?? []) {
+    for (const { linkId, toward } of steps ?? []) {
       const link = pipes[linkId] ??= { net: {} };
-      const into = towardEnd ? to : at;
+      const into = towardEnd ? toward : endsById.get(linkId).find((e) => e !== toward);
       link.net[into] = (link.net[into] ?? 0) + qty;
-      at = to;
     }
   };
   for (const { part, returned, lifted } of pushed) {
@@ -265,15 +273,9 @@ export function tick(state, ctx) {
     for (const { node, recovered } of part.plants) {
       if (part.reclaimed > 0) along(mains, node.instanceId, pathTo(mains, node.instanceId, isPump), returned * recovered / part.reclaimed, true);
     }
-    // What piped rooms took, and what the cisterns took for the rest.
-    const sinks = part.buildings
-      .filter(({ instance }) => piped(instance))
-      .map(({ instance, qty }) => ({ id: instance.instanceId, qty: qty * (instance.waterShare ?? 1) }));
-    const toRooms = sinks.reduce((t, x) => t + x.qty, 0);
-    const toCisterns = Math.max(0, returned + lifted - toRooms);
-    for (const c of part.cisterns) sinks.push({ id: c.instanceId, qty: toCisterns * cisternCapacity(def(c)) / part.capacity });
-    for (const { id, qty } of sinks) {
-      if (qty > 0) along(mains, id, pathTo(mains, id, isPump), qty, false);
+    for (const c of part.cisterns) {
+      const qty = (returned + lifted) * cisternCapacity(def(c)) / part.capacity;
+      if (qty > 0) along(mains, c.instanceId, pathTo(mains, c.instanceId, isPump), qty, false);
     }
   }
 

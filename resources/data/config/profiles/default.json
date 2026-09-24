@@ -26,7 +26,7 @@
     "hiddenPassageLevel": 41
   },
   "opening": {
-    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched. porters: each hired at the named station and given the route, stops naming [buildingId, level, nth] — nth counts that building on that level in placement order (0 when omitted); each stop picks up or drops off one good, `qty` per visit or all. links: the cables, pipes, drains and ducts the Shaft opens with, each naming its two ends as [buildingId, level, nth] (catalog/infrastructure/networks.json); priorities: junction priorities, 1 served first, others left at the default. fans: which way each duct fan turns, suck or blow (a fan not named blows).",
+    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched. porters: each hired at the named station and given the route, stops naming [buildingId, level, nth] — nth counts that building on that level in placement order (0 when omitted); each stop picks up or drops off one good, `qty` per visit or all. links: the cables, wires, pipes, drains, feed lines and ducts the Shaft opens with, each naming its two ends as [buildingId, level, nth] and plugged into the first free sockets that fit (catalog/infrastructure/networks.json); an entry with a `name` may be teed into by a later one that gives `tap` (that name) instead of `to` — every room that draws power is wired to a junction and every room that uses water is fed from a cistern; priorities: junction priorities, 1 served first, others left at the default. fans: which way each duct fan turns, suck or blow (a fan not named blows).",
     "buildings": [
       [
         "auditorium",
@@ -857,34 +857,12 @@
       {
         "network": "power-grid",
         "from": [
-          "junction",
-          31
+          "main-generator",
+          38
         ],
         "to": [
-          "junction",
-          22
-        ]
-      },
-      {
-        "network": "power-grid",
-        "from": [
-          "junction",
-          22
-        ],
-        "to": [
-          "junction",
-          13
-        ]
-      },
-      {
-        "network": "power-grid",
-        "from": [
-          "junction",
-          13
-        ],
-        "to": [
-          "junction",
-          4
+          "battery-bank",
+          21
         ]
       },
       {
@@ -899,14 +877,25 @@
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-grid",
         "from": [
-          "deep-pump",
-          40
+          "main-generator",
+          38
         ],
         "to": [
-          "cistern",
-          31
+          "junction",
+          13
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "main-generator",
+          38
+        ],
+        "to": [
+          "junction",
+          4
         ]
       },
       {
@@ -921,65 +910,11 @@
         ]
       },
       {
+        "name": "mains-31",
         "network": "water-mains",
         "from": [
-          "cistern",
-          31
-        ],
-        "to": [
-          "cistern",
-          22
-        ]
-      },
-      {
-        "network": "water-mains",
-        "from": [
-          "cistern",
-          22
-        ],
-        "to": [
-          "cistern",
-          13
-        ]
-      },
-      {
-        "network": "water-mains",
-        "from": [
-          "cistern",
-          13
-        ],
-        "to": [
-          "cistern",
-          4
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "cistern",
-          4
-        ],
-        "to": [
-          "cistern",
-          13
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "cistern",
-          13
-        ],
-        "to": [
-          "cistern",
-          22
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "cistern",
-          22
+          "deep-pump",
+          40
         ],
         "to": [
           "cistern",
@@ -987,6 +922,33 @@
         ]
       },
       {
+        "name": "mains-22",
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          22
+        ],
+        "tap": "mains-31"
+      },
+      {
+        "name": "mains-13",
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          13
+        ],
+        "tap": "mains-22"
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          4
+        ],
+        "tap": "mains-13"
+      },
+      {
+        "name": "drain-31",
         "network": "sewer",
         "from": [
           "cistern",
@@ -998,6 +960,33 @@
         ]
       },
       {
+        "name": "drain-22",
+        "network": "sewer",
+        "from": [
+          "cistern",
+          22
+        ],
+        "tap": "drain-31"
+      },
+      {
+        "name": "drain-13",
+        "network": "sewer",
+        "from": [
+          "cistern",
+          13
+        ],
+        "tap": "drain-22"
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "cistern",
+          4
+        ],
+        "tap": "drain-13"
+      },
+      {
+        "name": "foul-11",
         "network": "foul-ducts",
         "from": [
           "duct-fan",
@@ -1011,6 +1000,52 @@
       {
         "network": "foul-ducts",
         "from": [
+          "oxygen-garden",
+          9
+        ],
+        "tap": "foul-11"
+      },
+      {
+        "name": "fresh-18",
+        "network": "fresh-ducts",
+        "from": [
+          "scrubber-bank",
+          20
+        ],
+        "to": [
+          "duct-fan",
+          18
+        ]
+      },
+      {
+        "name": "fresh-9",
+        "network": "fresh-ducts",
+        "from": [
+          "oxygen-garden",
+          9
+        ],
+        "tap": "fresh-18"
+      },
+      {
+        "name": "fresh-4",
+        "network": "fresh-ducts",
+        "from": [
+          "duct-fan",
+          4
+        ],
+        "tap": "fresh-9"
+      },
+      {
+        "network": "fresh-ducts",
+        "from": [
+          "duct-fan",
+          2
+        ],
+        "tap": "fresh-4"
+      },
+      {
+        "network": "foul-ducts",
+        "from": [
           "duct-fan",
           39
         ],
@@ -1020,70 +1055,22 @@
         ]
       },
       {
-        "network": "foul-ducts",
-        "from": [
-          "scrubber-bank",
-          30
-        ],
-        "to": [
-          "scrubber-bank",
-          20
-        ]
-      },
-      {
-        "network": "fresh-ducts",
-        "from": [
-          "scrubber-bank",
-          20
-        ],
-        "to": [
-          "duct-fan",
-          18
-        ]
-      },
-      {
-        "network": "fresh-ducts",
-        "from": [
-          "duct-fan",
-          18
-        ],
-        "to": [
-          "oxygen-garden",
-          9
-        ]
-      },
-      {
-        "network": "fresh-ducts",
-        "from": [
-          "oxygen-garden",
-          9
-        ],
-        "to": [
-          "duct-fan",
-          4
-        ]
-      },
-      {
+        "name": "fresh-30",
         "network": "fresh-ducts",
         "from": [
           "scrubber-bank",
           30
         ],
-        "to": [
+        "tap": "fresh-18"
+      },
+      {
+        "name": "fresh-32",
+        "network": "fresh-ducts",
+        "from": [
           "duct-fan",
           32
-        ]
-      },
-      {
-        "network": "fresh-ducts",
-        "from": [
-          "duct-fan",
-          2
         ],
-        "to": [
-          "duct-fan",
-          4
-        ]
+        "tap": "fresh-30"
       },
       {
         "network": "fresh-ducts",
@@ -1091,55 +1078,179 @@
           "duct-fan",
           42
         ],
+        "tap": "fresh-32"
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
         "to": [
-          "duct-fan",
-          32
+          "auditorium",
+          1
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "cistern",
+          "junction",
+          4
+        ],
+        "to": [
+          "shaft-exit",
+          1
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "council-chamber",
+          2
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "duct-fan",
+          2
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "archive",
+          3
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "judicial",
+          4
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "duct-fan",
+          4
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "grove",
+          5
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          4
+        ],
+        "to": [
+          "superior-suite",
+          8
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          13
+        ],
+        "to": [
+          "oxygen-garden",
+          9
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          13
+        ],
+        "to": [
+          "common-hall",
+          10
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          13
+        ],
+        "to": [
+          "duct-fan",
+          11
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          13
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
           13
         ],
         "to": [
           "hydroponics-bay",
           13,
-          0
-        ]
-      },
-      {
-        "network": "water-mains",
-        "from": [
-          "hydroponics-bay",
-          13,
-          0
-        ],
-        "to": [
-          "hydroponics-bay",
-          13,
           1
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "hydroponics-bay",
-          13,
-          1
+          "junction",
+          13
         ],
         "to": [
           "hydroponics-bay",
-          14,
-          0
+          14
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "hydroponics-bay",
-          14,
-          0
+          "junction",
+          13
         ],
         "to": [
           "hydroponics-bay",
@@ -1148,24 +1259,21 @@
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "hydroponics-bay",
-          14,
-          1
+          "junction",
+          13
         ],
         "to": [
           "protein-vats",
-          15,
-          0
+          15
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "protein-vats",
-          15,
-          0
+          "junction",
+          13
         ],
         "to": [
           "protein-vats",
@@ -1174,24 +1282,21 @@
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "protein-vats",
-          15,
-          1
+          "junction",
+          13
         ],
         "to": [
           "hydroponics-bay",
-          16,
-          0
+          16
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "hydroponics-bay",
-          16,
-          0
+          "junction",
+          13
         ],
         "to": [
           "hydroponics-bay",
@@ -1200,11 +1305,10 @@
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
         "from": [
-          "hydroponics-bay",
-          16,
-          1
+          "junction",
+          13
         ],
         "to": [
           "food-processing",
@@ -1212,7 +1316,216 @@
         ]
       },
       {
-        "network": "water-mains",
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "porter-station",
+          18
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "duct-fan",
+          18
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "scrubber-bank",
+          20
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "clinic",
+          22
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "simple-suite",
+          24
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "canteen",
+          26
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "simple-suite",
+          27
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "canteen",
+          28
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "scrubber-bank",
+          30
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "storehouse",
+          35
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "porter-station",
+          35
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "workshop",
+          36
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "smelter",
+          37
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "duct-fan",
+          39
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "dig-face",
+          40
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "deep-pump",
+          40
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "reclamation-plant",
+          42
+        ]
+      },
+      {
+        "network": "power-lines",
+        "from": [
+          "junction",
+          40
+        ],
+        "to": [
+          "duct-fan",
+          42
+        ]
+      },
+      {
+        "network": "water-feeds",
         "from": [
           "cistern",
           4
@@ -1223,128 +1536,183 @@
         ]
       },
       {
-        "network": "sewer",
+        "network": "water-feeds",
         "from": [
-          "hydroponics-bay",
-          13,
-          0
-        ],
-        "to": [
-          "hydroponics-bay",
-          13,
-          1
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "hydroponics-bay",
-          13,
-          1
-        ],
-        "to": [
-          "hydroponics-bay",
-          14,
-          0
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "hydroponics-bay",
-          14,
-          0
-        ],
-        "to": [
-          "hydroponics-bay",
-          14,
-          1
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "hydroponics-bay",
-          14,
-          1
-        ],
-        "to": [
-          "protein-vats",
-          15,
-          0
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "protein-vats",
-          15,
-          0
-        ],
-        "to": [
-          "protein-vats",
-          15,
-          1
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "protein-vats",
-          15,
-          1
-        ],
-        "to": [
-          "hydroponics-bay",
-          16,
-          0
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "hydroponics-bay",
-          16,
-          0
-        ],
-        "to": [
-          "hydroponics-bay",
-          16,
-          1
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "hydroponics-bay",
-          16,
-          1
-        ],
-        "to": [
-          "food-processing",
-          17
-        ]
-      },
-      {
-        "network": "sewer",
-        "from": [
-          "food-processing",
-          17
-        ],
-        "to": [
           "cistern",
+          4
+        ],
+        "to": [
+          "superior-suite",
+          8
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "oxygen-garden",
+          9
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          13
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          13,
+          1
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          14
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          14,
+          1
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "protein-vats",
+          15
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "protein-vats",
+          15,
+          1
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          16
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "hydroponics-bay",
+          16,
+          1
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "food-processing",
+          17
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          22
+        ],
+        "to": [
+          "clinic",
           22
         ]
       },
       {
-        "network": "sewer",
+        "network": "water-feeds",
         "from": [
-          "grove",
-          5
+          "cistern",
+          22
         ],
         "to": [
+          "simple-suite",
+          24
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
           "cistern",
-          13
+          22
+        ],
+        "to": [
+          "canteen",
+          26
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          31
+        ],
+        "to": [
+          "simple-suite",
+          27
+        ]
+      },
+      {
+        "network": "water-feeds",
+        "from": [
+          "cistern",
+          31
+        ],
+        "to": [
+          "canteen",
+          28
         ]
       }
     ],

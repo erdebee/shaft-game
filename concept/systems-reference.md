@@ -119,24 +119,33 @@ Deliberately **not** survival-critical, which is what makes spending capacity on
 
 ## 5. Infrastructure and distribution
 
-The player lays all four networks by hand — cables, pipes, drains and ducts
-between buildings (`catalog/infrastructure/networks.json`), from Build ›
-Infrastructure. Each network has **hubs** that hand it out to every level
-within their reach, and a hub works only once it is linked back to a source.
-Links cost materials per level spanned and have a maximum span, so long runs
-need intermediate hubs.
+The player lays every network by hand, socket by socket — cables, wires,
+pipes, drains, feed lines and ducts between buildings
+(`catalog/infrastructure/networks.json`), from Build › Infrastructure. Every
+building on a network shows its **sockets** in the Shaft; clicking a free one
+starts a link (a ghost of it follows the pointer), clicking a socket it fits
+lays it, and clicking a used one takes it out. Sockets face in, out or either
+way, and each takes one link, so a hub hands out only as many lines as it has
+sockets. Pipes, drains and ducts can be **teed**: a new line runs from a
+socket into the middle of an existing run of its network, so one line serves
+several machines. Links cost materials per level spanned and have a maximum span.
+Power and water are wired all the way to the room: no room is served by being
+near a hub. The air is not: its ducts join only the air machines, and the
+fans air the levels around them.
 
 ### Power grid
-`Generator → cable → junction → cable → junction …`, `battery → cable → junction`
-- A **junction** lights every room within its reach, up to its capacity
-- Transmission loss scales with the cable run from the generator plus the drop from the junction to the room
+`Generator ═HV═ junction ─LV─ room`, `generator ═HV═ battery ═HV═ battery … ═HV═ junction`
+- **High voltage:** a generator has six outputs, a junction one input. A battery sits in line, one input and one output, so batteries chain in series
+- **Low voltage:** a junction has twelve outlets; every room that draws power has one, and is wired to a junction no more than four levels away. A room on no wire is dark. A junction carries up to its capacity
+- Transmission loss scales with the high-voltage run from the generator plus the low-voltage wire from the junction to the room
 - **Junction priority (1–5)** set in advance: when supply drops below demand, the grid serves junctions in priority order, so whole districts go dark together. Within one junction the Accord's Order of Supply decides. Deciding whether the clinic's junction outranks the workshop's is a decision made early and felt later
-- **Battery banks** cabled to a junction back up that junction and no other, and charge from the surplus
+- **Battery banks** back up the junction at the end of their chain and no other, and charge from the surplus
 
 ### Water network
 - **A loop, like the air.** Cisterns supply the rooms and residents around them; what they use drains down the sewer to the **reclamation plant**; the plant's recovered water goes to a **deep pump** it is piped to; and the pump pushes it back up the mains to the cisterns. Pumps drive the loop: without one, nothing on the mains moves, and a plant piped to no pump wastes what it recovers
 - The pump tops the loop up with fresh groundwater for what reclamation loses, as much as it can draw and the aquifer gives
-- Cisterns store water and supply every room and resident within reach; the **cultivation rooms** (not the seed vault) are the exception, piped for their water and drained by their own drains
+- **Main lines** (large pipe sleeves) run only between pumps, cisterns and reclamation plants (a purifier may sit on the mains). A pump sits in line, one pipe in (from the reclamation plant) and one out (up to the cisterns); a cistern has one fresh-water and one sewage sleeve, and so does a reclamation plant. More cisterns join a pump's main, and more drains a plant's, by tees
+- **Feed lines** (a double pipe, water in and the used water back): a cistern has ten feed sleeves, and every room that uses water — homes included — has one, fed from a cistern no more than four levels away. A home's residents drink through its feed line; people with no home drink at the nearest room that has one
 - **Pumping upward costs power proportional to lift height**, so water cost scales with how high people live, making vertical layout an economic decision
 - A **purifier** on the mains cleans the reclaimed water passing through it
 
@@ -147,7 +156,8 @@ need intermediate hubs.
 ### Air network
 - Tracked **per level**, as two numbers: purity (fouled by crowds and industry, most of all the deep generator, smelter and dig face) and oxygen (breathed by everyone, burned by combustion). Breathable air is the worse of the two
 - **Two duct lines, one loop.** Duct fans suck or blow. Foul-air ducts carry what the sucking fans draw off their levels to the **scrubbers**; fresh-air ducts carry it on, cleaned, to the blowing fans, which push it out onto their levels. Air only moves round a loop that passes a scrubber — two blowers, or foul ducts straight to a blower, move nothing
-- **Oxygen gardens** can sit on either line and breathe into the air passing them. A scrubber or garden off the air's path works on its own level only
+- **Sleeves:** a duct fan has one duct sleeve, which takes either line; a scrubber and an oxygen garden have one foul and one fresh. Several fans share a scrubber through tees in the ducts
+- **Oxygen gardens** sit in the loop like a scrubber — foul air in, fresh air out — and breathe into the air passing through them. A scrubber cleans only the air its ducts carry through it — air drifting past it in the Shaft, from a blower to a sucker, is untouched, so a scrubber on no loop cleans nothing. A garden off the air's path breathes into its own level only
 - **Through the Shaft, the air takes the stairwell.** A fan's vents open on its own level and the ones either side. Between a blower and a sucker the air flows up or down the stairwell through every level in between, and each level mixes the passing air into its own before handing it on. So a level is aired by what flows past it. Nothing flows beyond the last fan, and two fans turning the same way side by side push against each other, leaving the levels between them barely aired. Air is moved, never made: only the scrubbers and gardens change it
 - The player's targets are each room's **oxygen** and **pollution**; the Infrastructure › Air page and a gauge on every room show both
 - Plants (bays, groves, gardens) need clean air to grow and breathe a little oxygen back out

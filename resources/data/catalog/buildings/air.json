@@ -19,7 +19,7 @@
       "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
       "effects": [{ "op": "flow.scrub", "target": "air-quality", "value": 40 }],
-      "_note": "Cleans the air the ducts carry through it, and its own level with what is left. The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
+      "_note": "Cleans only the air the ducts carry through it, in at its foul sleeve and out at its fresh; the Shaft's air drifting past it is untouched, and a scrubber on no loop cleans nothing. The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
     },
     {
       "id": "oxygen-garden",

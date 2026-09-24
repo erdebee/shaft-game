@@ -17,11 +17,17 @@
  * on a free slot builds it there (src/ui/view/placeLayer.js).
  *
  * `network` names the network the Infrastructure panel has open: the shaft
- * draws it (view/networkLayer.js), and a click on one of its nodes starts
- * or finishes a link from `linkFrom` instead of opening the inspector.
+ * draws it and the other lines on its page (view/networkLayer.js), with
+ * every socket on them. A click on a free socket starts a link, held in
+ * `linkFrom` as { instanceId, network, socket } — or, from a joint on a
+ * pipe, as { network, tap } — and a click on a second socket (or a room
+ * with one free, or a run to tee into) finishes it.
+ *
+ * `highlight` names a link the player has picked out in the shaft: it is
+ * drawn lit there and on the minimap, and its sockets offer to take it out.
  */
 
-let current = { instanceId: null, level: null, editing: null, follow: null, placing: null, network: null, linkFrom: null };
+let current = { instanceId: null, level: null, editing: null, follow: null, placing: null, network: null, linkFrom: null, highlight: null };
 const listeners = new Set();
 
 export function get() {
@@ -68,14 +74,27 @@ export function place(buildingId) {
 /** Open a network in the shaft, or close it with null. Drops any half-laid link. */
 export function showNetwork(networkId) {
   if (current.network === networkId && current.linkFrom === null) return;
-  current = { ...current, network: networkId, linkFrom: null };
+  current = { ...current, network: networkId, linkFrom: null, highlight: null };
   notify('network');
 }
 
-/** Start a link from a node, or drop the half-laid one with null. */
-export function startLink(instanceId) {
-  if (current.linkFrom === instanceId) return;
-  current = { ...current, linkFrom: instanceId };
+/**
+ * Start a link from a socket — { instanceId, network, socket } — or drop the
+ * half-laid one with null. Starting one on another line of the page opens
+ * that line.
+ */
+export function startLink(from) {
+  const same = (a, b) => a === b || (!!a && !!b && a.instanceId === b.instanceId && a.network === b.network
+    && a.socket === b.socket && a.tap === b.tap);
+  if (same(current.linkFrom, from)) return;
+  current = { ...current, network: from?.network ?? current.network, linkFrom: from, highlight: from ? null : current.highlight };
+  notify('network');
+}
+
+/** Pick out a link in the shaft, or let it go with null. */
+export function highlightLink(linkId) {
+  if (current.highlight === linkId) return;
+  current = { ...current, highlight: linkId };
   notify('network');
 }
 

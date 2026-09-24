@@ -275,7 +275,7 @@ export const REFS = {
   buildings: { 'consumes[].id': 'any-resource', 'produces[].id': 'any-resource', 'repairCost[].id': 'any-resource', zone: null },
   minerals: { 'refinesInto[]': 'components' },
   flows: { network: 'networks' },
-  networks: { 'connects[].from': 'buildings', 'connects[].to': 'buildings', 'hubs[]': 'buildings', 'linkCost[].id': 'any-resource' },
+  networks: { 'connects[].from': 'buildings', 'connects[].to': 'buildings', 'hubs[]': 'buildings', 'sockets[].building': 'buildings', 'linkCost[].id': 'any-resource' },
   stocks: { 'producedBy[]': 'buildings' },
   jobs: { faction: 'factions', 'worksIn[]': 'buildings' },
   factions: { 'controls[]': 'buildings' },

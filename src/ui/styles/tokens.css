@@ -190,8 +190,10 @@
      Infrastructure panel. UI only — never in a sprite. Power keeps the
      sodium, since amber already means powered. */
   --net-power-grid:   var(--sodium-core);
+  --net-power-lines:  var(--sodium);
   --net-water-mains:  var(--water-lit);
   --net-sewer:        var(--brass);
+  --net-water-feeds:  var(--water-lit);
   --net-foul-ducts: var(--rust-bright);
   --net-fresh-ducts: var(--steel-highlight);
 

@@ -23,7 +23,7 @@ import { used } from '../systems/resources/ledger.js';
 import { hire } from '../systems/population/roster.js';
 import { labourPool } from '../systems/population/staffing.js';
 import { validRoute } from '../systems/haulage/haulageMethods.js';
-import { canLink, networkDef, isHub } from '../systems/infrastructure/networkGraph.js';
+import { canLink, canTap, networkDef, isHub } from '../systems/infrastructure/networkGraph.js';
 
 const HANDLERS = {
   /**
@@ -111,48 +111,59 @@ const HANDLERS = {
     state.buildings = state.buildings.filter((b) => b !== instance);
     // Its cables, pipes and ducts come down with it.
     if (state.infrastructure) {
-      state.infrastructure.links = state.infrastructure.links.filter((l) => l.from !== instance.instanceId && l.to !== instance.instanceId);
+      state.infrastructure.links = withoutOrphans(state.infrastructure.links.filter((l) => l.from !== instance.instanceId && l.to !== instance.instanceId));
     }
     log(state, `${def?.name ?? instance.buildingId} demolished on level ${instance.level}`);
   },
 
   /**
-   * Lay a cable, pipe, drain or duct between two buildings on a network
-   * (catalog/infrastructure/networks.json). The materials come out of the
-   * common stores, nearest the upper end first; the Shaft the player
-   * inherits is already laid, and free.
+   * Lay a cable, wire, pipe, drain, feed line or duct between two buildings
+   * on a network (catalog/infrastructure/networks.json), plugged into the
+   * sockets `fromSocket` and `toSocket` name — or, either left out, the first
+   * free socket that fits. With `tap` (a link id) instead of `to`, the line
+   * runs into the middle of that link: a tee, on a network that can be
+   * branched. The materials come out of the common stores, nearest the upper
+   * end first; the Shaft the player inherits is already laid, and free.
    */
   'player:link': (state, ctx, cmd) => {
-    const check = canLink(state, ctx, cmd.network, cmd.from, cmd.to);
+    const tapping = cmd.tap != null;
+    const check = tapping
+      ? canTap(state, ctx, cmd.network, cmd.from, cmd.tap, { fromSocket: cmd.fromSocket ?? null })
+      : canLink(state, ctx, cmd.network, cmd.from, cmd.to, { fromSocket: cmd.fromSocket ?? null, toSocket: cmd.toSocket ?? null });
+    const refused = (reason) => ctx.emit('link:refused', { network: cmd.network, from: cmd.from, to: cmd.to ?? null, tap: cmd.tap ?? null, reason });
     if (!check.ok) {
-      ctx.emit('link:refused', { network: cmd.network, from: cmd.from, to: cmd.to, reason: check.reason });
+      refused(check.reason);
       return;
     }
     const cost = cmd.inherited === true ? [] : check.cost;
     const a = state.buildings.find((b) => b.instanceId === cmd.from);
-    const b = state.buildings.find((x) => x.instanceId === cmd.to);
-    const near = Math.min(a.level, b.level);
+    const farLevel = tapping ? check.level : state.buildings.find((x) => x.instanceId === cmd.to).level;
+    const near = Math.min(a.level, farLevel);
     if (!cost.every((c) => inStorehouses(state, ctx, c.id) >= c.qty)) {
-      ctx.emit('link:refused', { network: cmd.network, from: cmd.from, to: cmd.to, reason: 'cost' });
+      refused('cost');
       return;
     }
     for (const c of cost) used(state, c.id, takeFromStorehouses(state, ctx, c.id, c.qty, near), 'construction');
     state.infrastructure ??= { links: [], nextLinkId: 1 };
     const id = `l${state.infrastructure.nextLinkId}`;
     state.infrastructure.nextLinkId += 1;
-    state.infrastructure.links.push({ id, network: cmd.network, from: cmd.from, to: cmd.to });
+    state.infrastructure.links.push(tapping
+      ? { id, network: cmd.network, from: cmd.from, to: null, tap: cmd.tap, fromSocket: check.fromSocket, toSocket: null }
+      : { id, network: cmd.network, from: cmd.from, to: cmd.to, fromSocket: check.fromSocket, toSocket: check.toSocket });
     if (cmd.inherited !== true) {
       const net = networkDef(ctx, cmd.network);
-      log(state, `${net.name}: ${net.link} laid between levels ${a.level} and ${b.level}`);
+      log(state, tapping
+        ? `${net.name}: ${net.link} teed in from level ${a.level} at level ${farLevel}`
+        : `${net.name}: ${net.link} laid between levels ${a.level} and ${farLevel}`);
     }
   },
 
-  /** Take a link out. Nothing is recovered. */
+  /** Take a link out, and every line teed into it. Nothing is recovered. */
   'player:unlink': (state, ctx, cmd) => {
     const links = state.infrastructure?.links ?? [];
     const link = links.find((l) => l.id === cmd.linkId);
     if (!link) return;
-    state.infrastructure.links = links.filter((l) => l !== link);
+    state.infrastructure.links = withoutOrphans(links.filter((l) => l !== link));
     const net = networkDef(ctx, link.network);
     log(state, `${net?.name ?? link.network}: ${net?.link ?? 'link'} taken out`);
   },
@@ -171,7 +182,7 @@ const HANDLERS = {
    */
   'player:setPriority': (state, ctx, cmd) => {
     const instance = state.buildings.find((b) => b.instanceId === cmd.instanceId);
-    if (!instance || !isHub(ctx, 'power-grid', instance.buildingId)) return;
+    if (!instance || !isHub(ctx, 'power-lines', instance.buildingId)) return;
     const priority = Math.round(Number(cmd.priority));
     if (!(priority >= 1 && priority <= 5)) return;
     instance.priority = priority;
@@ -406,4 +417,14 @@ export function applyRecorded(state, ctx, command) {
 
 export function knownCommands() {
   return Object.keys(HANDLERS);
+}
+
+/** Links whose tapped link is gone go with it: a tee on nothing is nothing. */
+function withoutOrphans(links) {
+  const kept = new Set();
+  return links.filter((l) => {
+    if (l.tap && !kept.has(l.tap)) return false;
+    kept.add(l.id);
+    return true;
+  });
 }

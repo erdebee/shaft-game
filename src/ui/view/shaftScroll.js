@@ -22,8 +22,8 @@ import { SHAFT_WIDTH, BUILD_X, roomRect } from './interpolate.js';
 import { severityOf } from '../buildingStatus.js';
 import * as selection from '../selection.js';
 import { segmentsOf } from '../routePlan.js';
-import { readNetwork, colorOf } from '../networkStatus.js';
-import { isHub } from '../../systems/infrastructure/networkGraph.js';
+import { readNetwork, colorOf, linesWith } from '../networkStatus.js';
+import { isHub, networkDef } from '../../systems/infrastructure/networkGraph.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -39,6 +39,14 @@ const MAX_DOTS = 5;
 
 /** Below this many pixels per floor, only every fifth floor is numbered. */
 const DENSE_ROW_PX = 13;
+
+/**
+ * Lines the minimap draws in a lane of their own, and which side, as the
+ * shaft has them: the high-voltage trunk and the clean halves of the loops
+ * on the left (fresh air, the mains), the dirty halves on the right (foul
+ * air, the sewer).
+ */
+const MINIMAP_LANES = { 'power-grid': 'left', 'fresh-ducts': 'left', 'water-mains': 'left', 'foul-ducts': 'right', sewer: 'right' };
 
 export function createShaftScroll(host, view, state, ctx) {
   const { viewport } = view;
@@ -268,73 +276,134 @@ export function createShaftScroll(host, view, state, ctx) {
   }
 
   /**
-   * The open network on the minimap: what each live hub reaches as a bar
-   * down the left, every link as a line between its rooms, every node as a
-   * square (a hub filled), and what nothing reaches in red. The whole Shaft
-   * at once, which the view itself cannot show.
+   * The open page's networks on the minimap — every line of it, each in its
+   * own colour: the power's high-voltage cables and low-voltage wires, the
+   * water's mains, drains and feed lines, the air's two ducts. Every link is
+   * a line between its rooms (a trunk heavier than a feed), every building
+   * on a trunk a square (a hub filled), and what nothing reaches in red. The
+   * lines of one page sit a little apart, so a pipe and the drain beside it
+   * both show; the line picked out in the shaft (selection.highlight) is lit. The whole Shaft at once, which the view itself cannot show.
    */
   function syncNetwork(currentState, currentCtx, networkId) {
     const w = networkBox.clientWidth;
     const h = networkBox.clientHeight;
-    const net = networkId ? readNetwork(currentState, currentCtx, networkId) : null;
-    const key = net ? JSON.stringify([
-      networkId, w, h, view.builtSignature,
-      net.links.map((l) => l.id),
-      net.groups.map((g) => [g.key, g.live]),
-      [...net.reach.keys()],
-      net.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}`),
+    const nets = networkId ? linesWith(networkId).map((id) => readNetwork(currentState, currentCtx, id)) : [];
+    const { highlight } = selection.get();
+    const key = nets.length ? JSON.stringify([
+      networkId, w, h, view.builtSignature, highlight,
+      nets.map((net) => [
+        net.links.map((l) => l.id),
+        net.groups.map((g) => [g.key, g.live]),
+        net.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}`),
+      ]),
     ]) : '';
     if (key === networkKey) return;
     networkKey = key;
     networkSvg.replaceChildren();
-    if (!net || w <= 0 || h <= 0) return;
+    if (!nets.length || w <= 0 || h <= 0) return;
     networkSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     networkSvg.style.setProperty('--net', colorOf(networkId));
 
-    const pad = 6;
-    const bar = 5;
+    // The high-voltage cables, the air's ducts and the water's mains and
+    // drains run in lanes, as in the shaft: the trunk and the clean halves
+    // down one at the left, the dirty halves up one at the right, the rooms
+    // between.
+    const lanes = nets.filter((n) => MINIMAP_LANES[n.graph.networkId]).length > 0;
+    const pad = lanes ? 20 : 6;
     const xOf = (b) => {
       const r = roomRect(b, currentState.buildings);
-      return bar + pad + ((r.x + r.width / 2 - BUILD_X) / (SHAFT_WIDTH - BUILD_X)) * (w - bar - pad * 2);
+      return pad + ((r.x + r.width / 2 - BUILD_X) / (SHAFT_WIDTH - BUILD_X)) * (w - pad * 2);
     };
+    const laneX = (id) => (MINIMAP_LANES[id] === 'left' ? 10 : w - 8);
     const yOf = (level) => ((level - 0.5) / levelCount) * h;
     const row = h / levelCount;
 
-    for (const gap of net.gaps) {
+    // What nothing reaches, on any line of the page.
+    const gaps = nets.flatMap((net) => net.gaps);
+    for (const level of new Set(gaps.filter((g) => !g.instance).map((g) => g.level))) {
       const r = svgEl(networkSvg, 'rect', 'minimap-net-gap');
       r.setAttribute('x', '0');
-      r.setAttribute('y', (yOf(gap.level) - row / 2).toFixed(1));
+      r.setAttribute('y', (yOf(level) - row / 2).toFixed(1));
       r.setAttribute('width', String(w));
       r.setAttribute('height', row.toFixed(1));
     }
-    for (const level of net.reach.keys()) {
-      const r = svgEl(networkSvg, 'rect', 'minimap-net-reach');
-      r.setAttribute('x', '0');
-      r.setAttribute('y', (yOf(level) - row / 2).toFixed(1));
-      r.setAttribute('width', String(bar));
-      r.setAttribute('height', (row + 0.5).toFixed(1));
+
+    // The links, the feeds first so the trunks sit on top, the open line last.
+    const order = (net) => (isFeed(net) ? 0 : 1) * 2 + (net.graph.networkId === networkId ? 1 : 0);
+    const drawn = [...nets].sort((p, q) => order(p) - order(q));
+    const trunks = nets.filter((net) => !isFeed(net));
+    for (const net of drawn) {
+      const id = net.graph.networkId;
+      const dx = isFeed(net) ? 0 : (trunks.indexOf(net) - (trunks.length - 1) / 2) * 2.5;
+      // A tee sits on the run it taps, under that run's first building.
+      const byLink = new Map(net.links.map((l) => [l.id, l]));
+      const teeX = (link) => {
+        let host = byLink.get(link.tap);
+        while (host?.tap) host = byLink.get(host.tap);
+        return host ? xOf(host.a) : xOf(link.a);
+      };
+      const lane = MINIMAP_LANES[id] ? laneX(id) : null;
+      for (const link of net.links) {
+        const line = svgEl(networkSvg, 'path', `minimap-net-link${isFeed(net) ? ' feed' : ''}${lane !== null ? ' lane' : ''}${link.id === highlight ? ' highlight' : ''}`);
+        line.style.setProperty('--net', colorOf(id));
+        const ax = xOf(link.a);
+        const ay = yOf(link.a.level);
+        let bx;
+        let by;
+        if (lane !== null) {
+          // Across to the lane, along it, and across to the other room — or, a
+          // tee, along the lane to where it meets the run it taps.
+          by = yOf(link.tap ? link.tee?.level ?? link.a.level : link.b.level);
+          bx = link.tap ? lane : xOf(link.b);
+          const points = [[ax, ay], [lane, ay], [lane, by], ...(link.tap ? [] : [[bx, by]])];
+          line.setAttribute('d', points.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(''));
+        } else {
+          [bx, by] = link.tap ? [teeX(link), yOf(link.tee?.level ?? link.a.level)] : [xOf(link.b), yOf(link.b.level)];
+          line.setAttribute('d', `M${(ax + dx).toFixed(1)} ${ay.toFixed(1)}L${(bx + dx).toFixed(1)} ${by.toFixed(1)}`);
+        }
+        if (link.tap && lane === null) bx += dx;
+        if (link.tap) {
+          const dot = svgEl(networkSvg, 'circle', 'minimap-net-tee');
+          dot.style.setProperty('--net', colorOf(id));
+          dot.setAttribute('cx', bx.toFixed(1));
+          dot.setAttribute('cy', by.toFixed(1));
+          dot.setAttribute('r', '2');
+        }
+      }
     }
-    for (const link of net.links) {
-      const line = svgEl(networkSvg, 'path', 'minimap-net-link');
-      line.setAttribute('d', `M${xOf(link.a).toFixed(1)} ${yOf(link.a.level).toFixed(1)}L${xOf(link.b).toFixed(1)} ${yOf(link.b.level).toFixed(1)}`);
+
+    // The buildings on the trunks; a room on a feed is shown by its line.
+    const placed = new Set();
+    for (const net of trunks) {
+      const id = net.graph.networkId;
+      const live = new Set(net.groups.filter((g) => g.live).map((g) => g.key));
+      for (const node of net.graph.nodes) {
+        if (placed.has(node.instanceId)) continue;
+        placed.add(node.instanceId);
+        const hub = isHub(currentCtx, id, node.buildingId) || nets.some((n) => isHub(currentCtx, n.graph.networkId, node.buildingId));
+        const sq = svgEl(networkSvg, 'rect', `minimap-net-node${hub ? ' hub' : ''}`);
+        sq.style.setProperty('--net', colorOf(id));
+        sq.dataset.live = String(live.has(net.graph.component.get(node.instanceId)));
+        sq.setAttribute('x', (xOf(node) - 3).toFixed(1));
+        sq.setAttribute('y', (yOf(node.level) - 3).toFixed(1));
+        sq.setAttribute('width', '6');
+        sq.setAttribute('height', '6');
+      }
     }
-    const live = new Set(net.groups.filter((g) => g.live).map((g) => g.key));
-    for (const node of net.graph.nodes) {
-      const hub = isHub(currentCtx, networkId, node.buildingId);
-      const sq = svgEl(networkSvg, 'rect', `minimap-net-node${hub ? ' hub' : ''}`);
-      sq.dataset.live = String(live.has(net.graph.component.get(node.instanceId)));
-      sq.setAttribute('x', (xOf(node) - 3).toFixed(1));
-      sq.setAttribute('y', (yOf(node.level) - 3).toFixed(1));
-      sq.setAttribute('width', '6');
-      sq.setAttribute('height', '6');
-    }
-    for (const gap of net.gaps) {
-      if (!gap.instance) continue;
+    const ringed = new Set();
+    for (const gap of gaps) {
+      if (!gap.instance || ringed.has(gap.instance.instanceId)) continue;
+      ringed.add(gap.instance.instanceId);
       const dot = svgEl(networkSvg, 'circle', 'minimap-net-gap-room');
       dot.setAttribute('cx', xOf(gap.instance).toFixed(1));
       dot.setAttribute('cy', yOf(gap.level).toFixed(1));
       dot.setAttribute('r', '3');
     }
+  }
+
+  /** Whether a line is a feed network: many thin lines from a hub to its rooms. */
+  function isFeed(net) {
+    return !!networkDef(ctx, net.graph.networkId)?.users;
   }
 
   function syncStatus(currentState, currentCtx) {

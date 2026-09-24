@@ -2,18 +2,20 @@
  * airflow.js
  * Air moved round its loop, part of the `airQuality` system
  * (perLevelAir.js). Each duct fan is set to SUCK or BLOW. The ducts come in
- * two lines: FOUL-AIR ducts carry what the suckers draw to the scrubbers,
- * and FRESH-AIR ducts carry it on from the scrubbers to the blowers — air
- * only moves round a loop that goes through a scrubber. In each
+ * two lines: FOUL-AIR ducts carry what the suckers draw to the scrubbers
+ * (or the oxygen gardens), and FRESH-AIR ducts carry it on from them to the
+ * blowers — air only moves round a loop that goes through a scrubber or a
+ * garden, in at its foul sleeve and out at its fresh. Ducts branch at tees
+ * (networkGraph.js), nodes with no building that treat nothing. In each
  * ducted-together group:
  *
  *   - the sucking fans draw air off the unsealed levels they reach, as much
  *     as they can move (airflowPerTick) — but air only moves if something
  *     is blowing it out again, so the group moves the lesser of what its
  *     suckers can draw and its blowers can push
- *   - that air travels the foul ducts to a scrubber and the fresh ducts on
- *     to a blower, by the shortest run, and everything on the way works on
- *     it: a scrubber cleans it, an oxygen garden breathes into it, each
+ *   - that air travels the foul ducts to a scrubber or garden and the fresh
+ *     ducts on to a blower, by the shortest run, and what it passes through
+ *     works on it: a scrubber cleans it, a garden breathes into it, each
  *     sharing its capacity over all the air passing through it
  *   - the blowers push it out through their vents, and the suckers draw it
  *     in through theirs; between the two it has to go through the Shaft,
@@ -22,8 +24,9 @@
  *     level is aired by what flows past it: one outside every stream, or
  *     between two blowers pushing at each other, is barely aired at all
  *
- * What a scrubber or garden has left over — all of it, when no air passes —
- * works on its own level.
+ * A scrubber cleans only what its ducts carry through it — the air passing
+ * it in the Shaft is never drawn in. What a garden has left over — all of
+ * it, when no air passes — it breathes into its own level.
  *
  * Writes level.airQuality and level.oxygen (the air system's own) and
  * state.resources.flows.air: the flow on every duct, what passes every
@@ -71,15 +74,18 @@ export function initialAir() {
 export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
   const levels = state.levels;
   const volume = ctx.tables?.levels?.levelTemplate?.airVolume ?? 100;
-  const def = (i) => ctx.catalog.buildings.byId[i.buildingId];
+  // A tee in a duct is a node with no building: it treats nothing.
+  const def = (i) => ctx.catalog.buildings.byId[i.buildingId] ?? {};
   const record = { ...initialAir(), levelIn: new Array(levels.length + 1).fill(0), levelOut: new Array(levels.length + 1).fill(0) };
-  const graph = loopOf(foul, fresh, (n) => (def(n).effects ?? []).some((e) => e.op === 'flow.scrub'));
+  // A scrubber or a garden turns the foul line into the fresh: its foul
+  // sleeve takes the air in, its fresh sleeve sends it on.
+  const graph = loopOf(foul, fresh, (n) => (def(n).effects ?? []).some((e) => e.op === 'flow.scrub') || (def(n).oxygenOutput ?? 0) > 0);
 
   const scrubOf = (i) => {
     const e = (def(i).effects ?? []).find((x) => x.op === 'flow.scrub' && x.target === 'air-quality');
-    return e ? e.value * scaleOf.get(i.instanceId) : 0;
+    return e ? e.value * (scaleOf.get(i.instanceId) ?? 0) : 0;
   };
-  const oxygenOf = (i) => (def(i).oxygenOutput ?? 0) * scaleOf.get(i.instanceId);
+  const oxygenOf = (i) => (def(i).oxygenOutput ?? 0) * (scaleOf.get(i.instanceId) ?? 0);
   const used = new Map(); // treatment node -> { scrub, oxygen } spent on passing air
   const vents = []; // level -> { in, out, airQuality, oxygen (weighted), blowers, suckers }
 
@@ -147,7 +153,8 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
           }
           const linkId = p.route.links[k];
           if (linkId) {
-            const next = p.route.nodes[k + 1];
+            // Booked toward the end of the duct it runs to, through any tees.
+            const next = p.route.towards[k];
             const link = record.links[linkId] ??= { flow: 0, net: {}, airQuality: 0, oxygen: 0, weight: 0 };
             link.net[next] = (link.net[next] ?? 0) + p.flow;
             link.airQuality += air.airQuality * p.flow;
@@ -212,11 +219,13 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
     };
   }
 
-  // What the scrubbers and gardens did not spend on passing air, they spend
-  // where they stand — or, on an unlaid network, wherever it is worst.
+  // A scrubber cleans only the air its ducts carry through it: the Shaft's
+  // air drifting past it from a blower to a sucker is not drawn in, and what
+  // it did not spend is lost. A garden breathes what it did not spend into
+  // its own level. On an unlaid network, both work wherever it is worst.
   const reach = graph.enforced ? null : open;
   for (const node of state.buildings) {
-    const scrub = def(node) ? scrubOf(node) : 0;
+    const scrub = def(node) && !graph.enforced ? scrubOf(node) : 0;
     const breath = def(node) && graph.byId.has(node.instanceId) ? oxygenOf(node) : 0;
     if (scrub <= 0 && breath <= 0) continue;
     const spent = used.get(node.instanceId) ?? { scrub: 0, oxygen: 0 };
@@ -367,7 +376,7 @@ function loopOf(foul, fresh, isScrubber) {
     seen.add(node.instanceId);
     while (queue.length) {
       const id = queue.shift();
-      group.push(byId.get(id));
+      if (!byId.get(id).tee) group.push(byId.get(id));
       for (const { id: next } of both.get(id)) {
         if (!seen.has(next)) { seen.add(next); queue.push(next); }
       }
@@ -402,14 +411,14 @@ function loopRuns(graph, fromId) {
     open.delete(current);
     const line = Number(current[0]);
     const id = current.slice(2);
-    const steps = (graph.lines[line].get(id) ?? []).map((n) => ({ to: key(n.id, line), cost: Math.max(1, n.span), linkId: n.linkId }));
+    const steps = (graph.lines[line].get(id) ?? []).map((n) => ({ to: key(n.id, line), cost: Math.max(1, n.span), linkId: n.linkId, toward: n.toward }));
     // Through a scrubber, foul air comes out on the fresh line.
-    if (line === 0 && graph.isScrubber(id)) steps.push({ to: key(id, 1), cost: 0, linkId: null });
-    for (const { to, cost, linkId } of steps) {
+    if (line === 0 && graph.isScrubber(id)) steps.push({ to: key(id, 1), cost: 0, linkId: null, toward: null });
+    for (const { to, cost, linkId, toward } of steps) {
       const d = dist.get(current) + cost;
       if (d < (dist.get(to) ?? Infinity)) {
         dist.set(to, d);
-        prev.set(to, { from: current, linkId });
+        prev.set(to, { from: current, linkId, toward });
         open.add(to);
       }
     }
@@ -418,17 +427,19 @@ function loopRuns(graph, fromId) {
     const end = key(toId, 1);
     if (!dist.has(end)) return null;
     const trail = [];
-    for (let at = end; at; at = prev.get(at)?.from) trail.unshift({ id: at.slice(2), linkId: prev.get(at)?.linkId ?? null });
+    for (let at = end; at; at = prev.get(at)?.from) trail.unshift({ id: at.slice(2), linkId: prev.get(at)?.linkId ?? null, toward: prev.get(at)?.toward ?? null });
     // The step through a scrubber changes line, not place.
     const nodes = [];
     const links = [];
+    const towards = [];
     for (const step of trail) {
       if (nodes.length && step.linkId === null) continue;
-      if (nodes.length) links.push(step.linkId);
+      if (nodes.length) { links.push(step.linkId); towards.push(step.toward); }
       nodes.push(step.id);
     }
     links.push(null);
-    return { nodes, links };
+    towards.push(null);
+    return { nodes, links, towards };
   };
 }
 

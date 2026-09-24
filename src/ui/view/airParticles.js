@@ -45,6 +45,16 @@ const CLEAN = 97;
 const OMEGA = 7;
 const ZETA = 0.28;
 
+/** The longest gap between frames, in seconds, a particle is sprung across rather than put in place. */
+const MAX_GAP = 0.25;
+
+/**
+ * How far, in shaft units, a particle may be from its point and still be
+ * sprung to it. Well past a corner's overshoot; any further, and its line
+ * has moved, so it is put in place.
+ */
+const MAX_STRAY = 48;
+
 /** How fast air moves, in shaft units a second, for a given flow. */
 const speedFor = (flow) => 64 + flow * 0.4;
 
@@ -57,11 +67,24 @@ export function createAirParticles(parent) {
   let lastMs = null;
   const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  return { build, frame, clear };
+  return { build, frame, clear, forget };
 
+  /** Take every particle away, keeping where each was for a rebuild to carry on from. */
   function clear() {
     group.replaceChildren();
     streams = [];
+  }
+
+  /**
+   * Take every particle away and forget where they were: when they come
+   * back — the network opened again after the player looked elsewhere — the
+   * clock has moved on, and a particle sprung from its old place would fly
+   * across the Shaft to its new one.
+   */
+  function forget() {
+    clear();
+    motion = new Map();
+    lastMs = null;
   }
 
   /**
@@ -139,7 +162,11 @@ export function createAirParticles(parent) {
   /** Move every particle towards where the clock puts its point, and colour it. */
   function frame(ambientMs) {
     const seconds = calm ? 0 : ambientMs / 1000;
-    const dt = lastMs === null ? 0 : Math.max(0, Math.min(0.1, (ambientMs - lastMs) / 1000));
+    // After a gap in the frames (the layer hidden, the tab in the
+    // background), every particle is put where it should be, not sprung there.
+    const gap = lastMs === null ? Infinity : (ambientMs - lastMs) / 1000;
+    const jump = gap > MAX_GAP;
+    const dt = jump ? 0 : Math.max(0, gap);
     lastMs = ambientMs;
     const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
     const h = dt / steps;
@@ -157,9 +184,12 @@ export function createAirParticles(parent) {
         const tx = at.x + (p.dx + (at.vertical ? sway : 0)) * (at.vertical ? 1 : across * 0.3);
         const ty = at.y + (p.dy + (at.vertical ? 0 : sway)) * (at.vertical ? (p.ducted ? 0.3 : 0.1) : (p.ducted ? 1 : at.spread));
 
-        // Back at the start of its loop, or new: it appears where it should be.
+        // Back at the start of its loop, or new, or its line has moved from
+        // under it (the network redrawn, the minimap widening): it appears
+        // where it should be rather than flying there.
         const wrapped = m.along !== null && along < m.along - route.length / 2;
-        if (m.x === null || wrapped || calm) {
+        const astray = m.x !== null && Math.hypot(tx - m.x, ty - m.y) > MAX_STRAY;
+        if (m.x === null || wrapped || calm || jump || astray) {
           m.x = tx; m.y = ty; m.vx = 0; m.vy = 0;
         } else {
           for (let i = 0; i < steps; i++) {

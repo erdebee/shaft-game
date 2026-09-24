@@ -55,9 +55,8 @@
       "produces": [],
       "repairCost": [{ "id": "copper-wire", "qty": 1 }, { "id": "electrical-components", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
-      "serviceRadiusLevels": 4,
       "effects": [{ "op": "network.capacity", "target": "power-grid", "value": 800 }],
-      "_note": "Lights every room within serviceRadiusLevels of it, up to its network.capacity in kW, once it is cabled back to a generator or a battery. The player ranks junctions 1-5; in a shortfall the grid serves them in that order."
+      "_note": "Lights every room wired into one of its low-voltage sockets (catalog/infrastructure/networks.json), up to its network.capacity in kW, once a high-voltage cable feeds it from a generator or a battery. The player ranks junctions 1-5; in a shortfall the grid serves them in that order."
     }
   ]
 }

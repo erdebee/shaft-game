@@ -1,90 +1,117 @@
 {
-  "_note": "The five distribution networks the player lays by hand. Each is a set of LINKS (cables, pipes, ducts) between the buildings named in `connects`; a link costs `linkCost` per level it spans (at least one) and may span at most `maxSpanLevels`. HUBS are the buildings that hand the network out to everything within their serviceRadiusLevels (catalog/buildings/*.json): a junction lights the rooms around it, a cistern waters them, a duct fan airs them — but a hub only works when it is linked back to where the network comes from. The graph is read by systems/infrastructure/networkGraph.js; each system settles its own network over it. A network not listed in config infrastructure.enforced is treated as fully laid (every node joined, every hub reaching everywhere) — which is how system tests isolate one network at a time.",
+  "_note": "The distribution networks the player lays by hand, socket by socket. Every building that takes part in a network carries SOCKETS for it (`sockets`: how many of each, and which way they face: `in`, `out`, or `any`; an in-line building's in and out carry a `row`, drawn one above the other so its two pipes never cross), and every LINK (a cable, pipe, drain, duct or feed line) plugs one socket into another: an `out` into an `in`, an `any` into anything, and only between the buildings named in `connects`. A socket takes one link — sockets sharing a `pool` are one sleeve on several lines, such as a fan's duct, which takes either air line — so a junction, a cistern or a generator hands out only as many lines as it has sockets. A FEED network (`users`) is the thin last stretch: its hubs' sockets go to every building that draws the network's resource (`power`: anything with a powerDraw or a recipe; `water`: anything that consumes water), each of which has the one `userSocket`. On a network with `taps`, a link may also run from a socket into the middle of another link of its network — a tee — so one line serves several machines. A link costs `linkCost` per level it spans (at least one) and may span at most `maxSpanLevels`. `socketStyle` is how the view draws the sockets (view/networkLayer.js). The graph is read by systems/infrastructure/networkGraph.js; each system settles its own network over it. A network not listed in config infrastructure.enforced is treated as fully laid (every node joined, every hub reaching everywhere) — which is how system tests isolate one network at a time.",
   "networks": [
     {
       "id": "power-grid",
-      "name": "Power grid",
-      "short": "Power",
+      "name": "High-voltage grid",
+      "short": "HV",
       "carries": "power",
-      "link": "cable",
+      "link": "high-voltage cable",
       "connects": [
         { "from": "main-generator", "to": "junction" },
-        { "from": "junction", "to": "junction" },
+        { "from": "main-generator", "to": "battery-bank" },
+        { "from": "battery-bank", "to": "battery-bank" },
         { "from": "battery-bank", "to": "junction" }
       ],
-      "hubs": ["junction"],
+      "hubs": [],
       "linkCost": [{ "id": "copper-wire", "qtyPerLevel": 0.5 }],
-      "maxSpanLevels": 10,
-      "description": "Generators feed junctions by cable; each junction lights every room within its reach, up to its capacity. When the generators run short, junctions are served in priority order (1 first) and batteries cover only the junctions they are cabled to.",
-      "_note": "Loss scales with cable run from the generator plus the drop from the junction to the room, so a shallow level fed from a deep generator pays for every level of cable between."
+      "maxSpanLevels": 40,
+      "description": "The generators' high-voltage cables, out to the junctions. A generator has six high-voltage outputs; a junction takes one feed in. A battery sits in line, one cable in and one out, so batteries chain in series between a generator and a junction; every battery in the chain backs the junction at its end, and no other. When the generators run short, junctions are served in priority order (1 first).",
+      "_note": "Loss scales with cable run from the generator plus the low-voltage drop from the junction to the room, so a shallow level fed from a deep generator pays for every level of cable between.",
+      "socketStyle": "hv",
+      "sockets": [
+        { "building": "main-generator", "id": "out", "dir": "out", "count": 6, "label": "HV out" },
+        { "building": "battery-bank", "id": "in", "dir": "in", "count": 1, "label": "HV in", "row": 0 },
+        { "building": "battery-bank", "id": "out", "dir": "out", "count": 1, "label": "HV out", "row": 1 },
+        { "building": "junction", "id": "in", "dir": "in", "count": 1, "label": "HV in" }
+      ]
+    },
+    {
+      "id": "power-lines",
+      "name": "Low-voltage lines",
+      "short": "LV",
+      "carries": "power",
+      "link": "wire",
+      "connects": [],
+      "hubs": ["junction"],
+      "users": "power",
+      "socketStyle": "lv",
+      "sockets": [{ "building": "junction", "id": "out", "dir": "out", "count": 12, "label": "LV out" }],
+      "userSocket": { "id": "in", "dir": "in", "count": 1, "label": "LV in" },
+      "linkCost": [{ "id": "copper-wire", "qtyPerLevel": 0.25 }],
+      "maxSpanLevels": 4,
+      "description": "The wires from a junction to the rooms it lights. Every room that draws power has one low-voltage socket, and a junction has twelve: plug each room into a junction no more than four levels away, and keep the junction under what it can carry.",
+      "_note": "A room on no wire is off the grid, however close a junction stands."
     },
     {
       "id": "water-mains",
       "name": "Water mains",
-      "short": "Water",
+      "short": "Mains",
       "carries": "water",
-      "link": "pipe",
+      "link": "main pipe",
       "connects": [
         { "from": "reclamation-plant", "to": "deep-pump" },
         { "from": "deep-pump", "to": "cistern" },
         { "from": "deep-pump", "to": "purifier" },
-        { "from": "purifier", "to": "cistern" },
-        { "from": "cistern", "to": "cistern" },
-        { "from": "cistern", "to": "hydroponics-bay" },
-        { "from": "cistern", "to": "protein-vats" },
-        { "from": "cistern", "to": "food-processing" },
-        { "from": "cistern", "to": "grove" },
-        { "from": "hydroponics-bay", "to": "hydroponics-bay" },
-        { "from": "hydroponics-bay", "to": "protein-vats" },
-        { "from": "hydroponics-bay", "to": "food-processing" },
-        { "from": "hydroponics-bay", "to": "grove" },
-        { "from": "protein-vats", "to": "protein-vats" },
-        { "from": "protein-vats", "to": "food-processing" },
-        { "from": "protein-vats", "to": "grove" },
-        { "from": "food-processing", "to": "food-processing" },
-        { "from": "food-processing", "to": "grove" },
-        { "from": "grove", "to": "grove" }
+        { "from": "purifier", "to": "cistern" }
       ],
-      "hubs": ["cistern"],
+      "hubs": [],
       "linkCost": [{ "id": "steel-billet", "qtyPerLevel": 0.5 }],
       "maxSpanLevels": 12,
-      "description": "The water's loop, fresh half. Pumps drive it: a pump pushes the reclamation plant's recovered water, and fresh groundwater for what is lost, up the mains to the cisterns; each cistern stores water and supplies every room and resident within its reach — except the cultivation rooms, which take their water only by pipe, from a cistern or from the next room along. A purifier on the mains cleans the reclaimed water that passes through it.",
-      "_note": "Pumping upward costs power proportional to lift height, so water costs more the higher people live."
+      "description": "The water's loop, fresh half, in large pipe. Pumps drive it: a pump sits in line, one pipe in and one out — the reclamation plant's recovered water in, and out up the mains to the cisterns, with fresh groundwater added for what is lost. A cistern has one fresh-water sleeve and a reclamation plant one; to serve several cisterns from one pump, branch a pipe off the main with a tee. A purifier on the way cleans the reclaimed water that passes through it.",
+      "_note": "Pumping upward costs power proportional to lift height, so water costs more the higher people live.",
+      "socketStyle": "main-fresh",
+      "sockets": [
+        { "building": "deep-pump", "id": "in", "dir": "in", "count": 1, "label": "water in", "row": 0 },
+        { "building": "deep-pump", "id": "out", "dir": "out", "count": 1, "label": "water out", "row": 1 },
+        { "building": "purifier", "id": "fresh", "dir": "any", "count": 2, "label": "fresh water" },
+        { "building": "cistern", "id": "fresh", "dir": "any", "count": 1, "label": "fresh water" },
+        {
+          "building": "reclamation-plant",
+          "id": "fresh",
+          "dir": "out",
+          "count": 1,
+          "label": "reclaimed water out"
+        }
+      ],
+      "taps": true
     },
     {
       "id": "sewer",
       "name": "Sewer",
-      "short": "Sewage",
+      "short": "Sewer",
       "carries": "greywater",
-      "link": "drain",
-      "connects": [
-        { "from": "cistern", "to": "cistern" },
-        { "from": "cistern", "to": "reclamation-plant" },
-        { "from": "hydroponics-bay", "to": "cistern" },
-        { "from": "protein-vats", "to": "cistern" },
-        { "from": "food-processing", "to": "cistern" },
-        { "from": "grove", "to": "cistern" },
-        { "from": "hydroponics-bay", "to": "reclamation-plant" },
-        { "from": "protein-vats", "to": "reclamation-plant" },
-        { "from": "food-processing", "to": "reclamation-plant" },
-        { "from": "grove", "to": "reclamation-plant" },
-        { "from": "hydroponics-bay", "to": "hydroponics-bay" },
-        { "from": "hydroponics-bay", "to": "protein-vats" },
-        { "from": "hydroponics-bay", "to": "food-processing" },
-        { "from": "hydroponics-bay", "to": "grove" },
-        { "from": "protein-vats", "to": "protein-vats" },
-        { "from": "protein-vats", "to": "food-processing" },
-        { "from": "protein-vats", "to": "grove" },
-        { "from": "food-processing", "to": "food-processing" },
-        { "from": "food-processing", "to": "grove" },
-        { "from": "grove", "to": "grove" }
-      ],
-      "hubs": ["cistern"],
+      "link": "main drain",
+      "connects": [{ "from": "cistern", "to": "reclamation-plant" }],
+      "hubs": [],
       "flowsDownhill": true,
       "linkCost": [{ "id": "concrete", "qtyPerLevel": 0.5 }],
       "maxSpanLevels": 12,
-      "description": "The water's loop, dirty half. What a cistern's rooms and residents use comes back dirty. Drains carry it downhill only, cistern to cistern, to a reclamation plant — the cultivation rooms, piped for their water, drain by their own drains too; sewage with nowhere to go is dumped where it was made and fouls that level's air.",
-      "_note": "Gravity is the whole design: a drain never carries anything up, so the plant belongs at the bottom."
+      "description": "The water's loop, dirty half, in large drain. What a cistern's rooms use comes back to it dirty; its one sewage sleeve carries it on, downhill only, to a reclamation plant, which takes one drain in. Several cisterns drain into one plant by branching their drains off one another's with tees. Sewage with nowhere to go is dumped where it was made and fouls that level's air.",
+      "_note": "Gravity is the whole design: a drain never carries anything up, so the plant belongs at the bottom.",
+      "socketStyle": "main-sewage",
+      "sockets": [
+        { "building": "cistern", "id": "sewage", "dir": "any", "count": 1, "label": "sewage" },
+        { "building": "reclamation-plant", "id": "sewage", "dir": "any", "count": 1, "label": "sewage in" }
+      ],
+      "taps": true
+    },
+    {
+      "id": "water-feeds",
+      "name": "Feed lines",
+      "short": "Feeds",
+      "carries": "water",
+      "link": "feed line",
+      "connects": [],
+      "hubs": ["cistern"],
+      "users": "water",
+      "socketStyle": "feed",
+      "sockets": [{ "building": "cistern", "id": "feed", "dir": "out", "count": 10, "label": "feed line" }],
+      "userSocket": { "id": "feed", "dir": "in", "count": 1, "label": "feed line" },
+      "linkCost": [{ "id": "steel-billet", "qtyPerLevel": 0.25 }],
+      "maxSpanLevels": 4,
+      "description": "The thin double pipe from a cistern to each room it serves: water in, and the used water back beside it. Every room that uses water, a home included, has one feed sleeve; a cistern has ten. Plug each into a cistern no more than four levels away.",
+      "_note": "A home's residents drink through its feed line. People with no home drink at the nearest room that has one."
     },
     {
       "id": "foul-ducts",
@@ -93,18 +120,22 @@
       "carries": "air",
       "link": "foul duct",
       "connects": [
-        { "from": "duct-fan", "to": "duct-fan" },
         { "from": "duct-fan", "to": "scrubber-bank" },
         { "from": "duct-fan", "to": "oxygen-garden" },
-        { "from": "scrubber-bank", "to": "scrubber-bank" },
-        { "from": "scrubber-bank", "to": "oxygen-garden" },
-        { "from": "oxygen-garden", "to": "oxygen-garden" }
+        { "from": "duct-fan", "to": "duct-fan" }
       ],
       "hubs": ["duct-fan"],
       "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
       "maxSpanLevels": 10,
-      "description": "The first half of the air's loop. Sucking duct fans draw the foul air off the levels they reach and send it down the foul-air ducts to the scrubbers — through any oxygen garden on the way, which feeds on it and breathes into it. Air only moves when the loop is closed: foul ducts into a scrubber, fresh ducts out of it to a blowing fan.",
-      "_note": "Airflow is settled in systems/airQuality/airflow.js, over this network and fresh-ducts together: the air runs sucker -> foul ducts -> scrubber -> fresh ducts -> blower."
+      "description": "The first half of the air's loop. A sucking duct fan draws the foul air off the levels it reaches and sends it down a foul-air duct to a scrubber's foul sleeve — or an oxygen garden's, which feeds on it — and on through it. A fan has one duct sleeve, which takes either line; a scrubber and a garden have one foul and one fresh. Branch a duct off another with a tee to gather several fans into one scrubber. Air only moves when the loop is closed: foul ducts into a scrubber or garden, fresh ducts out of it to a blowing fan.",
+      "_note": "Airflow is settled in systems/airQuality/airflow.js, over this network and fresh-ducts together: the air runs sucker -> foul ducts -> scrubber -> fresh ducts -> blower.",
+      "socketStyle": "duct-foul",
+      "sockets": [
+        { "building": "duct-fan", "id": "duct", "dir": "any", "count": 1, "label": "duct", "pool": "air" },
+        { "building": "scrubber-bank", "id": "foul", "dir": "any", "count": 1, "label": "foul air" },
+        { "building": "oxygen-garden", "id": "foul", "dir": "any", "count": 1, "label": "foul air" }
+      ],
+      "taps": true
     },
     {
       "id": "fresh-ducts",
@@ -113,17 +144,22 @@
       "carries": "air",
       "link": "fresh duct",
       "connects": [
-        { "from": "duct-fan", "to": "duct-fan" },
         { "from": "duct-fan", "to": "scrubber-bank" },
         { "from": "duct-fan", "to": "oxygen-garden" },
-        { "from": "scrubber-bank", "to": "oxygen-garden" },
-        { "from": "oxygen-garden", "to": "oxygen-garden" }
+        { "from": "duct-fan", "to": "duct-fan" }
       ],
       "hubs": ["duct-fan"],
       "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
       "maxSpanLevels": 10,
-      "description": "The second half of the loop. Out of the scrubbers, cleaned, the air runs along the fresh-air ducts — through any oxygen garden on them, which breathes into it — to the blowing duct fans, which push it out onto the levels they reach. A scrubber or garden the air does not pass works on its own level only.",
-      "_note": "A duct fan may carry both lines. What it does with its own levels is set by suck or blow; air can still pass through it on either line."
+      "description": "The second half of the loop. Out of a scrubber or garden, cleaned or breathed into, the air runs along the fresh-air ducts to the blowing duct fans, which push it out onto the levels they reach; a tee in the duct shares it between several fans. A scrubber cleans only the air its ducts carry through it — never the Shaft's air drifting past it; a garden the air does not pass breathes into its own level only.",
+      "_note": "A duct fan may carry both lines. What it does with its own levels is set by suck or blow; air can still pass through it on either line.",
+      "socketStyle": "duct-fresh",
+      "sockets": [
+        { "building": "duct-fan", "id": "duct", "dir": "any", "count": 1, "label": "duct", "pool": "air" },
+        { "building": "scrubber-bank", "id": "fresh", "dir": "any", "count": 1, "label": "fresh air" },
+        { "building": "oxygen-garden", "id": "fresh", "dir": "any", "count": 1, "label": "fresh air" }
+      ],
+      "taps": true
     }
   ]
 }

@@ -90,23 +90,30 @@ function openingBuilding(state, [buildingId, level, nth = 0]) {
 }
 
 /**
- * The cables, pipes, drains and ducts the Shaft opens with, its junction
- * priorities and which way its fans turn, through the player's own commands. A link that names nothing
- * placed, or that the network refuses, is an error in the data.
+ * The cables, wires, pipes, drains, feed lines and ducts the Shaft opens
+ * with — some teed into others laid before them — its junction priorities
+ * and which way its fans turn, through the player's own commands. A link
+ * that names nothing placed, or that the network refuses, is an error in
+ * the data.
  */
 function layOpeningNetworks(state, ctx, dispatch) {
+  // An entry with a `name` can be tapped by a later one: `tap` names it.
+  const named = new Map();
   for (const entry of ctx.shaft.openingLinks ?? []) {
     const before = state.infrastructure.links.length;
+    const tap = entry.tap != null ? named.get(entry.tap) : null;
+    if (entry.tap != null && !tap) throw new Error(`opening: ${entry.network} link taps "${entry.tap}", which is not laid before it`);
     dispatch(state, ctx, {
       type: 'player:link',
       network: entry.network,
       from: openingBuilding(state, entry.from),
-      to: openingBuilding(state, entry.to),
+      ...(tap ? { tap } : { to: openingBuilding(state, entry.to) }),
       inherited: true,
     });
     if (state.infrastructure.links.length === before) {
-      throw new Error(`opening: ${entry.network} link ${entry.from.join(' ')} to ${entry.to.join(' ')} refused`);
+      throw new Error(`opening: ${entry.network} link ${entry.from.join(' ')} to ${entry.to?.join(' ') ?? `a tee on ${entry.tap}`} refused`);
     }
+    if (entry.name) named.set(entry.name, state.infrastructure.links.at(-1).id);
   }
   for (const entry of ctx.shaft.openingPriorities ?? []) {
     dispatch(state, ctx, { type: 'player:setPriority', instanceId: openingBuilding(state, entry.at), priority: entry.priority });

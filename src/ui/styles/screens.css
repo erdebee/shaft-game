@@ -259,9 +259,11 @@ body {
 .minimap-network { position: absolute; top: 0; bottom: 0; left: calc(1.6rem + 1.9em); right: 2px; display: none; pointer-events: none; }
 .shaft-host.network-open .minimap-network { display: block; }
 .minimap-network svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.minimap-net-reach { fill: var(--net); opacity: 0.8; }
 .minimap-net-gap { fill: var(--critical); opacity: 0.35; }
-.minimap-net-link { fill: none; stroke: var(--net); stroke-width: 1.5; }
+.minimap-net-link { fill: none; stroke: var(--net); stroke-width: 1.8; }
+.minimap-net-link.feed { stroke-width: 0.9; opacity: 0.75; }
+.minimap-net-link.lane { stroke-width: 2.2; stroke-linejoin: round; }
+.minimap-net-tee { fill: var(--net); stroke: var(--rock); stroke-width: 0.8; }
 .minimap-net-node { fill: var(--panel); stroke: var(--net); stroke-width: 1.2; }
 .minimap-net-node.hub { fill: var(--net); stroke: var(--rock); }
 .minimap-net-node[data-live="false"] { stroke: var(--ink-faint); }
@@ -1184,6 +1186,11 @@ body {
 .wire-edge { fill: none; stroke: var(--rock); stroke-width: 2.6; stroke-linecap: round; }
 .wire      { fill: none; stroke: var(--sodium); stroke-width: 1.2; stroke-linecap: round; }
 .wire[data-lit="false"] { stroke: var(--steel-dark); }
+.feed-pipe-edge { fill: none; stroke: var(--rock); stroke-width: 3.4; stroke-linecap: round; }
+.feed-pipe      { fill: none; stroke-width: 1.8; stroke-linecap: round; }
+.feed-water-mains { stroke: var(--net-water-mains); }
+.feed-sewer       { stroke: var(--net-sewer); }
+.feed-pipe[data-lit="false"] { stroke: var(--steel-dark); }
 .wire-clamp { fill: var(--steel-pale); stroke: var(--rock); stroke-width: 1; }
 
 /* The air moving round its loop (view/airParticles.js): particles through
@@ -1195,5 +1202,56 @@ body {
 .air-gauge text { fill: var(--readout-ok); font: 700 8px var(--font-mono); }
 .air-gauge text[data-band="warn"] { fill: var(--readout-warn); }
 .air-gauge text[data-band="critical"] { fill: var(--readout-critical); }
-.net-preview { fill: none; stroke: var(--critical); stroke-width: 2.5; stroke-dasharray: 4 4; }
-.net-preview[data-ok="true"] { stroke: var(--readout-ok); }
+/* The sockets a room carries for the open page's lines (view/networkLayer.js).
+   The one part of the network layer that takes the pointer: a free socket
+   starts a link, a used one takes its link out. Each kind in its own shape —
+   a high-voltage outlet, a low-voltage one, a pipe sleeve, a double feed
+   sleeve, a duct collar — tinted by its line (--net, set per socket). */
+.net-socket { pointer-events: all; cursor: pointer; }
+.net-socket-hit { fill: transparent; }
+.net-socket-plate  { fill: var(--steel-darkest); stroke: var(--rock); stroke-width: 1; }
+.net-socket-flange { fill: var(--steel-lit); stroke: var(--rock); stroke-width: 1; }
+.net-socket-face   { fill: var(--steel-dark); stroke: var(--net); stroke-width: 1.2; }
+.net-socket-pin    { fill: var(--rock); }
+.net-socket-bolt   { fill: var(--steel-pale); }
+.net-socket-bore   { fill: var(--rock); stroke: var(--net); stroke-width: 1; }
+.net-socket-plug   { fill: var(--net); stroke: var(--rock); stroke-width: 1; }
+.net-socket-mark   { fill: var(--net); font: 700 7px var(--font-mono); paint-order: stroke; stroke: var(--rock); stroke-width: 2; }
+.net-feed-fresh  { --net: var(--net-water-mains); }
+.net-feed-sewage { --net: var(--net-sewer); }
+.net-socket:hover .net-socket-plate,
+.net-socket:hover .net-socket-flange { stroke: var(--net); stroke-width: 1.6; }
+.net-socket[data-used="true"]:hover .net-socket-plug { fill: var(--critical); }
+/* While a link is being laid: where it starts, where it would fit, and the rest. */
+.net-socket[data-state="off"]  { opacity: 0.35; }
+.net-socket[data-state="fit"] .net-socket-plate,
+.net-socket[data-state="fit"] .net-socket-flange { stroke: var(--readout-ok); stroke-width: 1.8; }
+.net-socket[data-state="from"] .net-socket-plate,
+.net-socket[data-state="from"] .net-socket-flange { stroke: var(--sodium-core); stroke-width: 2.2; }
+
+/* The runs a line can be teed into: clickable only while a link is being laid. */
+/* The lines, to the pointer: a click on a run picks it out (or, laying, tees
+   into it); a click on a joint of a pipe, drain or duct starts a tee from it. */
+.net-pipe-hit { fill: none; stroke: transparent; stroke-linecap: round; stroke-linejoin: round; pointer-events: stroke; cursor: pointer; }
+.net-joint-hit { fill: transparent; pointer-events: all; cursor: crosshair; }
+.network-layer[data-linking="true"] .net-pipe-hit { cursor: crosshair; }
+/* The line picked out: lit along its run, and a ✕ on each of its sockets. */
+.net-highlight { fill: none; stroke: var(--sodium-core); stroke-linecap: round; stroke-linejoin: round; opacity: 0.45; }
+.net-socket-remove-disc  { fill: var(--critical); stroke: var(--rock); stroke-width: 1; }
+.net-socket-remove-cross { fill: none; stroke: var(--sodium-core); stroke-width: 1.4; stroke-linecap: round; }
+.minimap-net-link.highlight { stroke: var(--sodium-core); stroke-width: 3; opacity: 1; }
+
+/* The ghost of the link being laid: the line it would be, half-seen. */
+.net-ghost { opacity: 0.55; }
+.net-ghost-edge { fill: none; stroke: var(--rock); stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; }
+.net-ghost-core { fill: none; stroke: var(--net); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.net-ghost[data-style="hv"] .net-ghost-edge { stroke-width: 8; }
+.net-ghost[data-style="hv"] .net-ghost-core { stroke: var(--steel-darkest); stroke-width: 5.5; }
+.net-ghost[data-style^="main"] .net-ghost-edge,
+.net-ghost[data-style^="duct"] .net-ghost-edge { stroke-width: 10; }
+.net-ghost[data-style^="main"] .net-ghost-core,
+.net-ghost[data-style^="duct"] .net-ghost-core { stroke-width: 7; }
+.net-ghost[data-style="feed"] .net-ghost-core { stroke-width: 3; }
+.net-ghost[data-ok="false"] .net-ghost-core { stroke: var(--critical); }
+.net-ghost-ring { fill: none; stroke: var(--readout-ok); stroke-width: 1.5; }
+.net-ghost-ring[data-ok="false"] { stroke: var(--critical); }
