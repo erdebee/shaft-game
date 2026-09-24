@@ -5,9 +5,9 @@
  *   through the rooms  out of every blowing duct fan, along its level, down
  *                      or up through the rooms of every level between, and
  *                      along the sucking fan's level into the sucker — the
- *                      half of the loop where the air picks up what the
- *                      Shaft breathes out. Each particle takes its own line,
- *                      so a stream is a curtain
+ *                      streams the air actually takes through the Shaft
+ *                      (airflow.js streamsOf), which never cross. Each
+ *                      particle takes its own line, so a stream is a curtain
  *   through the ducts  from the sucker back along every duct to the
  *                      blowers, through the scrubbers and gardens on the way
  *
@@ -35,9 +35,6 @@ const SIZE = 3;
 /** Purity at and below which air is drawn fully brown; above CLEAN, fully blue. */
 const DIRTY = 65;
 const CLEAN = 97;
-
-/** How strongly a stream takes on the air of each level it crosses. */
-const PICKUP_PER_LEVEL = 0.35;
 
 /**
  * The spring a particle chases its point on: its natural frequency (rad/s)
@@ -251,22 +248,23 @@ function pointAt(route, along) {
 
 /**
  * The purity of a stream's air along its route, as [share of the way, purity]
- * samples: blown out as clean as the blower's air, taking on each level it
- * crosses, and — corrected so the sum comes out right — arriving exactly as
- * dirty as what the sucker draws.
+ * samples: blown out as clean as the blower's air, as clean as each level it
+ * crosses, and arriving exactly as dirty as what the sucker draws.
  */
 function profileOf(state, route, fromLevel, toLevel, path) {
   const purity = (level) => state.levels[level - 1]?.airQuality ?? 100;
   const samples = [[0, path.blown.airQuality]];
   let q = path.blown.airQuality;
+  // Every level the air crosses mixes it into its own and hands that on
+  // (airflow.js shaftFlow), so along the way it is as clean as the level.
   const firstRun = route.segments[0].len / route.length;
-  q += (purity(fromLevel) - q) * PICKUP_PER_LEVEL;
+  q = purity(fromLevel);
   samples.push([firstRun, q]);
   if (fromLevel !== toLevel) {
     const vertical = route.segments[1];
     const step = fromLevel < toLevel ? 1 : -1;
     for (let level = fromLevel + step; level !== toLevel + step; level += step) {
-      q += (purity(level) - q) * PICKUP_PER_LEVEL;
+      q = purity(level);
       const y = levelY(level) + ROOM_HEIGHT / 2;
       const f = Math.abs(y - vertical.from.y) / Math.max(1, vertical.len);
       samples.push([(vertical.start + f * vertical.len) / route.length, q]);

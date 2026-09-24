@@ -7,7 +7,7 @@
  *     each room it joins to a riser beside the stairwell (a drain dashed,
  *     and marked with the way it runs)
  *   - every node outlined, hubs tagged — a junction with its priority
- *   - what each live hub reaches, as a bar beside the stairwell
+ *   - on the air, every room's oxygen and pollution
  *   - what nothing reaches: its room outlined in red, or its level washed red
  *
  * A click on a node starts a link, a click on a second lays it and carries
@@ -21,7 +21,7 @@
 
 import { roomRect, levelY, ROOM_HEIGHT, BUILD_X, SHAFT_WIDTH } from './interpolate.js';
 import {
-  tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, plate, sagPath, sagOf, svg,
+  tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, sagPath, sagOf, svg,
 } from './conduits.js';
 import { fanMode, SUCK, AIR_LINES, FOUL, FRESH } from '../../systems/airQuality/airflow.js';
 import { createAirParticles } from './airParticles.js';
@@ -35,20 +35,16 @@ import { inStorehouses } from '../../systems/resources/stores.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-/** The reach bars stand at the stairwell's left edge, staggered so they do not hide each other. */
-const BAR_W = 4;
-const BAR_STEP = 6;
-
 /**
- * Each network's risers — the lanes its runs drop down, just inside the
- * stairwell, staggered so overlapping runs stay tellable — and how far below
- * a room's top its runs hang.
+ * Each network's risers — the lanes its runs drop down, staggered so
+ * overlapping runs stay tellable — and how far below a room's top its runs
+ * hang. The foul air comes up the right-hand wall of the Shaft and the fresh
+ * air goes down the stairwell on the left, so the two halves of the loop
+ * never cross; the water, sewage and power share the stairwell.
  */
 const LANES = {
-  // The two air lines side by side: the foul risers nearest the rooms, the
-  // fresh ones outside them; along a ceiling the fresh duct hangs below.
-  [FOUL]: { x: BUILD_X - 16, step: 52, y: 13, lanes: 2 },
-  [FRESH]: { x: BUILD_X - 42, step: 52, y: 38, lanes: 2 },
+  [FOUL]: { x: SHAFT_WIDTH - 14, step: 26, y: 13, lanes: 2 },
+  [FRESH]: { x: BUILD_X - 16, step: 26, y: 38, lanes: 2 },
   'water-mains': { x: BUILD_X - 12, step: 20, y: 9 },
   sewer: { x: BUILD_X - 12, step: 20, y: 9 },
   'power-grid': { x: BUILD_X - 8, step: 11, y: 6 },
@@ -56,7 +52,6 @@ const LANES = {
 
 export function createNetworkLayer(view, root, dispatch, ctx) {
   const layer = svg(view.layers.networks, 'g', 'network-layer');
-  const bars = svg(layer, 'g', 'net-bars');
   const washes = svg(layer, 'g', 'net-washes');
   const defs = svg(layer, 'defs');
   const lines = svg(layer, 'g', 'net-lines');
@@ -66,7 +61,7 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   const preview = svg(layer, 'path', 'net-preview');
   preview.style.display = 'none';
 
-  const layerState = { key: null, state: null, hover: null };
+  const layerState = { key: null, state: null, hover: null, gauges: [] };
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && selection.get().linkFrom) selection.startLink(null);
@@ -110,21 +105,25 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       air ? [
         other.links.map((l) => l.id),
         state.buildings.map((b) => b.fanMode ?? '').join(),
-        Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow)}`),
-        (state.resources.flows.air?.paths ?? []).map((p) => `${p.from}>${p.to}:${Math.round(p.flow)}:${Math.round(p.blown.airQuality / 2)}:${Math.round(p.drawn.airQuality / 2)}`),
-        (state.resources.flows.air?.levelIn ?? []).map(Math.round).join(),
-        (state.resources.flows.air?.levelOut ?? []).map(Math.round).join(),
+        // Streams are redrawn when they change by a visible amount; the air
+        // along them is read every frame.
+        Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow / 4)}:${Math.round(l.airQuality / 3)}`),
+        (state.resources.flows.air?.paths ?? []).map((p) => `${p.from}>${p.to}:${Math.round(p.flow / 4)}:${Math.round(p.blown.airQuality / 3)}:${Math.round(p.drawn.airQuality / 3)}`),
       ] : null,
     ]);
-    if (key === layerState.key) return;
+    if (key === layerState.key) {
+      if (air) updateGauges(state, currentCtx);
+      return;
+    }
     layerState.key = key;
     draw(state, currentCtx, network, net, linkFrom, other);
     drawPreview(state);
   }
 
   function draw(state, currentCtx, network, net, linkFrom, other) {
-    for (const g of [defs, bars, washes, lines, flows, outlines]) g.replaceChildren();
+    for (const g of [defs, washes, lines, flows, outlines]) g.replaceChildren();
     particles.clear();
+    layerState.gauges = [];
     layer.style.setProperty('--net', colorOf(network));
     const def = networkDef(currentCtx, network);
 
@@ -140,25 +139,11 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       }
     }
 
-    // What each live hub reaches.
-    const live = new Set(net.groups.filter((g) => g.live).map((g) => g.key));
-    const hubs = net.graph.nodes.filter((n) => isHub(currentCtx, network, n.buildingId));
-    hubs.forEach((hub, i) => {
-      const reach = currentCtx.catalog.buildings.byId[hub.buildingId].serviceRadiusLevels ?? 0;
-      const top = Math.max(1, hub.level - reach);
-      const bottom = Math.min(state.levels.length, hub.level + reach);
-      const x = 3 + (i % 3) * BAR_STEP;
-      const bar = rect(bars, 'net-reach', x, levelY(top) + 4, BAR_W, levelY(bottom) - levelY(top) + ROOM_HEIGHT - 8);
-      bar.dataset.live = String(live.has(net.graph.component.get(hub.instanceId)) && !hub.brokenDown);
-      const tick = rect(bars, 'net-reach-hub', x - 2, levelY(hub.level) + ROOM_HEIGHT / 2 - 2, BAR_W + 4, 4);
-      tick.dataset.live = bar.dataset.live;
-    });
-
     // The links, each network in its own material (conduits.js).
     const draw = {
       'power-grid': drawPower,
-      'water-mains': (...a) => drawPipes(...a, 'main'),
-      sewer: (...a) => drawPipes(...a, 'sewer'),
+      'water-mains': (st, c, n, d) => drawPipes(st, c, n, d, 'main'),
+      sewer: (st, c, n, d) => drawPipes(st, c, n, d, 'sewer'),
       [FOUL]: drawDucts,
       [FRESH]: drawDucts,
     }[network];
@@ -214,19 +199,18 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   }
 
   /**
-   * The air ducts, and the air moving through the rooms: particles from
-   * every blowing fan to the sucking fans it feeds, blue where the air is
-   * clean and brown where it has picked up the Shaft's dirt (airParticles.js).
-   * Each duct carries a plate with the air it moves; each sucking fan, the
-   * pollution its streams bring back to it a tick; and every room on a
-   * ventilated level, the air blown onto or drawn off it.
+   * The air ducts, and the air moving round the loop: particles along every
+   * duct, and through the Shaft from every blowing fan to the sucking fans
+   * its air goes to, blue where the air is clean and brown where it has
+   * picked up the Shaft's dirt (airParticles.js). Every room carries a gauge
+   * with the two numbers the loop is for: the oxygen in its air and the
+   * pollution (refreshed every frame by updateGauges, not redrawn).
    */
   function drawDucts(state, currentCtx, net, def, other) {
-    const air = state.resources.flows.air ?? { links: {}, paths: [], levelIn: [], levelOut: [] };
+    const air = state.resources.flows.air ?? { links: {}, paths: [] };
     const ducts = [];
     // The line that is open is drawn over the other.
-    const drawn = [other, net].filter(Boolean);
-    for (const line of drawn) {
+    for (const line of [other, net].filter(Boolean)) {
       const network = line.graph.networkId;
       const tiles = tilesOf(network === FRESH ? 'fresh-duct' : 'duct');
       line.links.forEach((link, i) => {
@@ -234,8 +218,6 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
         tileRoute(lines, defs, tiles, route);
         const flow = air.links?.[link.id];
         if (!flow || flow.flow < 0.5) return;
-        const mid = midpoint(route);
-        plate(flows, mid.x, mid.y, `${Math.round(flow.flow)}`, 'airflow-plate');
         // The air in the duct runs with it: from its upstream end.
         const [up, down] = flow.to === link.a.instanceId ? [link.b, link.a] : [link.a, link.b];
         const points = riserRoute(port(network, up, state), port(network, down, state), laneOf(network, i));
@@ -244,21 +226,40 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     }
     particles.build(state, air.paths, ducts);
 
-    const pickup = new Map();
-    for (const p of air.paths ?? []) pickup.set(p.to, (pickup.get(p.to) ?? 0) + p.pickup);
-    for (const [id, dirt] of pickup) {
-      const fan = state.buildings.find((b) => b.instanceId === id);
-      if (!fan) continue;
-      const r = roomRect(fan, state.buildings);
-      plate(flows, r.x + r.width / 2, r.y + 30, `+${dirt.toFixed(1)} pollution`, 'airflow-pickup');
-    }
     for (const b of state.buildings) {
-      const blown = air.levelIn?.[b.level] ?? 0;
-      const drawn = air.levelOut?.[b.level] ?? 0;
-      if (blown < 0.5 && drawn < 0.5) continue;
       const r = roomRect(b, state.buildings);
-      const text = blown >= drawn ? `▼${Math.round(blown)}` : `▲${Math.round(drawn)}`;
-      plate(flows, r.x + r.width - 16, r.y + ROOM_HEIGHT - 12, text, blown >= drawn ? 'airflow-in' : 'airflow-out');
+      const g = svg(flows, 'g', 'air-gauge');
+      g.setAttribute('transform', `translate(${r.x + r.width - 38} ${r.y + ROOM_HEIGHT - 26})`);
+      const box = svg(g, 'rect');
+      box.setAttribute('width', '34');
+      box.setAttribute('height', '21');
+      const oxygen = svg(g, 'text', 'air-gauge-oxygen');
+      oxygen.setAttribute('x', '3');
+      oxygen.setAttribute('y', '8.5');
+      const pollution = svg(g, 'text', 'air-gauge-pollution');
+      pollution.setAttribute('x', '3');
+      pollution.setAttribute('y', '18');
+      layerState.gauges.push({ level: b.level, oxygen, pollution, shown: null });
+    }
+    updateGauges(state, currentCtx);
+  }
+
+  /** Each room's oxygen and pollution, banded like the rest of the air readouts. */
+  function updateGauges(state, currentCtx) {
+    const { qualityWarnThreshold: warn, qualityCriticalThreshold: critical } = currentCtx.config.air;
+    const band = (q) => (q < critical ? 'critical' : q < warn ? 'warn' : 'ok');
+    for (const gauge of layerState.gauges) {
+      const level = state.levels[gauge.level - 1];
+      if (!level) continue;
+      const o2 = Math.round(level.oxygen ?? 100);
+      const purity = Math.round(level.airQuality ?? 100);
+      const shown = `${o2}|${purity}`;
+      if (shown === gauge.shown) continue;
+      gauge.shown = shown;
+      gauge.oxygen.textContent = `O₂  ${o2}%`;
+      gauge.oxygen.dataset.band = band(o2);
+      gauge.pollution.textContent = `POL ${100 - purity}%`;
+      gauge.pollution.dataset.band = band(purity);
     }
   }
 
@@ -381,26 +382,6 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     layerState.key = null;
     return true;
   }
-}
-
-/** Half way along a route, by length. */
-function midpoint(route) {
-  const segs = [];
-  let total = 0;
-  for (let i = 1; i < route.length; i++) {
-    const len = Math.abs(route[i].x - route[i - 1].x) + Math.abs(route[i].y - route[i - 1].y);
-    segs.push(len);
-    total += len;
-  }
-  let left = total / 2;
-  for (let i = 1; i < route.length; i++) {
-    if (left <= segs[i - 1]) {
-      const f = segs[i - 1] ? left / segs[i - 1] : 0;
-      return { x: route[i - 1].x + (route[i].x - route[i - 1].x) * f, y: route[i - 1].y + (route[i].y - route[i - 1].y) * f };
-    }
-    left -= segs[i - 1];
-  }
-  return route[route.length - 1];
 }
 
 /** Where a link meets a room: near its ceiling, a little in from the left. */

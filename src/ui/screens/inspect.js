@@ -28,6 +28,7 @@ import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
 import { visitorsOf } from '../routePlan.js';
 import { graphOf, hubFor, isHub, networksOf, networkDef } from '../../systems/infrastructure/networkGraph.js';
+import { airingOf } from '../networkStatus.js';
 import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { fanMode, SUCK, BLOW } from '../../systems/airQuality/airflow.js';
 
@@ -385,14 +386,12 @@ function networkLines(state, ctx, instance, def, draw) {
     const hub = hubFor(graphOf(state, ctx, 'water-mains'), ctx, instance.level, { usable: (h) => !h.brokenDown });
     if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
   }
-  // The air moving past it: blown onto its level, or drawn off.
-  const air = state.resources.flows.air;
-  const blown = air?.levelIn?.[instance.level] ?? 0;
-  const drawn = air?.levelOut?.[instance.level] ?? 0;
-  if (blown >= 0.5) lines.push(`Air blown onto this level: ${Math.round(blown)} a tick`);
-  if (drawn >= 0.5) lines.push(`Air drawn off this level: ${Math.round(drawn)} a tick`);
-  const passing = air?.nodes?.[instance.instanceId]?.through ?? 0;
-  if (passing >= 0.5 && !isHub(ctx, 'foul-ducts', def.id)) lines.push(`Air passing through: ${Math.round(passing)} a tick`);
+  // The air it stands in, and whether the loop airs it.
+  const level = state.levels[instance.level - 1];
+  if (level) {
+    const airing = { still: 'still air', weak: 'barely aired', aired: 'aired by the ducts' }[airingOf(state, ctx, instance.level)];
+    lines.push(`Air: oxygen ${Math.round(level.oxygen ?? 100)}%, pollution ${100 - Math.round(level.airQuality ?? 100)}% · ${airing}`);
+  }
   for (const networkId of networksOf(ctx, def.id)) {
     const links = (state.infrastructure?.links ?? []).filter((l) => l.network === networkId && (l.from === instance.instanceId || l.to === instance.instanceId));
     const net = networkDef(ctx, networkId);

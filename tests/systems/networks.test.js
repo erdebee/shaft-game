@@ -260,6 +260,29 @@ test('the flow on each duct is recorded, running from sucker to blower', async (
   assert.equal(run.state.resources.flows.air.moved, 0);
 });
 
+test('between blower and sucker the air goes through every level, and two blowers leave a still gap', async () => {
+  // One sucker at 36, blowers at 20 and 30: all the air they blow heads
+  // down to 36, so the levels between the two blowers see only what the
+  // upper one sends past, the levels above it nothing at all.
+  const layout = [['main-generator', 38], ['duct-fan', 36], ['scrubber-bank', 33], ['duct-fan', 30], ['duct-fan', 20]];
+  const run = await runWith(layout, { keep: SCRUBBING, networks: AIR, tunables: STILL });
+  link(run, 'foul-ducts', ['duct-fan', 36], 'scrubber-bank');
+  link(run, 'fresh-ducts', 'scrubber-bank', ['duct-fan', 30]);
+  link(run, 'fresh-ducts', ['duct-fan', 30], ['duct-fan', 20]);
+  setFan(run, 36, 'suck');
+  ticks(run, 1);
+  const air = run.state.resources.flows.air;
+  const cap = run.ctx.catalog.buildings.byId['duct-fan'].airflowPerTick;
+  // The flow down the stairwell is what has been blown in above, less what has been drawn out.
+  assert.equal(air.shaft[15], 0, 'nothing crosses above the upper blower');
+  assert.ok(Math.abs(air.shaft[25] - cap / 2) < 1e-6, `between the blowers: ${air.shaft[25]}`);
+  assert.ok(Math.abs(air.shaft[33] - cap) < 1e-6, `below both: ${air.shaft[33]}`);
+  assert.equal(air.through[15], 0);
+  assert.ok(air.through[25] > 0 && air.through[25] < air.through[33]);
+  // As streams: each blower's air to the sucker, neither crossing the other.
+  assert.deepEqual(air.paths.map((p) => p.to), [fan(run, 36), fan(run, 36)]);
+});
+
 test('no air moves round a loop that does not pass a scrubber', async () => {
   const layout = [['main-generator', 38], ['duct-fan', 30], ['duct-fan', 25]];
   const run = await runWith(layout, { keep: FUEL, networks: AIR, tunables: STILL });

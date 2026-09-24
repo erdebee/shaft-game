@@ -160,19 +160,3 @@ export function clamp(parent, x, y) {
   c.setAttribute('height', '4');
   return c;
 }
-
-/** A small plate with a figure on it, centred on a point. */
-export function plate(parent, x, y, text, className = '') {
-  const g = svg(parent, 'g', `net-plate ${className}`.trim());
-  g.setAttribute('transform', `translate(${Math.round(x)} ${Math.round(y)})`);
-  const w = 6 + text.length * 5;
-  const box = svg(g, 'rect');
-  box.setAttribute('x', String(-w / 2));
-  box.setAttribute('y', '-6');
-  box.setAttribute('width', String(w));
-  box.setAttribute('height', '11');
-  const t = svg(g, 'text');
-  t.setAttribute('y', '2.5');
-  t.textContent = text;
-  return g;
-}

@@ -1143,6 +1143,21 @@ body {
 }
 .net-prio:hover { color: var(--ink); border-color: var(--amber-dim); }
 .net-prio[aria-pressed="true"] { color: var(--rock); background: var(--sodium-core); border-color: var(--sodium-core); }
+.net-lines { margin: var(--space-2) 0; }
+.net-line[aria-pressed="true"] { background: var(--net); border-color: var(--net); }
+.air-levels { display: grid; gap: 1px; margin-bottom: var(--space-2); max-height: 22rem; overflow-y: auto; }
+.air-level {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1fr) 5.2em 8.6em 6.5em;
+  gap: var(--space-1);
+  align-items: baseline;
+  font-size: var(--size-xs);
+}
+.air-level-no { color: var(--ink-dim); font-family: var(--font-mono); }
+.air-rooms { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.air-reading { font-family: var(--font-mono); color: var(--readout-ok); white-space: nowrap; }
+.air-reading[data-state="warn"], .air-airing[data-state="warn"] { color: var(--readout-warn); }
+.air-reading[data-state="critical"], .air-airing[data-state="critical"] { color: var(--readout-critical); }
 .net-link { display: inline-flex; align-items: center; gap: 2px; margin-right: var(--space-2); }
 
 /* In the shaft. A drawing on the shaft, never in the way of a click. */
@@ -1175,11 +1190,10 @@ body {
    coloured in script from --air-fresh to
    --air-dirty by how clean the air is where they are. */
 .air-particle { stroke: var(--rock); stroke-width: 0.5; opacity: 0.95; }
-.net-plate rect { fill: var(--panel); stroke: var(--rock); stroke-width: 1; }
-.net-plate text { fill: var(--ink); font: 700 8px var(--font-mono); text-anchor: middle; }
-.airflow-pickup text { fill: var(--sodium-spill); }
-.airflow-in text  { fill: var(--water-glint); }
-.airflow-out text { fill: var(--readout-warn); }
+.air-gauge rect { fill: var(--panel); stroke: var(--rock); stroke-width: 1; opacity: 0.92; }
+.air-gauge text { fill: var(--readout-ok); font: 700 8px var(--font-mono); }
+.air-gauge text[data-band="warn"] { fill: var(--readout-warn); }
+.air-gauge text[data-band="critical"] { fill: var(--readout-critical); }
 .net-chevron { fill: none; stroke: var(--net); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .net-preview { fill: none; stroke: var(--critical); stroke-width: 2.5; stroke-dasharray: 4 4; }
 .net-preview[data-ok="true"] { stroke: var(--readout-ok); }

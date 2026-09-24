@@ -54,12 +54,12 @@
       "wearPerTick": 0.0016,
       "consumes": [],
       "produces": [],
-      "serviceRadiusLevels": 3,
+      "serviceRadiusLevels": 1,
       "airflowPerTick": 120,
       "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
       "effects": [],
-      "_note": "The hub of the air ducts. The player sets it to suck or blow: sucking, it draws airflowPerTick of air off every level within serviceRadiusLevels into the ducts; blowing, it pushes the ducts' air out onto them. It cleans nothing itself — it moves the problem to where something can solve it."
+      "_note": "The hub of the air ducts. The player sets it to suck or blow: sucking, it draws airflowPerTick of air through vents on its own level and the ones within serviceRadiusLevels into the ducts; blowing, it pushes the ducts' air out through them. Between a blower and a sucker the air goes through the Shaft itself, airing every level it crosses — so two blowers side by side push against each other and the levels between them go stale. It cleans nothing itself — it moves the problem to where something can solve it."
     }
   ]
 }

@@ -81,7 +81,6 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
     buildings: group(svg, 'layer-buildings'),
     seams: group(svg, 'layer-seams'),
     overlays: group(svg, 'layer-overlays'),
-    networks: group(svg, 'layer-networks'),
   };
 
   const viewport = createViewport({ levelCount: state.levels.length });
@@ -98,6 +97,11 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   // stands at. It is a copy of pixels the room render already contains
   // (tools/cutForeground.mjs), so a room without a cut simply has nothing here.
   layers.foreground = group(svg, 'layer-foreground');
+
+  // The open network (networkLayer.js): its ducts, pipes and cables run in
+  // front of the rooms and the stair rail — they are hung on the Shaft's
+  // walls, and the player is laying them.
+  layers.networks = group(svg, 'layer-networks');
 
   // The open porter's route (routeLayer.js): over the rooms, the people and
   // the stair rail, because it is a drawing ON the shaft, not part of it.

@@ -1,7 +1,7 @@
 /**
  * infrastructureScreen.js
  * The Infrastructure panel: where the player lays the Shaft's networks —
- * power, water, sewage, exhaust air and fresh air. The junctions, cisterns,
+ * power, water, sewage and air (its two duct lines on one page). The junctions, cisterns,
  * fans and the rest are built from the Buildings tab like any other room;
  * here they are joined up.
  *
@@ -22,16 +22,20 @@
 
 import * as selection from '../selection.js';
 import { el, button } from '../components/dom.js';
-import { readNetwork, networkIds, colorOf, roleOf, describe } from '../networkStatus.js';
+import { readNetwork, networkIds, colorOf, roleOf, describe, airingOf } from '../networkStatus.js';
 import { canLink, isHub, networkDef, reachOf } from '../../systems/infrastructure/networkGraph.js';
 import { priorityOf } from '../../systems/power/priorityLadder.js';
 import { cisternCapacity } from '../../systems/water/greywaterLoop.js';
 import { inStorehouses, nameOf } from '../../systems/resources/stores.js';
 import { outputScale } from '../../systems/buildings/buildingRegistry.js';
-import { fanMode, SUCK, BLOW, AIR_LINES } from '../../systems/airQuality/airflow.js';
+import { fanMode, SUCK, BLOW, AIR_LINES, FOUL, FRESH } from '../../systems/airQuality/airflow.js';
 
-/** Which page was open last, kept across tab switches. */
+/** The one page both air lines share: they are one loop. */
+const AIR = 'air';
+
+/** Which page was open last, and which air line was being laid, kept across tab switches. */
 let lastMode = 'power-grid';
+let lastLine = FOUL;
 
 const REFUSED = {
   'cannot-join': 'cannot join these',
@@ -41,6 +45,9 @@ const REFUSED = {
   cost: 'cannot afford',
 };
 
+/** The network a page lays: the air page lays whichever line is chosen. */
+const networkOfMode = (mode) => (mode === AIR ? lastLine : mode);
+
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
   const picker = el('nav', 'net-picker');
@@ -48,12 +55,13 @@ export function mount(root, state, ctx, dispatch) {
   const body = el('div', 'net-body');
   root.append(picker, body);
 
-  const modes = networkIds(ctx);
+  const modes = [...new Set(networkIds(ctx).map((id) => (AIR_LINES.includes(id) ? AIR : id)))];
   const tabs = new Map();
   for (const mode of modes) {
-    const label = networkDef(ctx, mode).short ?? networkDef(ctx, mode).name;
-    const b = button(label, `Lay the ${networkDef(ctx, mode).name.toLowerCase()}`, () => open(mode), 'net-tab');
-    b.style.setProperty('--net', colorOf(mode));
+    const def = mode === AIR ? null : networkDef(ctx, mode);
+    const label = def ? def.short ?? def.name : 'Air';
+    const b = button(label, def ? `Lay the ${def.name.toLowerCase()}` : 'Lay the air ducts', () => open(mode), 'net-tab');
+    b.style.setProperty('--net', colorOf(networkOfMode(mode)));
     tabs.set(mode, b);
     picker.appendChild(b);
   }
@@ -64,8 +72,8 @@ export function mount(root, state, ctx, dispatch) {
     lastMode = mode;
     for (const [m, b] of tabs) b.setAttribute('aria-pressed', String(m === mode));
     body.replaceChildren();
-    selection.showNetwork(mode);
-    page = networkPage(body, state, ctx, dispatch, mode);
+    selection.showNetwork(networkOfMode(mode));
+    page = mode === AIR ? airPage(body, state, ctx, dispatch) : networkPage(body, state, ctx, dispatch, mode);
   }
   open(modes.includes(lastMode) ? lastMode : modes[0]);
 
@@ -73,8 +81,95 @@ export function mount(root, state, ctx, dispatch) {
     update(currentState, currentCtx) {
       // Something else closed the network (a room opened in the inspector
       // and back): put ours back.
-      if (selection.get().network !== lastMode) selection.showNetwork(lastMode);
+      if (selection.get().network !== networkOfMode(lastMode)) selection.showNetwork(networkOfMode(lastMode));
       page?.update(currentState, currentCtx);
+    },
+  };
+}
+
+/**
+ * The air: both duct lines on one page. What the loop is for comes first —
+ * the oxygen and the pollution in every room — then which line to lay, and
+ * that line's nodes.
+ */
+function airPage(parent, state, ctx, dispatch) {
+  const card = el('section', 'card net-card');
+  card.style.setProperty('--net', colorOf(FRESH));
+  const about = el('p', 'meter-label net-about', 'Sucking fans draw the foul air off their levels into the foul-air ducts, up the right-hand wall; a scrubber cleans it, an oxygen garden on the way freshens it, and the fresh-air ducts, down the stairwell, carry it on to the blowing fans. Between a blower and a sucker the air has to go through the Shaft, and it airs every level it crosses: nothing flows past a level beyond the last fan, or between two fans turning the same way. Keep every room\'s oxygen up and its pollution down.');
+  const status = el('div', 'net-status');
+  const lineNav = el('div', 'net-priority net-lines');
+  const levels = el('div', 'air-levels');
+  card.append(el('h2', 'net-title', 'Air'), about, status, el('h3', 'build-zone', 'Oxygen and pollution'), levels, lineNav);
+  const lineBody = el('div');
+  parent.append(card, lineBody);
+
+  lineNav.appendChild(el('span', 'meter-label', 'Laying'));
+  const lineButtons = new Map();
+  for (const line of AIR_LINES) {
+    const def = networkDef(ctx, line);
+    const b = button(def.name, `Lay ${def.name.toLowerCase()}`, () => chooseLine(line), 'net-prio net-line');
+    b.style.setProperty('--net', colorOf(line));
+    lineButtons.set(line, b);
+    lineNav.appendChild(b);
+  }
+
+  let linePage = null;
+  function chooseLine(line) {
+    lastLine = line;
+    for (const [l, b] of lineButtons) b.setAttribute('aria-pressed', String(l === line));
+    lineBody.replaceChildren();
+    selection.showNetwork(line);
+    linePage = networkPage(lineBody, state, ctx, dispatch, line);
+  }
+  chooseLine(lastLine);
+
+  let rowsKey = null;
+  let rows = [];
+  return {
+    update(currentState, currentCtx) {
+      status.replaceChildren(...statusLines(currentState, currentCtx, AIR).map(([text, band]) => {
+        const line = el('div', 'inspect-status', text);
+        line.dataset.state = band;
+        return line;
+      }));
+
+      // A row per built level: its rooms, then its oxygen and pollution.
+      const key = currentState.buildings.map((b) => `${b.instanceId}@${b.level}`).join();
+      if (key !== rowsKey) {
+        rowsKey = key;
+        levels.replaceChildren();
+        rows = [];
+        const byLevel = new Map();
+        for (const b of currentState.buildings) {
+          if (!byLevel.has(b.level)) byLevel.set(b.level, []);
+          byLevel.get(b.level).push(currentCtx.catalog.buildings.byId[b.buildingId]?.name ?? b.buildingId);
+        }
+        for (const level of [...byLevel.keys()].sort((a, b) => a - b)) {
+          const names = byLevel.get(level);
+          const row = el('div', 'air-level');
+          const oxygen = el('span', 'air-reading');
+          const pollution = el('span', 'air-reading');
+          const airing = el('span', 'meter-label air-airing');
+          row.append(el('span', 'air-level-no', `L${level}`), el('span', 'meter-label air-rooms', names.join(', ')), oxygen, pollution, airing);
+          levels.appendChild(row);
+          rows.push({ level, oxygen, pollution, airing });
+        }
+      }
+      const { qualityWarnThreshold: warn, qualityCriticalThreshold: critical } = currentCtx.config.air;
+      const band = (q) => (q < critical ? 'critical' : q < warn ? 'warn' : 'ok');
+      for (const r of rows) {
+        const level = currentState.levels[r.level - 1];
+        const o2 = Math.round(level?.oxygen ?? 100);
+        const purity = Math.round(level?.airQuality ?? 100);
+        r.oxygen.textContent = `O₂ ${o2}%`;
+        r.oxygen.dataset.state = band(o2);
+        r.pollution.textContent = `pollution ${100 - purity}%`;
+        r.pollution.dataset.state = band(purity);
+        const airing = airingOf(currentState, currentCtx, r.level);
+        r.airing.textContent = { still: 'still air', weak: 'barely aired', aired: 'aired' }[airing];
+        r.airing.dataset.state = airing === 'aired' ? 'ok' : airing === 'weak' ? 'warn' : 'critical';
+      }
+      linePage?.update(currentState, currentCtx);
     },
   };
 }
@@ -291,16 +386,19 @@ function statusLines(state, ctx, networkId) {
       }
       break;
     }
-    case 'foul-ducts':
-    case 'fresh-ducts': {
-      const air = state.resources.flows.air ?? {};
+    case AIR: {
       const band = (q) => (q < ctx.config.air.qualityCriticalThreshold ? 'critical' : q < ctx.config.air.qualityWarnThreshold ? 'warn' : 'ok');
-      lines.push([`Moving ${round(air.moved ?? 0)} of air a tick`, (air.moved ?? 0) > 0 ? 'ok' : 'warn']);
-      for (const [field, word] of [['airQuality', 'Purity'], ['oxygen', 'Oxygen']]) {
-        const worst = state.levels.reduce((w, l) => ((l[field] ?? 100) < (w[field] ?? 100) ? l : w), state.levels[0]);
-        const mean = state.levels.reduce((s, l) => s + (l[field] ?? 100), 0) / state.levels.length;
-        lines.push([`${word} averages ${round(mean)}, worst level ${worst.index} at ${round(worst[field] ?? 100)}`, band(Math.min(mean, worst[field] ?? 100))]);
+      const lived = state.levels.filter((l) => state.buildings.some((b) => b.level === l.index));
+      const worst = (field) => lived.reduce((w, l) => ((l[field] ?? 100) < (w[field] ?? 100) ? l : w), lived[0]);
+      const mean = (field) => lived.reduce((t, l) => t + (l[field] ?? 100), 0) / Math.max(1, lived.length);
+      if (lived.length) {
+        const o = worst('oxygen');
+        const p = worst('airQuality');
+        lines.push([`Oxygen averages ${round(mean('oxygen'))}%, lowest on level ${o.index} at ${round(o.oxygen ?? 100)}%`, band(Math.min(mean('oxygen'), o.oxygen ?? 100))]);
+        lines.push([`Pollution averages ${round(100 - mean('airQuality'))}%, worst on level ${p.index} at ${round(100 - (p.airQuality ?? 100))}%`, band(Math.min(mean('airQuality'), p.airQuality ?? 100))]);
       }
+      const still = lived.filter((l) => airingOf(state, ctx, l.index) === 'still').map((l) => l.index);
+      if (still.length) lines.push([`Still air on level${still.length > 1 ? 's' : ''} ${still.join(', ')}`, 'warn']);
       break;
     }
     default:
@@ -340,13 +438,12 @@ function readingOf(state, ctx, networkId, node) {
       const air = state.resources.flows.air?.nodes?.[node.instanceId];
       if (reach) {
         if (outputScale(node, def, ctx) <= 0) return 'not running';
-        const moving = air?.flow ?? 0;
-        const pickup = (state.resources.flows.air?.paths ?? []).filter((p) => p.to === node.instanceId).reduce((t, p) => t + p.pickup, 0);
-        const carried = fanMode(node) === SUCK && pickup > 0 ? ` · takes ${pickup.toFixed(1)} pollution a tick` : '';
-        return `${fanMode(node) === SUCK ? 'sucks' : 'blows'} ${Math.round(moving)} of ${Math.round(air?.capacity ?? 0)}${carried} · ${span}`;
+        const vents = `L${Math.max(1, node.level - reach)}–${Math.min(state.levels.length, node.level + reach)}`;
+        const way = fanMode(node) === SUCK ? `sucking off ${vents}` : `blowing onto ${vents}`;
+        return (air?.flow ?? 0) > 0 ? way : `${way} · idle: no loop through a scrubber`;
       }
       if (outputScale(node, def, ctx) <= 0) return 'not working';
-      return air?.through ? `${Math.round(air.through)} a tick passing through` : 'no air passing — works its own level';
+      return air?.through ? 'the loop\'s air passes through it' : 'no air passing — works its own level';
     }
     default:
       if (reach) return outputScale(node, def, ctx) > 0 ? span : 'not running';

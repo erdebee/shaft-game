@@ -139,20 +139,31 @@ function gapsOf(state, ctx, networkId, graph, reach, def) {
     }
     case 'foul-ducts':
     case 'fresh-ducts': {
-      // Where people live and no air is moved, bar a scrubber's or garden's
-      // own level.
-      const air = state.resources.flows.air ?? {};
+      // Where people live and no air flows past, bar a scrubber's or
+      // garden's own level.
       const own = new Set(graph.nodes.filter((n) => !isHub(ctx, networkId, n.buildingId)).map((n) => n.level));
       residents.forEach((n, level) => {
         if (level < 1 || n < 1 || own.has(level)) return;
-        if ((air.levelIn?.[level] ?? 0) > 0 || (air.levelOut?.[level] ?? 0) > 0) return;
-        gaps.push({ level, what: `${Math.round(n)} residents, no air moved` });
+        if (airingOf(state, ctx, level) !== 'still') return;
+        gaps.push({ level, what: `${Math.round(n)} residents, still air` });
       });
       break;
     }
     default:
   }
   return gaps.sort((a, b) => a.level - b.level);
+}
+
+/**
+ * How well a level is aired by the loop: 'still' with nothing flowing past
+ * it, 'weak' where the flow would take several ticks to change its air,
+ * 'aired' otherwise.
+ */
+export function airingOf(state, ctx, level) {
+  const through = state.resources.flows.air?.through?.[level] ?? 0;
+  const volume = ctx.tables?.levels?.levelTemplate?.airVolume ?? 100;
+  if (through < volume * 0.01) return 'still';
+  return through < volume * 0.25 ? 'weak' : 'aired';
 }
 
 /** A sentence on what a network is and how it is laid. */

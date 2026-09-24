@@ -15,12 +15,12 @@
  *     to a blower, by the shortest run, and everything on the way works on
  *     it: a scrubber cleans it, an oxygen garden breathes into it, each
  *     sharing its capacity over all the air passing through it
- *   - the blowers push it out into the levels they reach, which take on its
- *     purity and oxygen in proportion to how much arrives against the
- *     level's volume (levelTemplate.airVolume)
- *   - the air the blowers push out displaces their levels' own, which
- *     flows through the Shaft to refill the levels being sucked — so the
- *     loop moves air round and only the scrubbers and gardens change it
+ *   - the blowers push it out through their vents, and the suckers draw it
+ *     in through theirs; between the two it has to go through the Shaft,
+ *     up or down the stairwell, level by level (shaftFlow) — and every level
+ *     it crosses mixes it into its own air and hands on the mixture. So a
+ *     level is aired by what flows past it: one outside every stream, or
+ *     between two blowers pushing at each other, is barely aired at all
  *
  * What a scrubber or garden has left over — all of it, when no air passes —
  * works on its own level.
@@ -50,7 +50,7 @@ export function fanMode(instance) {
 }
 
 export function initialAir() {
-  return { links: {}, nodes: {}, paths: [], levelIn: [], levelOut: [], moved: 0 };
+  return { links: {}, nodes: {}, paths: [], levelIn: [], levelOut: [], through: [], shaft: [], moved: 0 };
 }
 
 /**
@@ -72,12 +72,9 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
   };
   const oxygenOf = (i) => (def(i).oxygenOutput ?? 0) * scaleOf.get(i.instanceId);
   const used = new Map(); // treatment node -> { scrub, oxygen } spent on passing air
+  const vents = []; // level -> { in, out, airQuality, oxygen (weighted), blowers, suckers }
 
   const open = levels.filter((l) => !l.sealed);
-  const stair = {
-    airQuality: mean(open, 'airQuality'),
-    oxygen: mean(open, 'oxygen'),
-  };
 
   if (graph.enforced) {
     for (const [, members] of graph.members) {
@@ -120,7 +117,6 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
       const arriving = new Map(); // blower -> { flow, airQuality, oxygen } weighted sums
       for (const p of pairs) {
         const air = { airQuality: mean(p.s.levels, 'airQuality'), oxygen: mean(p.s.levels, 'oxygen') };
-        p.intake = { ...air };
         for (let k = 0; k < p.route.nodes.length; k++) {
           const id = p.route.nodes[k];
           const node = graph.byId.get(id);
@@ -161,59 +157,39 @@ export function settleAirflow(state, ctx, foul, fresh, scaleOf) {
         record.nodes[id] ??= { mode: null, flow: 0, capacity: 0, through: 0 };
         record.nodes[id].through = t;
       }
-      // The other half of the loop, through the rooms: what each blower
-      // pushes out comes back, dirtied by the levels it crosses, to the
-      // suckers. Blown clean, drawn in foul — the difference, in pollution
-      // a tick, is what that stream carried off.
-      for (const p of pairs) {
-        const arrive = arriving.get(p.b);
-        const blown = { airQuality: arrive.airQuality / arrive.flow, oxygen: arrive.oxygen / arrive.flow };
-        record.paths.push({
-          from: p.b.node.instanceId,
-          to: p.s.node.instanceId,
-          flow: p.flow,
-          blown,
-          drawn: p.intake,
-          pickup: Math.max(0, ((blown.airQuality - p.intake.airQuality) * p.flow) / volume),
-        });
-      }
-      // What the blowers push out displaces the air of their levels, and
-      // that air — not new air — is what flows through the Shaft to refill
-      // the levels the suckers draw from. So air is moved, never made: only
-      // the scrubbers and gardens on the way change it.
-      const displaced = new Map(blowers.map((b) => [b, { airQuality: mean(b.levels, 'airQuality'), oxygen: mean(b.levels, 'oxygen') }]));
-      const refill = new Map();
-      for (const p of pairs) {
-        const r = refill.get(p.s) ?? { flow: 0, airQuality: 0, oxygen: 0 };
-        const air = displaced.get(p.b);
-        r.flow += p.flow;
-        r.airQuality += air.airQuality * p.flow;
-        r.oxygen += air.oxygen * p.flow;
-        refill.set(p.s, r);
-      }
-      // Out into the blowers' levels, and in to the suckers'.
+      // Out through the blowers' vents, in through the suckers'.
       for (const [b, arrive] of arriving) {
         record.nodes[b.node.instanceId].flow = arrive.flow;
-        const air = { airQuality: arrive.airQuality / arrive.flow, oxygen: arrive.oxygen / arrive.flow };
         const each = arrive.flow / b.levels.length;
         for (const level of b.levels) {
-          exchange(level, air, each / volume);
-          record.levelIn[level.index] += each;
+          const v = vents[level.index] ??= { in: 0, out: 0, airQuality: 0, oxygen: 0, blowers: [], suckers: [] };
+          v.in += each;
+          v.airQuality += (arrive.airQuality / arrive.flow) * each;
+          v.oxygen += (arrive.oxygen / arrive.flow) * each;
+          v.blowers.push({ id: b.node.instanceId, flow: each, air: { airQuality: arrive.airQuality / arrive.flow, oxygen: arrive.oxygen / arrive.flow } });
         }
       }
       for (const s of suckers) {
-        const r = refill.get(s);
-        const drawn = r.flow;
-        record.nodes[s.node.instanceId].flow = drawn;
-        const air = { airQuality: r.airQuality / r.flow, oxygen: r.oxygen / r.flow };
-        const each = drawn / s.levels.length;
+        record.nodes[s.node.instanceId].flow = s.flow;
+        const each = s.flow / s.levels.length;
         for (const level of s.levels) {
-          exchange(level, air, each / volume);
-          record.levelOut[level.index] += each;
+          const v = vents[level.index] ??= { in: 0, out: 0, airQuality: 0, oxygen: 0, blowers: [], suckers: [] };
+          v.out += each;
+          v.suckers.push({ id: s.node.instanceId, flow: each });
         }
       }
     }
   }
+
+  // The other half of the loop is the Shaft itself: what the blowers push
+  // out has to get to the suckers, up or down the stairwell, through every
+  // level between — and nowhere else.
+  const shaft = shaftFlow(levels, vents, volume);
+  record.levelIn = shaft.levelIn;
+  record.levelOut = shaft.levelOut;
+  record.shaft = shaft.flux;
+  record.through = shaft.through;
+  record.paths = streamsOf(vents, levels, volume);
 
   // Net flow and the air in it, per duct: one direction, the stronger.
   for (const [id, link] of Object.entries(record.links)) {
@@ -249,6 +225,114 @@ function exchange(level, air, share) {
   level.airQuality += (air.airQuality - level.airQuality) * k;
   level.oxygen += (air.oxygen - level.oxygen) * k;
 }
+
+/**
+ * The air through the Shaft, from the blowers' vents to the suckers'. The
+ * stairwell is one column, so what crosses between two levels is fixed:
+ * everything blown in above the gap less everything drawn out above it
+ * (positive runs down). Each level, taken upstream first, mixes what flows
+ * into it — from its vents and from its neighbours — into its own air, and
+ * passes its air on. A level no flow crosses keeps its air; one between two
+ * blowers pushing at each other gets only what the difference leaves it.
+ * A sealed level lets the flow by without mixing into it.
+ *
+ * Returns per level: levelIn, levelOut (its vents), through (everything
+ * that flowed into it) and flux[i] (across the gap below level i).
+ */
+function shaftFlow(levels, vents, volume) {
+  const n = levels.length;
+  const levelIn = new Array(n + 1).fill(0);
+  const levelOut = new Array(n + 1).fill(0);
+  const through = new Array(n + 1).fill(0);
+  const flux = new Array(n + 1).fill(0);
+  const EPS = 1e-6;
+  let running = 0;
+  for (let i = 1; i <= n; i++) {
+    levelIn[i] = vents[i]?.in ?? 0;
+    levelOut[i] = vents[i]?.out ?? 0;
+    running += levelIn[i] - levelOut[i];
+    flux[i] = i < n && Math.abs(running) > EPS ? running : 0;
+  }
+  // Upstream first: a level is taken once whatever flows into it has been.
+  const waiting = new Array(n + 2).fill(0);
+  for (let i = 1; i < n; i++) {
+    if (flux[i] > 0) waiting[i + 1]++;
+    else if (flux[i] < 0) waiting[i]++;
+  }
+  const ready = [];
+  for (let i = 1; i <= n; i++) if (!waiting[i]) ready.push(i);
+  const out = new Array(n + 2).fill(null);
+  while (ready.length) {
+    const i = ready.shift();
+    const level = levels[i - 1];
+    const parts = [];
+    const v = vents[i];
+    if (v?.in > 0) parts.push([v.in, { airQuality: v.airQuality / v.in, oxygen: v.oxygen / v.in }]);
+    if (i > 1 && flux[i - 1] > 0) parts.push([flux[i - 1], out[i - 1]]);
+    if (i < n && flux[i] < 0) parts.push([-flux[i], out[i + 1]]);
+    const total = parts.reduce((t, [f]) => t + f, 0);
+    through[i] = total;
+    if (total > 0) {
+      const mix = {
+        airQuality: parts.reduce((t, [f, a]) => t + f * a.airQuality, 0) / total,
+        oxygen: parts.reduce((t, [f, a]) => t + f * a.oxygen, 0) / total,
+      };
+      if (level.sealed) out[i] = mix;
+      else exchange(level, mix, total / volume);
+    }
+    out[i] ??= { airQuality: level.airQuality, oxygen: level.oxygen };
+    if (i < n && flux[i] > 0 && !--waiting[i + 1]) ready.push(i + 1);
+    if (i > 1 && flux[i - 1] < 0 && !--waiting[i - 1]) ready.push(i - 1);
+  }
+  return { levelIn, levelOut, through, flux };
+}
+
+/**
+ * The flow through the Shaft as streams from a blower to a sucker, for the
+ * view to draw. The blown air, lowest level last, meets the drawn air in
+ * the same order — so no two streams cross, and together they are exactly
+ * the flow up and down the stairwell. Each carries how clean it was blown
+ * out, how foul the sucker's level is when it gets there, and the pollution
+ * it took away with it, a tick.
+ */
+function streamsOf(vents, levels, volume) {
+  const supply = [];
+  const demand = [];
+  vents.forEach((v, level) => {
+    if (!v) return;
+    for (const b of v.blowers) supply.push({ ...b, level, left: b.flow });
+    for (const s of v.suckers) demand.push({ ...s, level, left: s.flow });
+  });
+  const pairs = new Map();
+  let i = 0;
+  let j = 0;
+  while (i < supply.length && j < demand.length) {
+    const b = supply[i];
+    const s = demand[j];
+    const f = Math.min(b.left, s.left);
+    if (f > 1e-9) {
+      const key = `${b.id}>${s.id}`;
+      const p = pairs.get(key) ?? { from: b.id, to: s.id, flow: 0, bq: 0, bo: 0, dq: 0, do: 0 };
+      const at = levels[s.level - 1];
+      p.flow += f;
+      p.bq += b.air.airQuality * f;
+      p.bo += b.air.oxygen * f;
+      p.dq += at.airQuality * f;
+      p.do += at.oxygen * f;
+      pairs.set(key, p);
+    }
+    b.left -= f;
+    s.left -= f;
+    if (b.left <= 1e-9) i++;
+    if (s.left <= 1e-9) j++;
+  }
+  return [...pairs.values()].map((p) => {
+    const blown = { airQuality: p.bq / p.flow, oxygen: p.bo / p.flow };
+    const drawn = { airQuality: p.dq / p.flow, oxygen: p.do / p.flow };
+    return { from: p.from, to: p.to, flow: p.flow, blown, drawn, pickup: Math.max(0, ((blown.airQuality - drawn.airQuality) * p.flow) / volume) };
+  });
+}
+
 
 function mean(levels, field) {
   return levels.length ? levels.reduce((s, l) => s + (l[field] ?? 100), 0) / levels.length : 100;
