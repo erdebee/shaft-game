@@ -81,17 +81,17 @@ test('a pump draws more power the higher people live', async () => {
   assert.ok(draw(high) > draw(low));
 });
 
-test('residents foul their own level, and a scrubber cleans only within its radius', async () => {
-  const run = await runWith([...POWERED, ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 30]], {
+test('residents foul their own level, and an unducted scrubber cleans only its own', async () => {
+  const run = await runWith([...POWERED, ['scrubber-bank', 20], ['simple-suite', 20], ['simple-suite', 22]], {
     keep: { ...FUEL, 'activated-carbon': 100, 'scrubber-catalyst': 1 },
+    networks: ['duct-network'],
+    tunables: { 'air.migrationRateBetweenLevels': 0 },
   });
   run.state.population.headcount = 160;
   ticks(run, 60);
   const air = (i) => run.state.levels[i - 1].airQuality;
-  const radius = run.ctx.config.air.scrubberRadiusLevels;
   assert.ok(air(20) > 95, `the scrubbed level should stay clean, got ${air(20)}`);
-  assert.ok(air(30) < air(20), 'the unscrubbed crowded level should be worse');
-  assert.ok(20 + radius < 30, 'test assumes level 30 is out of reach');
+  assert.ok(air(22) < air(20), 'the crowded level two floors down should be worse');
 });
 
 test('a sealed level loses its air even with a scrubber next door', async () => {

@@ -69,14 +69,48 @@ export async function createRun({
  */
 export function placeOpening(state, ctx, dispatch) {
   for (const [buildingId, level] of ctx.shaft.opening ?? []) {
+    const before = state.buildings.length;
     dispatch(state, ctx, { type: 'player:placeBuilding', buildingId, level, inherited: true });
+    if (state.buildings.length === before) throw new Error(`opening: no room for ${buildingId} on level ${level}`);
   }
   for (const instance of state.buildings) {
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     dispatch(state, ctx, { type: 'player:assignStaff', instanceId: instance.instanceId, count: def.staffing ?? 0 });
   }
+  layOpeningNetworks(state, ctx, dispatch);
   stockOpening(state, ctx);
   hireOpeningPorters(state, ctx, dispatch);
+}
+
+/** The building an opening entry names: [buildingId, level, nth]. */
+function openingBuilding(state, [buildingId, level, nth = 0]) {
+  const found = state.buildings.filter((b) => b.buildingId === buildingId && b.level === level)[nth];
+  if (!found) throw new Error(`opening: no ${buildingId} #${nth} on level ${level}`);
+  return found.instanceId;
+}
+
+/**
+ * The cables, pipes, drains and ducts the Shaft opens with, and its junction
+ * priorities, through the player's own commands. A link that names nothing
+ * placed, or that the network refuses, is an error in the data.
+ */
+function layOpeningNetworks(state, ctx, dispatch) {
+  for (const entry of ctx.shaft.openingLinks ?? []) {
+    const before = state.infrastructure.links.length;
+    dispatch(state, ctx, {
+      type: 'player:link',
+      network: entry.network,
+      from: openingBuilding(state, entry.from),
+      to: openingBuilding(state, entry.to),
+      inherited: true,
+    });
+    if (state.infrastructure.links.length === before) {
+      throw new Error(`opening: ${entry.network} link ${entry.from.join(' ')} to ${entry.to.join(' ')} refused`);
+    }
+  }
+  for (const entry of ctx.shaft.openingPriorities ?? []) {
+    dispatch(state, ctx, { type: 'player:setPriority', instanceId: openingBuilding(state, entry.at), priority: entry.priority });
+  }
 }
 
 /**
@@ -86,11 +120,7 @@ export function placeOpening(state, ctx, dispatch) {
  * the data, and says so.
  */
 function hireOpeningPorters(state, ctx, dispatch) {
-  const find = ([buildingId, level, nth = 0]) => {
-    const found = state.buildings.filter((b) => b.buildingId === buildingId && b.level === level)[nth];
-    if (!found) throw new Error(`opening: no ${buildingId} #${nth} on level ${level}`);
-    return found.instanceId;
-  };
+  const find = (entry) => openingBuilding(state, entry);
   for (const entry of ctx.shaft.openingPorters ?? []) {
     const before = state.population.workers.length;
     dispatch(state, ctx, { type: 'player:hirePorter', instanceId: find(entry.station), inherited: true });

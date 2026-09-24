@@ -13,6 +13,8 @@
       "wearPerTick": 0.0026,
       "consumes": [{ "id": "fuel", "qty": 0.2 }],
       "produces": [{ "id": "power", "qty": 1800 }],
+      "airLoad": 4,
+      "oxygenDraw": 2,
       "repairCost": [
         { "id": "basic-parts", "qty": 8 },
         { "id": "electrical-components", "qty": 4 },
@@ -36,8 +38,8 @@
       "produces": [],
       "repairCost": [{ "id": "electrical-components", "qty": 3 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
-      "effects": [{ "op": "buffer.add", "target": "power", "value": 600 }],
-      "_note": "Buffers against generator faults. Buys minutes, not hours — enough to get the priority ladder to do its job in an orderly way."
+      "effects": [{ "op": "buffer.add", "target": "power", "value": 2400 }],
+      "_note": "Holds `buffer.add` kW-ticks. Cabled to junctions, it charges from the grid's surplus and, when the generators fall short, keeps THOSE junctions lit and no others. Buys minutes, not hours — enough to get the priority ladder to do its job in an orderly way."
     },
     {
       "id": "junction",
@@ -53,8 +55,9 @@
       "produces": [],
       "repairCost": [{ "id": "copper-wire", "qty": 1 }, { "id": "electrical-components", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.65, "breakdown": 0.3 },
-      "effects": [{ "op": "network.capacity", "target": "power-grid", "value": 400 }],
-      "_note": "One per level, or that level draws through a neighbour's and eats the extra transmission loss."
+      "serviceRadiusLevels": 4,
+      "effects": [{ "op": "network.capacity", "target": "power-grid", "value": 800 }],
+      "_note": "Lights every room within serviceRadiusLevels of it, up to its network.capacity in kW, once it is cabled back to a generator or a battery. The player ranks junctions 1-5; in a shortfall the grid serves them in that order."
     }
   ]
 }

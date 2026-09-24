@@ -28,6 +28,7 @@
 import { approach, clamp } from '../../utils/math.js';
 import { residentsByLevel, housingCapacity } from './housing.js';
 import { cohortFactor } from './demography.js';
+import { breathable } from '../../core/selectors.js';
 import { workScale } from '../buildings/buildingRegistry.js';
 import { take } from '../resources/stores.js';
 import { used } from '../resources/ledger.js';
@@ -172,7 +173,7 @@ function residentAir(state, residents) {
   for (const level of state.levels) {
     const n = residents[level.index] ?? 0;
     people += n;
-    sum += n * level.airQuality;
+    sum += n * breathable(level);
   }
   return people > 0 ? sum / people : 100;
 }
@@ -182,7 +183,7 @@ function suffocating(state, ctx, residents) {
   const critical = ctx.config.air.qualityCriticalThreshold;
   let exposed = 0;
   for (const level of state.levels) {
-    exposed += (residents[level.index] ?? 0) * below(level.airQuality, critical);
+    exposed += (residents[level.index] ?? 0) * below(breathable(level), critical);
   }
   return exposed;
 }

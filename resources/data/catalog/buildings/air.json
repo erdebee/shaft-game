@@ -16,11 +16,10 @@
         { "id": "scrubber-catalyst", "qty": 0.005 }
       ],
       "produces": [],
-      "serviceRadiusLevels": 3,
       "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
       "effects": [{ "op": "flow.scrub", "target": "air-quality", "value": 40 }],
-      "_note": "The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
+      "_note": "Cleans its own level, and every level the duct fans it is ducted to serve. The catalyst line is the single most consequential entry in this file. It cannot be produced locally at any depth, and cutting it off is how the Presidium demonstrates dependency without a shot fired."
     },
     {
       "id": "oxygen-garden",
@@ -34,14 +33,14 @@
       "wearPerTick": 0.0008,
       "consumes": [{ "id": "water", "qty": 4 }],
       "produces": [],
-      "serviceRadiusLevels": 2,
+      "oxygenOutput": 24,
+      "airNeed": 40,
       "repairCost": [{ "id": "glass", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.7, "breakdown": 0.3 },
       "effects": [
-        { "op": "flow.scrub", "target": "air-quality", "value": 18 },
         { "op": "meter.add", "target": "morale", "value": 2 }
       ],
-      "_note": "Weaker than a scrubber and needs no catalyst. The self-sufficient option, which is thematically loaded once the player learns what the scrubbers actually depend on."
+      "_note": "Makes oxygenOutput a tick for its own level, or for every level the duct fans it is ducted to serve. Needs clean air to grow (airNeed), and no catalyst. The self-sufficient option, which is thematically loaded once the player learns what the scrubbers actually depend on."
     },
     {
       "id": "duct-fan",
@@ -50,15 +49,17 @@
       "slots": 1,
       "levelConstraint": null,
       "priorityClass": "life-support",
-      "powerDraw": 20,
+      "powerDraw": 10,
       "staffing": 0,
       "wearPerTick": 0.0016,
       "consumes": [],
       "produces": [],
+      "serviceRadiusLevels": 3,
+      "ductFlowPerTick": 10,
       "repairCost": [{ "id": "basic-parts", "qty": 2 }, { "id": "electrical-components", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
-      "effects": [{ "op": "network.boost", "target": "duct-network", "value": 0.3 }],
-      "_note": "Raises migration between adjacent levels. Fixes stale pockets without adding scrubbing capacity — it moves the problem rather than solving it."
+      "effects": [],
+      "_note": "The hub of both duct loops: while it runs it draws foul air off every level within serviceRadiusLevels to the scrubbers it is ducted to, and blows in the oxygen of the gardens it is ducted to — at most ductFlowPerTick of each a tick. It cleans nothing itself — it moves the problem to where something can solve it."
     }
   ]
 }

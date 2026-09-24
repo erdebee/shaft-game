@@ -28,9 +28,12 @@ export const dataset = await loadDataset({ readJson, chapter: 1, profile: 'defau
  * @param {object} [options.keep]      goods topped up (as `stocks`) before
  *   every tick — the porters a test does not want to model
  * @param {boolean} [options.staffed=true]
+ * @param {string[]} [options.networks]  networks the layout must lay by hand
+ *   (config infrastructure.enforced); by default none, so a test of the
+ *   kitchen need not cable, pipe and duct it. Lay links with `link`.
  */
-export async function runWith(layout, { stocks = {}, keep = null, tunables = {}, staffed = true, seed = 4242 } = {}) {
-  const run = await createRun({ dataset: withTunables(tunables), seed, chapter: 1, readJson });
+export async function runWith(layout, { stocks = {}, keep = null, tunables = {}, staffed = true, seed = 4242, networks = [] } = {}) {
+  const run = await createRun({ dataset: withTunables({ 'infrastructure.enforced': networks, ...tunables }), seed, chapter: 1, readJson });
   for (const [buildingId, level] of layout) {
     dispatch(run.state, run.ctx, { type: 'player:placeBuilding', buildingId, level, inherited: true });
   }
@@ -73,9 +76,29 @@ export function totalOf(run, id) {
   return total(run.state, id);
 }
 
+/**
+ * Lay a link between the nth placed `from` and `to` buildings (by id, and
+ * level when given as [id, level]), free, as the opening does.
+ */
+export function link(run, network, from, to) {
+  const find = (spec) => {
+    const [id, level] = Array.isArray(spec) ? spec : [spec, null];
+    const found = run.state.buildings.find((b) => b.buildingId === id && (level === null || b.level === level));
+    if (!found) throw new Error(`link: no ${id}${level ? ` on level ${level}` : ''}`);
+    return found.instanceId;
+  };
+  const before = run.state.infrastructure.links.length;
+  dispatch(run.state, run.ctx, { type: 'player:link', network, from: find(from), to: find(to), inherited: true });
+  if (run.state.infrastructure.links.length === before) throw new Error(`link: ${network} ${from} to ${to} refused`);
+}
+
+/** The shared dataset with no networks enforced, built once. */
+let unlaid = null;
+
 /** The shared dataset, or a copy with some config values replaced. */
 function withTunables(tunables) {
-  if (Object.keys(tunables).length === 0) return dataset;
+  const onlyUnlaid = Object.keys(tunables).length === 1 && tunables['infrastructure.enforced']?.length === 0;
+  if (onlyUnlaid && unlaid) return unlaid;
   const config = structuredClone(dataset.config);
   for (const [path, value] of Object.entries(tunables)) {
     const keys = path.split('.');
@@ -84,7 +107,9 @@ function withTunables(tunables) {
     if (!(last in node)) throw new Error(`runWith: unknown tunable ${path}`);
     node[last] = value;
   }
-  return { ...dataset, config };
+  const out = { ...dataset, config };
+  if (onlyUnlaid) unlaid = out;
+  return out;
 }
 
 export function ticks(run, n) {

@@ -16,22 +16,31 @@
     "transmissionLossPerLevel": 0.004,
     "junctionCapacity": 400,
     "batteryBankCapacity": 600,
-    "batteryChargeRatePerTick": 20,
+    "batteryChargeRatePerTick": 60,
     "brownoutRecoveryTicks": 5,
-    "defaultPriorityLadder": ["life-support", "water", "medical", "industry", "residential", "amenity"]
+    "defaultPriorityLadder": ["life-support", "water", "medical", "industry", "residential", "amenity"],
+    "_junctionNote": "Junction priority runs 1 (served first) to 5 (dropped first) when the generators run short; a new junction starts at defaultJunctionPriority. Within one junction, the Accord's ladder above decides which rooms stay lit.",
+    "defaultJunctionPriority": 3
+  },
+
+  "infrastructure": {
+    "_note": "Networks the player must lay by hand (catalog/infrastructure/networks.json). A network left out is treated as fully laid — every node joined and every hub reaching everywhere — which is for system tests and sandboxes, not play.",
+    "enforced": ["power-grid", "water-mains", "sewer", "duct-network", "oxygen-ducts"]
   },
 
   "air": {
     "contaminantPerCapitaPerTick": 0.01,
     "migrationRateBetweenLevels": 0.15,
     "scrubberVolumePerTick": 40,
-    "scrubberRadiusLevels": 4,
     "catalystConsumptionPerTick": 0.05,
     "qualityWarnThreshold": 60,
     "qualityCriticalThreshold": 30,
     "sealedLevelDecayPerTick": 0.8,
     "catalystDeliveryIntervalTicks": 900,
-    "catalystDeliveryQty": 12
+    "catalystDeliveryQty": 12,
+    "_oxygenNote": "Each level carries oxygen (0-100) beside its purity (airQuality). Residents breathe oxygenPerCapitaPerTick each; oxygen gardens, and plants a little, make it. Breathable air is the worse of the two. Sewage the drains cannot carry away is dumped where it was made and fouls that level by sewageLoadPerUnit per unit.",
+    "oxygenPerCapitaPerTick": 0.01,
+    "sewageLoadPerUnit": 0.05
   },
 
   "water": {

@@ -1,48 +1,96 @@
 {
-  "_note": "The three distribution networks. Each has different physics, and that difference is what makes vertical layout matter: power loses over distance, water costs power to lift, air pools where nothing moves it. Scalar defaults live in config/base.json; this file declares the network's shape and behaviour.",
+  "_note": "The five distribution networks the player lays by hand. Each is a set of LINKS (cables, pipes, ducts) between the buildings named in `connects`; a link costs `linkCost` per level it spans (at least one) and may span at most `maxSpanLevels`. HUBS are the buildings that hand the network out to everything within their serviceRadiusLevels (catalog/buildings/*.json): a junction lights the rooms around it, a cistern waters them, a duct fan airs them — but a hub only works when it is linked back to where the network comes from. The graph is read by systems/infrastructure/networkGraph.js; each system settles its own network over it. A network not listed in config infrastructure.enforced is treated as fully laid (every node joined, every hub reaching everywhere) — which is how system tests isolate one network at a time.",
   "networks": [
     {
       "id": "power-grid",
       "name": "Power grid",
+      "short": "Power",
       "carries": "power",
-      "topology": "trunk-and-branch",
-      "path": ["main-generator", "trunk-cable", "junction", "building"],
-      "lossModel": "per-level-distance",
-      "lossTunable": "power.transmissionLossPerLevel",
-      "capacityNode": "junction",
-      "capacityTunable": "power.junctionCapacity",
-      "bufferNode": "battery-bank",
-      "shortfallResolution": "priority-ladder",
-      "_note": "Loss scales with distance travelled from the generator, so a shallow level served by a deep generator pays for every level in between."
+      "link": "cable",
+      "color": "#e8b04a",
+      "connects": [
+        { "from": "main-generator", "to": "junction" },
+        { "from": "junction", "to": "junction" },
+        { "from": "battery-bank", "to": "junction" }
+      ],
+      "hubs": ["junction"],
+      "linkCost": [{ "id": "copper-wire", "qtyPerLevel": 0.5 }],
+      "maxSpanLevels": 10,
+      "description": "Generators feed junctions by cable; each junction lights every room within its reach, up to its capacity. When the generators run short, junctions are served in priority order (1 first) and batteries cover only the junctions they are cabled to.",
+      "_note": "Loss scales with cable run from the generator plus the drop from the junction to the room, so a shallow level fed from a deep generator pays for every level of cable between."
     },
     {
       "id": "water-mains",
       "name": "Water mains",
+      "short": "Water",
       "carries": "water",
-      "topology": "lift-and-gravity-return",
-      "path": ["deep-pump", "purifier", "water-mains", "cistern", "building"],
-      "lossModel": "none",
-      "liftCostTunable": "water.pumpPowerPerLevelLifted",
-      "returnCost": 0,
-      "capacityNode": null,
-      "bufferNode": "cistern",
-      "shortfallResolution": "rationing",
-      "_note": "Pumping upward costs power proportional to lift height; greywater returns downward free by gravity to reclamation. Water cost therefore scales with how high people live — making vertical layout an economic decision rather than flavour."
+      "link": "pipe",
+      "color": "#5aa7d8",
+      "connects": [
+        { "from": "deep-pump", "to": "cistern" },
+        { "from": "deep-pump", "to": "purifier" },
+        { "from": "reclamation-plant", "to": "cistern" },
+        { "from": "reclamation-plant", "to": "purifier" },
+        { "from": "purifier", "to": "cistern" },
+        { "from": "cistern", "to": "cistern" }
+      ],
+      "hubs": ["cistern"],
+      "linkCost": [{ "id": "steel-billet", "qtyPerLevel": 0.5 }],
+      "maxSpanLevels": 12,
+      "description": "Pumps and the reclamation plant feed cisterns by pipe; each cistern stores water and supplies every room and resident within its reach. A purifier on the mains cleans the reclaimed water that passes through it.",
+      "_note": "Pumping upward costs power proportional to lift height, so water costs more the higher people live."
+    },
+    {
+      "id": "sewer",
+      "name": "Sewer",
+      "short": "Sewage",
+      "carries": "greywater",
+      "link": "drain",
+      "color": "#8f7a4e",
+      "connects": [
+        { "from": "cistern", "to": "cistern" },
+        { "from": "cistern", "to": "reclamation-plant" }
+      ],
+      "hubs": ["cistern"],
+      "flowsDownhill": true,
+      "linkCost": [{ "id": "concrete", "qtyPerLevel": 0.5 }],
+      "maxSpanLevels": 12,
+      "description": "What a cistern's rooms and residents use comes back dirty. Drains carry it downhill only, cistern to cistern, to a reclamation plant; sewage with nowhere to go is dumped where it was made and fouls that level's air.",
+      "_note": "Gravity is the whole design: a drain never carries anything up, so the plant belongs at the bottom."
     },
     {
       "id": "duct-network",
-      "name": "Duct network",
+      "name": "Exhaust ducts",
+      "short": "Exhaust",
       "carries": "air-quality",
-      "topology": "radial-per-level",
-      "path": ["scrubber-bank", "duct-network", "level"],
-      "lossModel": "radius-falloff",
-      "radiusTunable": "air.scrubberRadiusLevels",
-      "migrationTunable": "air.migrationRateBetweenLevels",
-      "capacityNode": null,
-      "bufferNode": null,
-      "shortfallResolution": "per-level-degradation",
-      "sealable": true,
-      "_note": "Sealing a level isolates it from the ducts — useful during fire, contamination or containment, and also the reason it begins suffocating. sealedLevelDecayPerTick in base.json is how fast that happens."
+      "link": "duct",
+      "color": "#b0a8a0",
+      "connects": [
+        { "from": "duct-fan", "to": "duct-fan" },
+        { "from": "duct-fan", "to": "scrubber-bank" }
+      ],
+      "hubs": ["duct-fan"],
+      "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
+      "maxSpanLevels": 8,
+      "description": "Duct fans draw foul air off the levels within their reach and send it to the scrubbers they are ducted to. A scrubber with no ducts cleans only its own level.",
+      "_note": "Sealing a level cuts it from every fan. The id is kept from when this was the only duct network."
+    },
+    {
+      "id": "oxygen-ducts",
+      "name": "Fresh-air ducts",
+      "short": "Oxygen",
+      "carries": "oxygen",
+      "link": "duct",
+      "color": "#7cc47a",
+      "connects": [
+        { "from": "duct-fan", "to": "duct-fan" },
+        { "from": "oxygen-garden", "to": "duct-fan" }
+      ],
+      "hubs": ["duct-fan"],
+      "linkCost": [{ "id": "basic-parts", "qtyPerLevel": 0.25 }],
+      "maxSpanLevels": 8,
+      "description": "Oxygen gardens breathe out what everyone else breathes in. Ducted to fans, their oxygen reaches every level the fans serve; unducted, it stays on their own level.",
+      "_note": "The same fans as the exhaust ducts, on a second loop: foul air goes down to the scrubbers, fresh air comes out to the levels."
     }
   ]
 }

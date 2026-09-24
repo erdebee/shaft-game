@@ -74,12 +74,13 @@ export function workScale(instance, def, ctx) {
  * Effective output scale for an instance: workScale, and nothing at all if it
  * went without its inputs last tick. A generator with no fuel generates
  * nothing; a scrubber with no carbon scrubs nothing. A building on rationed
- * water works at the share it was given. 0 means the building contributes
+ * water works at the share it was given, and a plant in foul air grows at
+ * the share the air allows (`airShare`, set by the air system). 0 means the building contributes
  * nothing this tick.
  */
 export function outputScale(instance, def, ctx) {
   if (instance.starved) return 0;
-  return workScale(instance, def, ctx) * (instance.waterShare ?? 1);
+  return workScale(instance, def, ctx) * (instance.waterShare ?? 1) * (instance.airShare ?? 1);
 }
 
 /**
@@ -95,7 +96,9 @@ export function powerDemand(instance, def, ctx, state) {
   const recipe = instance.job ? ctx.catalog.recipes.byId[instance.job.recipeId] : null;
   // A pump pays for every level it lifts water to where it is drunk.
   const lifts = (def.produces ?? []).some((p) => p.id === 'water');
-  const lift = lifts && state ? state.resources.flows.water.liftLevels * ctx.config.water.pumpPowerPerLevelLifted : 0;
+  const water = state?.resources.flows.water;
+  const levels = water?.lift?.[instance.instanceId] ?? water?.liftLevels ?? 0;
+  const lift = lifts ? levels * ctx.config.water.pumpPowerPerLevelLifted : 0;
   return (def.powerDraw ?? 0) + (recipe?.powerDraw ?? 0) + lift;
 }
 

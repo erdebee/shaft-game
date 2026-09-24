@@ -67,8 +67,14 @@ export function instancesOf(state, buildingId) {
   return state.buildings.filter((b) => b.buildingId === buildingId);
 }
 
+/** How breathable a level is: the worse of its purity and its oxygen. */
+export function breathable(level) {
+  return Math.min(level.airQuality, level.oxygen ?? 100);
+}
+
 export function levelAir(state, levelIndex) {
-  return state.levels.find((l) => l.index === levelIndex)?.airQuality ?? 0;
+  const level = state.levels.find((l) => l.index === levelIndex);
+  return level ? breathable(level) : 0;
 }
 
 export function flowOf(state, id) {

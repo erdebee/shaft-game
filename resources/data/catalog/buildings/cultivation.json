@@ -1,5 +1,5 @@
 {
-  "_note": "Cultivation zone. The grove competes directly with food production for slots — that competition is the point, not an oversight. levelConstraint null means placeable anywhere; 'shallow'/'deep' restrict by depth band defined in catalog/infrastructure/levels.json.",
+  "_note": "Cultivation zone. Plants breathe: oxygenOutput is oxygen a working bay adds to its own level per tick, and airNeed the air purity below which it grows proportionally slower (systems/airQuality/perLevelAir.js). The grove competes directly with food production for slots — that competition is the point, not an oversight. levelConstraint null means placeable anywhere; 'shallow'/'deep' restrict by depth band defined in catalog/infrastructure/levels.json.",
   "buildings": [
     {
       "id": "hydroponics-bay",
@@ -13,6 +13,8 @@
       "wearPerTick": 0.0018,
       "consumes": [{ "id": "water", "qty": 6 }],
       "produces": [{ "id": "food", "qty": 8 }],
+      "oxygenOutput": 1.5,
+      "airNeed": 40,
       "repairCost": [{ "id": "basic-parts", "qty": 3 }, { "id": "glass", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
       "effects": []
@@ -78,6 +80,8 @@
       "wearPerTick": 0.0004,
       "consumes": [{ "id": "water", "qty": 5 }],
       "produces": [{ "id": "wood", "qty": 1 }],
+      "oxygenOutput": 2,
+      "airNeed": 40,
       "maturationTicks": 21600,
       "repairCost": [],
       "conditionThresholds": { "degraded": 0.8, "breakdown": null },

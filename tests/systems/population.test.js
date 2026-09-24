@@ -12,8 +12,10 @@ import { labourPool } from '../../src/systems/population/staffing.js';
 
 const POWERED = [['main-generator', 38], ['battery-bank', 38]];
 const CALM = {
-  // Enough water that thirst stays out of tests about something else.
+  // Enough water that thirst stays out of tests about something else, and
+  // no gardens needed to keep the air breathable.
   'water.potablePerCapitaPerTick': 0,
+  'air.oxygenPerCapitaPerTick': 0,
 };
 
 test('people eat per head at the canteens', async () => {
@@ -124,8 +126,11 @@ test("a striking faction's buildings get no staff", async () => {
 });
 
 test('the birth lottery adds children once a cycle, in a fed Shaft', async () => {
-  // Clean air and water, so nobody dies to muddy the count.
-  const run = await runWith(KITCHEN, { keep: FED_KEEP, tunables: { ...CALM, 'air.contaminantPerCapitaPerTick': 0 } });
+  // Clean air and water, so nobody dies to muddy the count. The generator
+  // fouls and burns the air of its own level, and nothing here scrubs it:
+  // the air is simply left alone.
+  const run = await runWith(KITCHEN, { keep: FED_KEEP, tunables: CALM });
+  run.engine.systems.airQuality = { tick() {} };
   const { birthLotteryCycleTicks: cycle, birthLotterySlotsPerCycle: slots } = run.ctx.config.population;
   ticks(run, cycle - 1);
   const children = run.state.population.cohorts.children;

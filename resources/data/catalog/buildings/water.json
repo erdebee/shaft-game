@@ -13,6 +13,7 @@
       "wearPerTick": 0.003,
       "consumes": [],
       "produces": [{ "id": "water", "qty": 50 }],
+      "airLoad": 0.3,
       "repairCost": [{ "id": "basic-parts", "qty": 5 }, { "id": "electrical-components", "qty": 2 }],
       "conditionThresholds": { "degraded": 0.5, "breakdown": 0.2 },
       "effects": [],
@@ -32,7 +33,8 @@
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 3 }],
       "conditionThresholds": { "degraded": 0.6, "breakdown": 0.25 },
-      "effects": [{ "op": "flow.setQuality", "target": "water", "value": 1.0 }]
+      "effects": [{ "op": "flow.setQuality", "target": "water", "value": 1.0 }],
+      "_note": "Cleans the reclaimed water on the mains it is piped into; pumped groundwater needs no help."
     },
     {
       "id": "reclamation-plant",
@@ -48,8 +50,9 @@
       "produces": [],
       "repairCost": [{ "id": "basic-parts", "qty": 4 }, { "id": "concrete", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.55, "breakdown": 0.2 },
+      "airLoad": 1,
       "effects": [{ "op": "reclamation.enable", "target": "water", "value": 1 }],
-      "_note": "Recovers greywater at water.reclamationEfficiency. Without it, every litre must be pumped fresh from the bottom."
+      "_note": "Recovers the greywater the sewer drains bring it, at water.reclamationEfficiency, into whatever water mains it is piped to. Without it, every litre must be pumped fresh from the bottom."
     },
     {
       "id": "cistern",
@@ -65,8 +68,9 @@
       "produces": [],
       "repairCost": [{ "id": "concrete", "qty": 2 }, { "id": "glass", "qty": 1 }],
       "conditionThresholds": { "degraded": 0.7, "breakdown": 0.35 },
+      "serviceRadiusLevels": 4,
       "effects": [{ "op": "buffer.add", "target": "water", "value": 200 }],
-      "_note": "Per-level buffer against pump failure. Free to run, which makes it the cheapest insurance in the game and the easiest thing to forget to build."
+      "_note": "The hub of the water mains: it stores water and supplies every room and resident within serviceRadiusLevels, and what they use drains back into it for the sewer. Free to run, which makes it the cheapest insurance in the game and the easiest thing to forget to build."
     }
   ]
 }

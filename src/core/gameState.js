@@ -18,6 +18,7 @@
 import { initialSeams } from '../systems/resources/minerals.js';
 import { initialLedger } from '../systems/resources/ledger.js';
 import { initialWater } from '../systems/water/greywaterLoop.js';
+import { initialPower } from '../systems/power/priorityLadder.js';
 import { initialVitals } from '../systems/population/vitals.js';
 import { initialUnrest } from '../systems/society/unrest.js';
 import { initialMaintenance } from '../systems/buildings/maintenance.js';
@@ -49,12 +50,15 @@ export function createGameState({ chapter, dataset, seed }) {
     nextInstanceId: 1,
     maintenance: initialMaintenance(config),
     haulage: { trips: [], nextTripId: 1 },
+    // The networks the player lays by hand (systems/infrastructure/
+    // networkGraph.js): cables, pipes, drains and ducts between buildings.
+    infrastructure: { links: [], nextLinkId: 1 },
 
     resources: {
       seams: initialSeams(shaft),
       abstracts: initialAbstracts(catalog, config),
       flows: {
-        power: { generation: 0, demand: 0, brownedOut: [] },
+        power: initialPower(),
         water: initialWater(),
       },
       cutSupplies: [],
@@ -122,7 +126,8 @@ function buildLevels(config, shaft, tables) {
   return Array.from({ length: count }, (_, i) => ({
     index: i + 1,
     buildSlots: template.buildSlots ?? 10,
-    airQuality: 100,
+    airQuality: 100, // purity: what the scrubbers fight
+    oxygen: 100,     // what the gardens make and everyone breathes
     sealed: false,
   }));
 }

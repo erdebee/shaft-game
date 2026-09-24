@@ -26,7 +26,7 @@
     "hiddenPassageLevel": 41
   },
   "opening": {
-    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched. porters: each hired at the named station and given the route, stops naming [buildingId, level, nth] — nth counts that building on that level in placement order (0 when omitted); each stop picks up or drops off one good, `qty` per visit or all.",
+    "_note": "The Shaft as the player inherits it: [buildingId, level] pairs, placed and fully staffed through the same commands the player uses, so the opening lands in the command log and replays with everything else. Level 1 was built before anyone alive: the auditorium and the Exit carry a fixed block in the catalogue and go only where it says. Cultivation sits high and the canteens low, so food is hauled a long way down — which is what puts porters on the stairwell where they can be watched. porters: each hired at the named station and given the route, stops naming [buildingId, level, nth] — nth counts that building on that level in placement order (0 when omitted); each stop picks up or drops off one good, `qty` per visit or all. links: the cables, pipes, drains and ducts the Shaft opens with, each naming its two ends as [buildingId, level, nth] (catalog/infrastructure/networks.json); priorities: junction priorities, 1 served first, others left at the default.",
     "buildings": [
       [
         "auditorium",
@@ -55,10 +55,6 @@
       [
         "common-hall",
         10
-      ],
-      [
-        "junction",
-        12
       ],
       [
         "hydroponics-bay",
@@ -129,14 +125,6 @@
         28
       ],
       [
-        "junction",
-        30
-      ],
-      [
-        "cistern",
-        32
-      ],
-      [
         "scrubber-bank",
         30
       ],
@@ -179,6 +167,70 @@
       [
         "porter-station",
         35
+      ],
+      [
+        "junction",
+        4
+      ],
+      [
+        "junction",
+        13
+      ],
+      [
+        "junction",
+        22
+      ],
+      [
+        "junction",
+        31
+      ],
+      [
+        "junction",
+        40
+      ],
+      [
+        "battery-bank",
+        21
+      ],
+      [
+        "cistern",
+        4
+      ],
+      [
+        "cistern",
+        13
+      ],
+      [
+        "cistern",
+        22
+      ],
+      [
+        "cistern",
+        31
+      ],
+      [
+        "duct-fan",
+        4
+      ],
+      [
+        "duct-fan",
+        11
+      ],
+      [
+        "duct-fan",
+        18
+      ],
+      [
+        "duct-fan",
+        25
+      ],
+      [
+        "duct-fan",
+        32
+      ],
+      [
+        "duct-fan",
+        39
       ]
     ],
     "porters": [
@@ -773,6 +825,346 @@
             "dropoff": "activated-carbon"
           }
         ]
+      }
+    ],
+    "links": [
+      {
+        "network": "power-grid",
+        "from": [
+          "main-generator",
+          38
+        ],
+        "to": [
+          "junction",
+          40
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "main-generator",
+          38
+        ],
+        "to": [
+          "junction",
+          31
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "junction",
+          31
+        ],
+        "to": [
+          "junction",
+          22
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "junction",
+          22
+        ],
+        "to": [
+          "junction",
+          13
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "junction",
+          13
+        ],
+        "to": [
+          "junction",
+          4
+        ]
+      },
+      {
+        "network": "power-grid",
+        "from": [
+          "battery-bank",
+          21
+        ],
+        "to": [
+          "junction",
+          22
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "deep-pump",
+          40
+        ],
+        "to": [
+          "cistern",
+          31
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "reclamation-plant",
+          42
+        ],
+        "to": [
+          "cistern",
+          31
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          31
+        ],
+        "to": [
+          "cistern",
+          22
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          22
+        ],
+        "to": [
+          "cistern",
+          13
+        ]
+      },
+      {
+        "network": "water-mains",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "cistern",
+          4
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "cistern",
+          4
+        ],
+        "to": [
+          "cistern",
+          13
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "cistern",
+          13
+        ],
+        "to": [
+          "cistern",
+          22
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "cistern",
+          22
+        ],
+        "to": [
+          "cistern",
+          31
+        ]
+      },
+      {
+        "network": "sewer",
+        "from": [
+          "cistern",
+          31
+        ],
+        "to": [
+          "reclamation-plant",
+          42
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "duct-fan",
+          4
+        ],
+        "to": [
+          "duct-fan",
+          11
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "duct-fan",
+          11
+        ],
+        "to": [
+          "duct-fan",
+          18
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "duct-fan",
+          18
+        ],
+        "to": [
+          "duct-fan",
+          25
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "duct-fan",
+          25
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "duct-fan",
+          32
+        ],
+        "to": [
+          "duct-fan",
+          39
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "duct-fan",
+          4
+        ],
+        "to": [
+          "duct-fan",
+          11
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "duct-fan",
+          11
+        ],
+        "to": [
+          "duct-fan",
+          18
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "duct-fan",
+          18
+        ],
+        "to": [
+          "duct-fan",
+          25
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "duct-fan",
+          25
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "duct-fan",
+          32
+        ],
+        "to": [
+          "duct-fan",
+          39
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "scrubber-bank",
+          20
+        ],
+        "to": [
+          "duct-fan",
+          18
+        ]
+      },
+      {
+        "network": "duct-network",
+        "from": [
+          "scrubber-bank",
+          30
+        ],
+        "to": [
+          "duct-fan",
+          32
+        ]
+      },
+      {
+        "network": "oxygen-ducts",
+        "from": [
+          "oxygen-garden",
+          6
+        ],
+        "to": [
+          "duct-fan",
+          4
+        ]
+      }
+    ],
+    "priorities": [
+      {
+        "at": [
+          "junction",
+          22
+        ],
+        "priority": 1
+      },
+      {
+        "at": [
+          "junction",
+          31
+        ],
+        "priority": 2
+      },
+      {
+        "at": [
+          "junction",
+          40
+        ],
+        "priority": 2
+      },
+      {
+        "at": [
+          "junction",
+          4
+        ],
+        "priority": 4
       }
     ]
   },

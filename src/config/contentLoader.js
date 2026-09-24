@@ -87,6 +87,8 @@ export function buildDataset(manifest, docs, selection = {}) {
     startingStocks: stripNotes(shaftProfile.startingStocks ?? {}),
     opening: shaftProfile.opening?.buildings ?? [],
     openingPorters: shaftProfile.opening?.porters ?? [],
+    openingLinks: shaftProfile.opening?.links ?? [],
+    openingPriorities: shaftProfile.opening?.priorities ?? [],
   };
 
   // --- catalog tier ----------------------------------------------------

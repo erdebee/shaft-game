@@ -13,7 +13,7 @@ import { meterTarget, workRate } from '../../src/systems/society/meters.js';
 import { outputScale } from '../../src/systems/buildings/buildingRegistry.js';
 import { collectModifiers } from '../../src/core/effects.js';
 
-const CALM = { 'water.potablePerCapitaPerTick': 0, 'air.contaminantPerCapitaPerTick': 0 };
+const CALM = { 'water.potablePerCapitaPerTick': 0, 'air.contaminantPerCapitaPerTick': 0, 'air.oxygenPerCapitaPerTick': 0 };
 
 
 /** Collect one event's payloads while `fn` runs. */
