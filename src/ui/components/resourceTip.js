@@ -21,6 +21,7 @@ import { iconOf } from '../icons.js';
 import { nameOf, total } from '../../systems/resources/stores.js';
 import { ratesOf, sourcesOf, sourceName } from '../../systems/resources/ledger.js';
 import { powerDemand, workScale } from '../../systems/buildings/buildingRegistry.js';
+import { breathable } from '../../core/selectors.js';
 
 const KINDS = [
   ['stocks', 'Stock'],
@@ -331,16 +332,19 @@ function flowRates(state, ctx, id, perDay) {
 
   if (id === 'air-quality') {
     const lived = state.levels.filter((l) => state.buildings.some((b) => b.level === l.index));
-    const avg = lived.length ? lived.reduce((s, l) => s + (l.airQuality ?? 0), 0) / lived.length : 0;
-    const worst = lived.reduce((w, l) => (w && w.airQuality <= l.airQuality ? w : l), null);
+    const avg = lived.length ? lived.reduce((s, l) => s + breathable(l), 0) / lived.length : 0;
+    const worst = lived.reduce((w, l) => (w && breathable(w) <= breathable(l) ? w : l), null);
+    const mean = (field) => (lived.length ? lived.reduce((s, l) => s + (l[field] ?? 100), 0) / lived.length : 100);
     const flow = ctx.catalog.flows.byId['air-quality'];
     const band = (q) => (q < flow.criticalThreshold ? 'critical' : q < flow.warnThreshold ? 'warn' : null);
     return {
       totals: [
         ['Average, lived-in levels', `${Math.round(avg)}`, band(avg)],
-        ...(worst ? [[`Worst, level ${worst.index}`, `${Math.round(worst.airQuality)}`, band(worst.airQuality)]] : []),
+        ...(worst ? [[`Worst, level ${worst.index}`, `${Math.round(breathable(worst))}${worst.oxygen < worst.airQuality ? ' (short of oxygen)' : ''}`, band(breathable(worst))]] : []),
+        ['Purity, on average', `${Math.round(mean('airQuality'))}`, band(mean('airQuality'))],
+        ['Oxygen, on average', `${Math.round(mean('oxygen'))}`, band(mean('oxygen'))],
       ],
-      made: byType((b, def) => ((def.effects ?? []).some((e) => e.op === 'flow.scrub' || e.op === 'network.boost') && b.powered !== false && !b.brokenDown ? 1 : 0)),
+      made: byType((b, def) => (((def.effects ?? []).some((e) => e.op === 'flow.scrub') || def.oxygenOutput > 0) && b.powered !== false && !b.brokenDown ? 1 : 0)),
       used: {},
       unit: (n) => `${fmt(n)} working`,
     };

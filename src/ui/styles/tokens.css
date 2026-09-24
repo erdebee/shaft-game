@@ -184,6 +184,17 @@
   --route-7: var(--readout-warn);
   --route-8: #7fd1bd;
 
+  /* ---- Networks ------------------------------------------------------
+     One colour per network the player lays (catalog/infrastructure/
+     networks.json), keyed by its id, for the overlay in the shaft and the
+     Infrastructure panel. UI only — never in a sprite. Power keeps the
+     sodium, since amber already means powered. */
+  --net-power-grid:   var(--sodium-core);
+  --net-water-mains:  var(--water-lit);
+  --net-sewer:        var(--brass);
+  --net-duct-network: var(--steel-highlight);
+  --net-oxygen-ducts: var(--readout-ok);
+
   /* ---- Type ---- */
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --font-ui:   var(--font-mono);

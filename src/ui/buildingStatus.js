@@ -25,7 +25,11 @@ export function problemsOf(instance, def, state, ctx) {
   const faction = factionOf(ctx, def.id);
   if (faction && state.population.strikes.some((s) => s.faction === faction)) problems.push(['Production stalled, on strike', 'critical']);
   if (instance.brokenDown) problems.push(['Production stalled, broken down — waiting for repairs', 'critical']);
-  if (instance.powered === false) problems.push(['Production stalled, no power', 'critical']);
+  if (instance.powered === false) {
+    const offGrid = state.resources.flows.power.offGrid?.includes(instance.instanceId);
+    problems.push([offGrid ? 'Production stalled, no power — no junction reaches it' : 'Production stalled, no power', 'critical']);
+  }
+  if (state.resources.flows.water.unserved?.includes(instance.instanceId)) problems.push(['No water — no cistern reaches it', 'critical']);
   if (def.staffing && (instance.staffing ?? 0) === 0) problems.push(['Production stalled, no workers', 'critical']);
   if (instance.starved) {
     for (const id of instance.missing?.length ? instance.missing : []) problems.push([`Production stalled, ran out of ${good(id)}`, 'critical']);
@@ -34,7 +38,8 @@ export function problemsOf(instance, def, state, ctx) {
   if (instance.blocked) {
     for (const id of instance.full ?? []) problems.push([`Production stalled, no space to store ${good(id)}`, 'critical']);
   }
-  if ((instance.waterShare ?? 1) < 1) problems.push([`Short of water — rationed to ${Math.round((instance.waterShare ?? 0) * 100)}%`, 'warn']);
+  if ((instance.airShare ?? 1) < 1) problems.push([`The air is too foul to grow well — ${Math.round((instance.airShare ?? 0) * 100)}%`, 'warn']);
+  if ((instance.waterShare ?? 1) < 1 && !state.resources.flows.water.unserved?.includes(instance.instanceId)) problems.push([`Short of water — rationed to ${Math.round((instance.waterShare ?? 0) * 100)}%`, 'warn']);
   if (def.staffing && instance.staffing > 0 && instance.staffing < def.staffing) problems.push([`Short-handed: ${instance.staffing} of ${def.staffing} crews`, 'warn']);
   if (!problems.length && recipesFor(def.id, ctx).length && !instance.job) problems.push([IDLE, 'warn']);
   return problems.length ? problems : [['Working', 'ok']];

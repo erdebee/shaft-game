@@ -20,7 +20,7 @@
 import { assertSerializable } from '../core/gameState.js';
 
 const KEY_PREFIX = 'save:';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** Storage backend, injectable so tests do not need a browser. */
 let store = typeof localStorage !== 'undefined' ? localStorage : null;
@@ -106,6 +106,19 @@ const MIGRATIONS = {
       ...envelope.state,
       meta: { ...envelope.state.meta, rngCursors: envelope.rngCursors ?? {} },
       commandLog: envelope.state.commandLog ?? [],
+    },
+  }),
+
+  // 1: before the networks were laid by hand. The Shaft comes through with
+  // nothing laid — every room dark and dry until the player lays it — and
+  // every level with a full breath of oxygen.
+  1: (envelope) => ({
+    ...envelope,
+    version: 2,
+    state: {
+      ...envelope.state,
+      infrastructure: envelope.state.infrastructure ?? { links: [], nextLinkId: 1 },
+      levels: envelope.state.levels.map((l) => ({ ...l, oxygen: l.oxygen ?? 100 })),
     },
   }),
 };

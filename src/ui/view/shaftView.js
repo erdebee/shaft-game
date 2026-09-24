@@ -28,9 +28,11 @@ import { createFigureLayer, renderFigures } from './figures.js';
 import { createShaftScroll } from './shaftScroll.js';
 import { createRouteLayer } from './routeLayer.js';
 import { createPlaceLayer } from './placeLayer.js';
+import { createNetworkLayer } from './networkLayer.js';
 import { shortages, inputsOf, nameOf } from '../../systems/resources/stores.js';
 import { SPEEDS } from '../../core/clock.js';
 import * as selection from '../selection.js';
+import { breathable } from '../../core/selectors.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -59,7 +61,8 @@ const MAX_SLOTS = 4;
 /**
  * @param art       the result of roomArt.loadRoomArt()
  * @param dispatch  sends a player command; used only by the open route's
- *                  clicks (routeLayer.js)
+ *                  clicks (routeLayer.js) and the open network's
+ *                  (networkLayer.js)
  */
 export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -132,6 +135,7 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   view.scroll = createShaftScroll(root, view, state, ctx);
   view.routes = createRouteLayer(view, root, dispatch, ctx);
   view.place = createPlaceLayer(view, root, dispatch);
+  view.networks = createNetworkLayer(view, root, dispatch, ctx);
 
   // Fit to the HOST, never to the svg: the svg's own width now derives from
   // the viewBox's intrinsic aspect ratio, so measuring it here would feed the
@@ -169,6 +173,7 @@ export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
     syncSelection(view, currentState);
     syncSeams(view, currentState);
     syncLevels(view, currentState);
+    view.networks.update(currentState, currentCtx);
     renderFigures(view.figureLayer, currentState, currentCtx, tick, alpha, view.viewport, view.art);
     view.scroll.update(currentState, currentCtx, tick);
   }
@@ -698,7 +703,7 @@ function syncLevels(view, state) {
     if (!level) continue;
 
     nodes.node.classList.toggle('sealed', level.sealed === true);
-    nodes.air.dataset.air = airBand(level.airQuality);
+    nodes.air.dataset.air = airBand(breathable(level));
   }
 }
 
@@ -771,6 +776,9 @@ function attachInteraction(view, state, ctx) {
     // While a route is open, a room is a stop to add and a marker's ✕ a stop
     // to remove (routeLayer.js), not something to inspect.
     if (selection.get().editing && view.routes.pick(state, hit, node, event)) return;
+    // While a network is open in the Infrastructure panel, a node is an end
+    // of a link to lay (networkLayer.js).
+    if (selection.get().network && view.networks.pick(state, hit, node)) return;
     const level = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect());
     if (node) selection.select({ instanceId: node.dataset.instance, level: Number(node.dataset.level) });
     else if (level >= 1 && level <= state.levels.length) selection.select({ level });

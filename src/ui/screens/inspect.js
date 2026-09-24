@@ -27,6 +27,8 @@ import { renderStation } from './porters.js';
 import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
 import { visitorsOf } from '../routePlan.js';
+import { graphOf, hubFor, isHub, networksOf, networkDef } from '../../systems/infrastructure/networkGraph.js';
+import { priorityOf } from '../../systems/power/priorityLadder.js';
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -73,6 +75,22 @@ export function mount(root, state, ctx, dispatch) {
       const current = selectedInstance(state);
       if (!current) return;
       dispatch({ type: 'player:assignStaff', instanceId: current.instanceId, count: (current.staffTarget ?? 0) + step });
+    }
+
+    // A junction's priority on the grid, 1 served first.
+    let priorityButtons = null;
+    if (isHub(currentCtx, 'power-grid', def.id)) {
+      const row = el('div', 'inspect-row net-priority');
+      row.appendChild(el('span', 'meter-label', 'Grid priority'));
+      priorityButtons = [];
+      for (let p = 1; p <= 5; p++) {
+        const b = button(String(p), `Priority ${p}${p === 1 ? ', served first' : p === 5 ? ', dropped first' : ''}`, () => {
+          dispatch({ type: 'player:setPriority', instanceId: instance.instanceId, priority: p });
+        }, 'net-prio');
+        priorityButtons.push(b);
+        row.appendChild(b);
+      }
+      host.appendChild(row);
     }
 
     const facts = el('div', 'inspect-facts');
@@ -146,6 +164,11 @@ export function mount(root, state, ctx, dispatch) {
       if (def.housing) lines.push(`Homes for ${def.housing}`);
       if ((current.waterShare ?? 1) < 1) lines.push(`Water ration ${Math.round(current.waterShare * 100)}%`);
       if (current.repairing) lines.push('On the repair list');
+      lines.push(...networkLines(currentState, ctxNow, current, def, draw));
+      if (priorityButtons) {
+        const p = priorityOf(current, ctxNow);
+        priorityButtons.forEach((b, i) => b.setAttribute('aria-pressed', String(i + 1 === p)));
+      }
       facts.replaceChildren(...lines.map((line) => el('div', 'meter-label', line)));
 
       renderStore(storeCard, storeKey, current, def, ctxNow);
@@ -327,6 +350,31 @@ function goodIcon(ctx, id) {
   node.tabIndex = 0;
   node.title = nameOf(ctx, id);
   return node;
+}
+
+/**
+ * Where the building sits on the networks: what it is linked to, and which
+ * junction and cistern serve it.
+ */
+function networkLines(state, ctx, instance, def, draw) {
+  const lines = [];
+  const levelOf = (hub) => (hub && hub !== '*' ? `level ${hub.level}` : null);
+  if (draw > 0 || def.powerDraw > 0) {
+    const hub = hubFor(graphOf(state, ctx, 'power-grid'), ctx, instance.level, { usable: (h) => !h.brokenDown });
+    if (hub) lines.push(hub === '*' ? 'Power from the grid' : `Power via the junction on ${levelOf(hub)} (priority ${priorityOf(hub, ctx)})`);
+  }
+  if ((def.consumes ?? []).some((c) => c.id === 'water')) {
+    const hub = hubFor(graphOf(state, ctx, 'water-mains'), ctx, instance.level, { usable: (h) => !h.brokenDown });
+    if (hub) lines.push(hub === '*' ? 'Water from the mains' : `Water from the cistern on ${levelOf(hub)}`);
+  }
+  for (const networkId of networksOf(ctx, def.id)) {
+    const links = (state.infrastructure?.links ?? []).filter((l) => l.network === networkId && (l.from === instance.instanceId || l.to === instance.instanceId));
+    const net = networkDef(ctx, networkId);
+    lines.push(links.length
+      ? `${net.name}: ${links.length} ${net.link}${links.length > 1 ? 's' : ''}`
+      : `${net.name}: not connected — lay it from Build › Infrastructure`);
+  }
+  return lines;
 }
 
 function selectedInstance(state) {

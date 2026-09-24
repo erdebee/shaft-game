@@ -9,7 +9,10 @@ chapter, who is actually in charge.
 air, haulage, the population's body (food, health, deaths, births, labour),
 maintenance, the meters and discontent (strikes, demands, riots, departures)
 all run, and the player can build, crew, pin recipes and demolish from the
-panel. The law engine is prototyped: dilemmas are raised, ruled on and
+panel. Power, water, sewage and air travel over networks the player lays by
+hand from Build › Infrastructure — cables, pipes, drains and ducts between
+junctions, cisterns and duct fans — with junction priorities and batteries
+deciding who stays lit in a shortfall. The law engine is prototyped: dilemmas are raised, ruled on and
 recorded as precedent; promises run on timers; law cards are enacted and
 repealed in amendment sessions for Authority; and a settled leaning can be
 made policy from the next case. Revelation staging, the Board and the chapter

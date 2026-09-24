@@ -134,6 +134,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
     tabButtons.push({ tab, top, subs });
   }
   const show = (name) => {
+    // The shaft draws a network only while the Infrastructure panel is open.
+    if (name !== 'infrastructure') selection.showNetwork(null);
     if (router.current() !== name) router.go(name);
     // A building in hand belongs to the Buildings tab: leaving it drops it.
     if (name !== 'buildings') selection.place(null);
@@ -156,7 +158,10 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   // and a click on a room offers to add it as a stop instead; closing the
   // route leaves the player on the Porters tab.
   let wasEditing = null;
-  selection.subscribe(({ instanceId, level, editing }) => {
+  selection.subscribe(({ instanceId, level, editing }, kind) => {
+    // Opening a network or laying a link changes what the shaft draws, not
+    // which panel is open.
+    if (kind === 'network') return;
     const closed = wasEditing && !editing;
     wasEditing = editing;
     if (editing) show('porters');
@@ -275,6 +280,19 @@ function wireLog(state, ctx) {
     if (!once(`blocked:${instanceId}`, tick)) return;
     record(`The ${building(buildingId).toLowerCase()} on level ${level} is full of ${goods(full)}: nobody is collecting`, 'warn');
   });
+  on('link:refused', ({ network, reason }) => {
+    const net = ctx.catalog.networks.byId[network];
+    const max = net?.maxSpanLevels;
+    const why = {
+      'cannot-join': `those two do not join on the ${net?.name.toLowerCase()}`,
+      'too-long': `a ${net?.link} spans at most ${max} levels`,
+      linked: 'they are already linked',
+      cost: 'the stores cannot pay for it',
+      same: 'that is the same building',
+    }[reason] ?? reason;
+    if (reason !== 'same') record(`Cannot lay that ${net?.link ?? 'link'}: ${why}`, 'warn');
+  });
+
   on('haulage:refused', ({ reason }) => {
     record(reason === 'station-full' ? 'The station has no bed for another porter' : 'Nobody in the labour pool to hire', 'warn');
   });

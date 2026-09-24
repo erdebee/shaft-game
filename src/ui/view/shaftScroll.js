@@ -11,7 +11,8 @@
  * for each room on it in trouble — red for stalled, orange for a warning,
  * judged by the same function as the inspector's status lines
  * (buildingStatus.js). It is instrument chrome, not a panel: it appears while
- * the view moves, fades once it stops, and stays while the pointer is on it.
+ * the view moves, fades once it stops, and stays while the pointer is on it
+ * — or while a porter's route or a network is open, which it then draws.
  *
  * Reads state. Never writes it.
  */
@@ -21,6 +22,8 @@ import { SHAFT_WIDTH, BUILD_X, roomRect } from './interpolate.js';
 import { severityOf } from '../buildingStatus.js';
 import * as selection from '../selection.js';
 import { segmentsOf } from '../routePlan.js';
+import { readNetwork, colorOf } from '../networkStatus.js';
+import { isHub } from '../../systems/infrastructure/networkGraph.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -56,6 +59,10 @@ export function createShaftScroll(host, view, state, ctx) {
   const routeSvg = document.createElementNS(SVG_NS, 'svg');
   routeBox.appendChild(routeSvg);
   let routeKey = null;
+  const networkBox = div(map, 'minimap-network');
+  const networkSvg = document.createElementNS(SVG_NS, 'svg');
+  networkBox.appendChild(networkSvg);
+  let networkKey = null;
 
   for (const band of ctx.tables?.levels?.depthBands ?? []) {
     const to = Math.min(band.toLevel ?? levelCount, levelCount);
@@ -172,7 +179,11 @@ export function createShaftScroll(host, view, state, ctx) {
     host.classList.toggle('route-open', !!porter);
     syncRoute(currentState, porter);
 
-    const show = !!porter || scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
+    const { network } = selection.get();
+    host.classList.toggle('network-open', !!network && !porter);
+    syncNetwork(currentState, currentCtx, porter ? null : network);
+
+    const show = !!porter || !!network || scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
     if (show !== scroll.shown) {
       scroll.shown = show;
       host.classList.toggle('scrolling', show);
@@ -254,6 +265,76 @@ export function createShaftScroll(host, view, state, ctx) {
       t.setAttribute('y', '3');
       t.textContent = String(i + 1);
     });
+  }
+
+  /**
+   * The open network on the minimap: what each live hub reaches as a bar
+   * down the left, every link as a line between its rooms, every node as a
+   * square (a hub filled), and what nothing reaches in red. The whole Shaft
+   * at once, which the view itself cannot show.
+   */
+  function syncNetwork(currentState, currentCtx, networkId) {
+    const w = networkBox.clientWidth;
+    const h = networkBox.clientHeight;
+    const net = networkId ? readNetwork(currentState, currentCtx, networkId) : null;
+    const key = net ? JSON.stringify([
+      networkId, w, h, view.builtSignature,
+      net.links.map((l) => l.id),
+      net.groups.map((g) => [g.key, g.live]),
+      [...net.reach.keys()],
+      net.gaps.map((g) => `${g.level}:${g.instance?.instanceId ?? ''}`),
+    ]) : '';
+    if (key === networkKey) return;
+    networkKey = key;
+    networkSvg.replaceChildren();
+    if (!net || w <= 0 || h <= 0) return;
+    networkSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    networkSvg.style.setProperty('--net', colorOf(networkId));
+
+    const pad = 6;
+    const bar = 5;
+    const xOf = (b) => {
+      const r = roomRect(b, currentState.buildings);
+      return bar + pad + ((r.x + r.width / 2 - BUILD_X) / (SHAFT_WIDTH - BUILD_X)) * (w - bar - pad * 2);
+    };
+    const yOf = (level) => ((level - 0.5) / levelCount) * h;
+    const row = h / levelCount;
+
+    for (const gap of net.gaps) {
+      const r = svgEl(networkSvg, 'rect', 'minimap-net-gap');
+      r.setAttribute('x', '0');
+      r.setAttribute('y', (yOf(gap.level) - row / 2).toFixed(1));
+      r.setAttribute('width', String(w));
+      r.setAttribute('height', row.toFixed(1));
+    }
+    for (const level of net.reach.keys()) {
+      const r = svgEl(networkSvg, 'rect', 'minimap-net-reach');
+      r.setAttribute('x', '0');
+      r.setAttribute('y', (yOf(level) - row / 2).toFixed(1));
+      r.setAttribute('width', String(bar));
+      r.setAttribute('height', (row + 0.5).toFixed(1));
+    }
+    for (const link of net.links) {
+      const line = svgEl(networkSvg, 'path', 'minimap-net-link');
+      line.setAttribute('d', `M${xOf(link.a).toFixed(1)} ${yOf(link.a.level).toFixed(1)}L${xOf(link.b).toFixed(1)} ${yOf(link.b.level).toFixed(1)}`);
+    }
+    const live = new Set(net.groups.filter((g) => g.live).map((g) => g.key));
+    for (const node of net.graph.nodes) {
+      const hub = isHub(currentCtx, networkId, node.buildingId);
+      const sq = svgEl(networkSvg, 'rect', `minimap-net-node${hub ? ' hub' : ''}`);
+      sq.dataset.live = String(live.has(net.graph.component.get(node.instanceId)));
+      sq.setAttribute('x', (xOf(node) - 3).toFixed(1));
+      sq.setAttribute('y', (yOf(node.level) - 3).toFixed(1));
+      sq.setAttribute('width', '6');
+      sq.setAttribute('height', '6');
+    }
+    for (const gap of net.gaps) {
+      if (!gap.instance) continue;
+      const dot = svgEl(networkSvg, 'circle', 'minimap-net-gap-room');
+      dot.setAttribute('cx', xOf(gap.instance).toFixed(1));
+      dot.setAttribute('cy', yOf(gap.level).toFixed(1));
+      dot.setAttribute('r', '3');
+    }
   }
 
   function syncStatus(currentState, currentCtx) {

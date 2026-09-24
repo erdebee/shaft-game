@@ -254,6 +254,19 @@ body {
 .minimap-route svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .minimap-route .route-line-under { stroke-width: 3.5; }
 .minimap-route .route-line-over { stroke-width: 1.5; }
+/* The open network (shaftScroll.js), the same way. */
+.shaft-host.network-open .shaft-minimap { width: 9rem; }
+.minimap-network { position: absolute; top: 0; bottom: 0; left: calc(1.6rem + 1.9em); right: 2px; display: none; pointer-events: none; }
+.shaft-host.network-open .minimap-network { display: block; }
+.minimap-network svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.minimap-net-reach { fill: var(--net); opacity: 0.8; }
+.minimap-net-gap { fill: var(--critical); opacity: 0.35; }
+.minimap-net-link { fill: none; stroke: var(--net); stroke-width: 1.5; }
+.minimap-net-node { fill: var(--panel); stroke: var(--net); stroke-width: 1.2; }
+.minimap-net-node.hub { fill: var(--net); stroke: var(--rock); }
+.minimap-net-node[data-live="false"] { stroke: var(--ink-faint); }
+.minimap-net-node.hub[data-live="false"] { fill: var(--ink-faint); }
+.minimap-net-gap-room { fill: var(--readout-critical); stroke: var(--rock); stroke-width: 1; }
 .minimap-stop circle { stroke: var(--rock); stroke-width: 1; }
 .minimap-stop.route-pickup circle { fill: var(--amber); }
 .minimap-stop.route-dropoff circle { fill: var(--terminal-lit); }
@@ -1062,3 +1075,92 @@ body {
 .accord-action:hover:not([disabled]) { border-color: var(--brass); }
 .accord-action:focus-visible { outline: 2px solid var(--cool); outline-offset: 1px; }
 .accord-action[disabled] { color: var(--ink-faint); cursor: not-allowed; }
+
+/* ---- Infrastructure: the networks the player lays ----------------------
+   One colour per network (--net, set from tokens.css --net-<id>) on the
+   picker, the card and the overlay in the shaft. */
+.net-picker { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-2); }
+.net-tab {
+  flex: 1 1 auto;
+  padding: var(--space-1) var(--space-2);
+  color: var(--ink-dim);
+  background: var(--panel-raised);
+  border: var(--border);
+  border-bottom: 2px solid var(--net, var(--panel-edge));
+  font: inherit;
+  font-size: var(--size-xs);
+  cursor: pointer;
+}
+.net-tab:hover { color: var(--ink); }
+.net-tab[aria-pressed="true"] { color: var(--rock); background: var(--net, var(--amber)); border-color: var(--net, var(--amber)); }
+.net-tab:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+.net-card { border-left: 3px solid var(--net); }
+.net-about { margin: 0 0 var(--space-2); line-height: 1.4; }
+.net-status { display: grid; gap: 2px; margin-bottom: var(--space-2); }
+.net-hint { color: var(--ink-dim); font-size: var(--size-xs); margin-bottom: var(--space-2); }
+.net-hint[data-active="true"] { color: var(--net); }
+.net-gap-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-2); }
+.net-gap {
+  padding: 2px var(--space-1);
+  color: var(--readout-critical);
+  font-size: var(--size-xs);
+}
+.net-group[data-live="false"] { color: var(--readout-warn); }
+.net-node {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 2px var(--space-2);
+  padding: var(--space-1);
+  border: 1px solid transparent;
+  border-bottom-color: var(--panel-edge);
+}
+.net-node[data-from="true"] { border-color: var(--net); }
+.net-role {
+  padding: 0 var(--space-1);
+  color: var(--rock);
+  background: var(--net);
+  font-size: var(--size-xs);
+  text-transform: uppercase;
+}
+.net-node-name { font-size: var(--size-sm); }
+.net-reading { grid-column: 2 / 3; }
+.net-actions { grid-column: 3; grid-row: 1 / span 2; }
+.net-lay:disabled { color: var(--ink-faint); cursor: default; }
+.net-priority, .net-links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.net-priority .meter-label { margin-right: var(--space-1); }
+.inspect-row.net-priority .meter-label { flex: 1; }
+.net-prio {
+  min-width: 1.6rem;
+  padding: 1px var(--space-1);
+  color: var(--ink-dim);
+  background: var(--panel-raised);
+  border: var(--border);
+  font: inherit;
+  font-size: var(--size-xs);
+  cursor: pointer;
+}
+.net-prio:hover { color: var(--ink); border-color: var(--amber-dim); }
+.net-prio[aria-pressed="true"] { color: var(--rock); background: var(--sodium-core); border-color: var(--sodium-core); }
+.net-link { display: inline-flex; align-items: center; gap: 2px; margin-right: var(--space-2); }
+
+/* In the shaft. A drawing on the shaft, never in the way of a click. */
+.network-layer { pointer-events: none; }
+.net-reach { fill: var(--net); opacity: 0.75; }
+.net-reach[data-live="false"] { fill: var(--ink-faint); opacity: 0.5; }
+.net-reach-hub { fill: var(--net); stroke: var(--rock); stroke-width: 1; }
+.net-reach-hub[data-live="false"] { fill: var(--ink-faint); }
+.net-gap-level { fill: var(--critical); opacity: 0.22; }
+.net-gap-room { fill: none; stroke: var(--readout-critical); stroke-width: 2; stroke-dasharray: 5 3; }
+.net-node-outline { fill: none; stroke: var(--net); stroke-width: 2; }
+.net-node-outline.net-from { stroke: var(--sodium-core); stroke-width: 4; stroke-dasharray: 8 4; }
+.net-tag rect { fill: var(--net); stroke: var(--rock); stroke-width: 1; }
+.net-tag text { fill: var(--rock); font: 700 8px var(--font-mono); }
+.net-line-under { fill: none; stroke: var(--rock); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.net-line-over  { fill: none; stroke: var(--net); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.net-joint { fill: var(--net); stroke: var(--rock); stroke-width: 1.5; }
+.net-line-drain { stroke-dasharray: 7 4; }
+.net-chevron { fill: none; stroke: var(--net); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.net-preview { fill: none; stroke: var(--critical); stroke-width: 2.5; stroke-dasharray: 4 4; }
+.net-preview[data-ok="true"] { stroke: var(--readout-ok); }

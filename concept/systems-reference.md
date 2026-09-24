@@ -119,24 +119,35 @@ Deliberately **not** survival-critical, which is what makes spending capacity on
 
 ## 5. Infrastructure and distribution
 
+The player lays all four networks by hand — cables, pipes, drains and ducts
+between buildings (`catalog/infrastructure/networks.json`), from Build ›
+Infrastructure. Each network has **hubs** that hand it out to every level
+within their reach, and a hub works only once it is linked back to a source.
+Links cost materials per level spanned and have a maximum span, so long runs
+need intermediate hubs.
+
 ### Power grid
-`Generator → trunk cable → per-level junction → buildings`
-- Transmission loss scales with distance travelled
-- Junctions have capacity caps
-- **Per-building priority ranking** set in advance: when supply drops below demand, low-priority buildings brown out first. Deciding whether the clinic outranks the workshop is a decision made early and felt later
-- Battery banks buffer against generator faults
+`Generator → cable → junction → cable → junction …`, `battery → cable → junction`
+- A **junction** lights every room within its reach, up to its capacity
+- Transmission loss scales with the cable run from the generator plus the drop from the junction to the room
+- **Junction priority (1–5)** set in advance: when supply drops below demand, the grid serves junctions in priority order, so whole districts go dark together. Within one junction the Accord's Order of Supply decides. Deciding whether the clinic's junction outranks the workshop's is a decision made early and felt later
+- **Battery banks** cabled to a junction back up that junction and no other, and charge from the surplus
 
 ### Water network
-- Source at the bottom (deep well)
-- **Pumping upward costs power proportional to lift height**; greywater returns downward free by gravity to reclamation
-- Water cost therefore scales with how high people live, making vertical layout an economic decision
-- Cisterns per level buffer against pump failure
+- Source at the bottom (deep pump); pipes carry it up to **cisterns**, which store it and supply every room and resident within reach
+- **Pumping upward costs power proportional to lift height**, so water cost scales with how high people live, making vertical layout an economic decision
+- A **purifier** on the mains cleans the reclaimed water passing through it
+
+### Sewer
+- What a cistern's area uses comes back as greywater and drains **downhill only**, cistern to cistern, to the **reclamation plant**, which returns it to its mains at a loss
+- Sewage no drain can carry is dumped where it was made and fouls that level's air
 
 ### Air network
-- Quality tracked **per level**
-- Scrubbers serve a radius of levels; stale air pools in poorly served pockets
-- CO₂ rises with local population density
-- Sealing a level (fire, contamination, containment during unrest) isolates it from the ducts — which is also why it begins suffocating
+- Tracked **per level**, as two numbers: purity (fouled by crowds and industry, most of all the deep generator, smelter and dig face) and oxygen (breathed by everyone, burned by combustion). Breathable air is the worse of the two
+- **Exhaust ducts:** duct fans draw foul air off the levels they reach to the scrubbers they are ducted to. A scrubber with no ducts cleans only its own level
+- **Fresh-air ducts:** the same fans blow in the oxygen of the **oxygen gardens** they are ducted to. Each fan moves only so much a tick
+- Plants (bays, groves, gardens) need clean air to grow and breathe a little oxygen back out
+- Sealing a level (fire, contamination, containment during unrest) cuts it from every fan — which is also why it begins suffocating
 
 ### Haulage
 Stock resources are moved by assigned **porters**. Distance in levels equals labour time.

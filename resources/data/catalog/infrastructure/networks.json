@@ -7,7 +7,6 @@
       "short": "Power",
       "carries": "power",
       "link": "cable",
-      "color": "#e8b04a",
       "connects": [
         { "from": "main-generator", "to": "junction" },
         { "from": "junction", "to": "junction" },
@@ -25,7 +24,6 @@
       "short": "Water",
       "carries": "water",
       "link": "pipe",
-      "color": "#5aa7d8",
       "connects": [
         { "from": "deep-pump", "to": "cistern" },
         { "from": "deep-pump", "to": "purifier" },
@@ -46,7 +44,6 @@
       "short": "Sewage",
       "carries": "greywater",
       "link": "drain",
-      "color": "#8f7a4e",
       "connects": [
         { "from": "cistern", "to": "cistern" },
         { "from": "cistern", "to": "reclamation-plant" }
@@ -64,7 +61,6 @@
       "short": "Exhaust",
       "carries": "air-quality",
       "link": "duct",
-      "color": "#b0a8a0",
       "connects": [
         { "from": "duct-fan", "to": "duct-fan" },
         { "from": "duct-fan", "to": "scrubber-bank" }
@@ -81,7 +77,6 @@
       "short": "Oxygen",
       "carries": "oxygen",
       "link": "duct",
-      "color": "#7cc47a",
       "connects": [
         { "from": "duct-fan", "to": "duct-fan" },
         { "from": "oxygen-garden", "to": "duct-fan" }

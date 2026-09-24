@@ -15,9 +15,13 @@
  * `placing` names a building the player has picked from the Build tab and is
  * now putting down: the shaft shows its ghost under the pointer and a click
  * on a free slot builds it there (src/ui/view/placeLayer.js).
+ *
+ * `network` names the network the Infrastructure panel has open: the shaft
+ * draws it (view/networkLayer.js), and a click on one of its nodes starts
+ * or finishes a link from `linkFrom` instead of opening the inspector.
  */
 
-let current = { instanceId: null, level: null, editing: null, follow: null, placing: null };
+let current = { instanceId: null, level: null, editing: null, follow: null, placing: null, network: null, linkFrom: null };
 const listeners = new Set();
 
 export function get() {
@@ -40,7 +44,7 @@ export function clear() {
  */
 export function editRoute(workerId, { follow = false } = {}) {
   current = { ...current, editing: workerId, follow: workerId && follow ? workerId : null };
-  notify();
+  notify('route');
 }
 
 /**
@@ -61,11 +65,26 @@ export function place(buildingId) {
   current = { ...current, placing: buildingId };
 }
 
+/** Open a network in the shaft, or close it with null. Drops any half-laid link. */
+export function showNetwork(networkId) {
+  if (current.network === networkId && current.linkFrom === null) return;
+  current = { ...current, network: networkId, linkFrom: null };
+  notify('network');
+}
+
+/** Start a link from a node, or drop the half-laid one with null. */
+export function startLink(instanceId) {
+  if (current.linkFrom === instanceId) return;
+  current = { ...current, linkFrom: instanceId };
+  notify('network');
+}
+
 export function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
 
-function notify() {
-  for (const fn of listeners) fn(current);
+/** Listeners hear what changed: 'select', 'route' or 'network'. */
+function notify(kind = 'select') {
+  for (const fn of listeners) fn(current, kind);
 }

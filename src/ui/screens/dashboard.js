@@ -9,7 +9,7 @@
 
 import { render as renderMeter, flowState } from '../components/resourceMeter.js';
 import { el, button, card } from '../components/dom.js';
-import { daysOfSupply } from '../../core/selectors.js';
+import { daysOfSupply, breathable } from '../../core/selectors.js';
 import { unhoused, residentsByLevel } from '../../systems/population/housing.js';
 import { total, nameOf } from '../../systems/resources/stores.js';
 import * as selection from '../selection.js';
@@ -178,8 +178,8 @@ function worstInhabited(state, ctx) {
   const residents = residentsByLevel(state, ctx);
   let worst = { level: null, quality: 100 };
   for (const level of state.levels) {
-    if ((residents[level.index] ?? 0) >= 1 && level.airQuality < worst.quality) {
-      worst = { level: level.index, quality: level.airQuality };
+    if ((residents[level.index] ?? 0) >= 1 && breathable(level) < worst.quality) {
+      worst = { level: level.index, quality: breathable(level) };
     }
   }
   return worst;

@@ -31,7 +31,7 @@ import { stepOnce } from '../src/core/engine.js';
 import { dispatch } from '../src/core/commands.js';
 import { on } from '../src/core/eventBus.js';
 import { loadDataset } from '../src/config/contentLoader.js';
-import { daysOfSupply } from '../src/core/selectors.js';
+import { daysOfSupply, breathable } from '../src/core/selectors.js';
 import { residentsByLevel } from '../src/systems/population/housing.js';
 import { totals } from '../src/systems/resources/stores.js';
 import { present } from '../src/narrative/dilemmaEngine.js';
@@ -136,7 +136,7 @@ function inhabitedAir() {
   const residents = residentsByLevel(state, ctx);
   let worst = 100;
   for (const level of state.levels) {
-    if ((residents[level.index] ?? 0) >= 1) worst = Math.min(worst, level.airQuality);
+    if ((residents[level.index] ?? 0) >= 1) worst = Math.min(worst, breathable(level));
   }
   return worst;
 }
