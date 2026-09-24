@@ -14,8 +14,8 @@
  */
 
 import { SPEEDS } from './clock.js';
-import { applyEffects } from './effects.js';
-import { evaluate } from './predicates.js';
+import { resolve as resolveDilemma, raise as raiseDilemma } from '../narrative/dilemmaEngine.js';
+import { enact, repeal } from '../governance/statuteEngine.js';
 import { createInstance } from '../systems/buildings/buildingRegistry.js';
 import { emit as busEmit } from './eventBus.js';
 import { inStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
@@ -25,27 +25,56 @@ import { labourPool } from '../systems/population/staffing.js';
 import { validRoute } from '../systems/haulage/haulageMethods.js';
 
 const HANDLERS = {
-  /** Pause, resume, or change speed. The only command available from tick 0. */
+  /**
+   * Pause, resume, or change speed. The only command available from tick 0.
+   * A hard-pausing dilemma holds the clock until it is ruled on.
+   */
   'player:setSpeed': (state, ctx, cmd) => {
     const speed = SPEEDS[cmd.speed];
     if (speed === undefined) throw new Error(`commands: unknown speed "${cmd.speed}"`);
+    if (state.narrative.activeDilemma?.hardPause && speed !== SPEEDS.PAUSED) return;
     state.clock.speed = speed;
   },
 
-  /** Resolve the active dilemma by choosing one of its options. */
+  /**
+   * Rule on the active dilemma (narrative/dilemmaEngine.js). A ruling not on
+   * offer, or one that cannot be given, is ignored rather than thrown on.
+   */
   'player:resolveDilemma': (state, ctx, cmd) => {
-    const active = state.narrative.activeDilemma;
-    if (!active || active.id !== cmd.dilemmaId) return;
+    resolveDilemma(state, ctx, cmd.dilemmaId, cmd.optionId);
+  },
 
-    const dilemma = ctx.content.dilemmas.byId[cmd.dilemmaId];
-    const option = dilemma?.options.find((o) => o.id === cmd.optionId);
-    if (!option) throw new Error(`commands: no option "${cmd.optionId}" on "${cmd.dilemmaId}"`);
-    if (!evaluate(state, ctx, option.requires)) return; // gated; ignore rather than throw
+  /** Enact a law card while a session sits, paying its Authority. */
+  'player:enactStatute': (state, ctx, cmd) => {
+    const verdict = enact(state, ctx, cmd.cardId);
+    const title = ctx.content.lawCards.byId[cmd.cardId]?.title ?? cmd.cardId;
+    if (!verdict.ok) {
+      ctx.emit('accord:refused', { cardId: cmd.cardId, reason: verdict.reason });
+      return;
+    }
+    log(state, `Enacted: ${title} (${verdict.cost.total} Authority)`);
+  },
 
-    applyEffects(state, ctx, option.effects, `dilemma:${cmd.dilemmaId}:${cmd.optionId}`);
-    state.narrative.activeDilemma = null;
-    state.narrative.dilemmaCooldowns[cmd.dilemmaId] = state.clock.tick;
-    log(state, `Ruled on ${dilemma.id}: ${option.label}`);
+  /** Repeal an enacted card while a session sits; the flip-flop penalty applies. */
+  'player:repealStatute': (state, ctx, cmd) => {
+    const result = repeal(state, ctx, cmd.cardId);
+    const title = ctx.content.lawCards.byId[cmd.cardId]?.title ?? cmd.cardId;
+    if (!result.ok) {
+      ctx.emit('accord:refused', { cardId: cmd.cardId, reason: result.reason });
+      return;
+    }
+    log(state, `Repealed: ${title}${result.penalty ? ` (−${result.penalty} stability and trust)` : ''}`, result.penalty ? 'warn' : 'info');
+  },
+
+  /**
+   * Put a dilemma in front of the player now, ignoring its preconditions —
+   * for playtesting a case without waiting for the Shaft to earn it. A
+   * command like any other, so a run that used it still replays.
+   */
+  'debug:raiseDilemma': (state, ctx, cmd) => {
+    if (state.narrative.activeDilemma) return;
+    raiseDilemma(state, ctx, cmd.dilemmaId);
+    if (state.narrative.activeDilemma.hardPause) state.clock.speed = SPEEDS.PAUSED;
   },
 
   /** Place a building on a level. */
@@ -254,8 +283,8 @@ export function depthBandOf(ctx, levelIndex) {
   return null;
 }
 
-function log(state, message) {
-  state.log.push({ tick: state.clock.tick, message });
+function log(state, message, kind = 'info') {
+  state.log.push({ tick: state.clock.tick, message, kind });
 }
 
 /**

@@ -15,7 +15,9 @@ import { on } from './core/eventBus.js';
 import * as router from './ui/router.js';
 import * as dashboard from './ui/screens/dashboard.js';
 import * as build from './ui/screens/build.js';
+import * as porters from './ui/screens/porters.js';
 import * as inspect from './ui/screens/inspect.js';
+import * as accord from './ui/screens/accordScreen.js';
 import * as selection from './ui/selection.js';
 import { createShaftView } from './ui/view/shaftView.js';
 import { loadRoomArt } from './ui/view/roomArt.js';
@@ -25,6 +27,8 @@ import { focusLevel } from './ui/view/viewport.js';
 import { mount as mountTimeControls } from './ui/components/timeControls.js';
 import * as logPanel from './ui/components/logPanel.js';
 import * as resourceTip from './ui/components/resourceTip.js';
+import * as dilemmaModal from './ui/components/dilemmaModal.js';
+import * as lawStatus from './ui/components/lawStatus.js';
 import * as musicToggle from './ui/components/musicToggle.js';
 import { loadMusic, createMusic } from './ui/audio/music.js';
 
@@ -70,9 +74,11 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   const timeControls = mountTimeControls(topbar, dispatch);
   const music = musicFiles ? createMusic(musicFiles) : null;
   if (music) musicToggle.mount(topbar, music);
+  const law = lawStatus.mount(topbar, () => show('accord'));
+  const cases = dilemmaModal.mount(document.body, dispatch);
   // Any icon carrying data-resource, anywhere on the page, opens the card.
   resourceTip.mount(() => ({ state, ctx }));
-  const shaftView = createShaftView(shaftHost, state, ctx, roomArt);
+  const shaftView = createShaftView(shaftHost, state, ctx, roomArt, dispatch);
 
   // Open on the inhabited middle of the shaft rather than level 1. The top
   // levels are administration and mostly still; the traffic is between
@@ -80,43 +86,81 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   const levels = state.buildings.map((b) => b.level).sort((a, b) => a - b);
   if (levels.length) focusLevel(shaftView.viewport, levels[Math.floor(levels.length / 2)]);
 
-  // The panel: a tab bar, the active screen, and the log, which stays in view
-  // whichever tab is open.
+  // The panel: the tabs, the active screen, and the log, which stays in view
+  // whichever tab is open. A tab with sub-tabs shows them in a second row
+  // while it is open, and remembers which one was open last.
   const tabBar = document.createElement('nav');
   tabBar.className = 'tabs';
   tabBar.setAttribute('aria-label', 'Panels');
+  const subBar = document.createElement('nav');
+  subBar.className = 'tabs tabs-sub';
+  subBar.setAttribute('aria-label', 'Sub-panels');
   const screenHost = document.createElement('div');
   screenHost.className = 'screen';
   const record = document.createElement('section');
   record.className = 'card record';
   record.innerHTML = '<h2>Record</h2>';
   logPanel.mount(record);
-  panel.append(tabBar, screenHost, record);
+  panel.append(tabBar, subBar, screenHost, record);
 
   router.attach(screenHost, { state, ctx, dispatch });
-  const tabs = [['dashboard', 'Status', dashboard], ['build', 'Build', build], ['inspect', 'Inspect', inspect]];
-  const tabButtons = new Map();
-  for (const [name, label, screen] of tabs) {
-    router.register(name, screen);
-    const tab = document.createElement('button');
-    tab.type = 'button';
-    tab.textContent = label;
-    tab.addEventListener('click', () => show(name));
-    tabBar.appendChild(tab);
-    tabButtons.set(name, tab);
+  const tabs = [
+    { label: 'Stats', screens: [['dashboard', 'Stats', dashboard]] },
+    { label: 'Build', screens: [['buildings', 'Buildings', build.buildings], ['infrastructure', 'Infrastructure', build.infrastructure]] },
+    { label: 'Porters', screens: [['porters', 'Porters', porters]] },
+    { label: 'Accord', screens: [['accord', 'Accord', accord]] },
+  ];
+  // Inspect has no tab: a room clicked in the shaft opens it.
+  router.register('inspect', inspect);
+  const lastOf = new Map();
+  const tabButtons = [];
+  for (const tab of tabs) {
+    for (const [name, , screen] of tab.screens) router.register(name, screen);
+    lastOf.set(tab, tab.screens[0][0]);
+    const top = document.createElement('button');
+    top.type = 'button';
+    top.textContent = tab.label;
+    top.addEventListener('click', () => show(lastOf.get(tab)));
+    tabBar.appendChild(top);
+    const subs = tab.screens.length > 1 ? tab.screens.map(([name, label]) => {
+      const sub = document.createElement('button');
+      sub.type = 'button';
+      sub.textContent = label;
+      sub.addEventListener('click', () => show(name));
+      return [name, sub];
+    }) : [];
+    tabButtons.push({ tab, top, subs });
   }
   const show = (name) => {
     if (router.current() !== name) router.go(name);
-    for (const [n, tab] of tabButtons) tab.setAttribute('aria-pressed', String(n === name));
+    let subs = [];
+    for (const entry of tabButtons) {
+      const open = entry.tab.screens.some(([n]) => n === name);
+      entry.top.setAttribute('aria-pressed', String(open));
+      if (!open) continue;
+      lastOf.set(entry.tab, name);
+      subs = entry.subs;
+      for (const [n, sub] of subs) sub.setAttribute('aria-pressed', String(n === name));
+    }
+    subBar.replaceChildren(...subs.map(([, sub]) => sub));
+    subBar.hidden = subs.length === 0;
   };
+  const buildTab = tabs[1];
   show('dashboard');
 
   // Clicking the shaft picks something: a room opens it in Inspect, an empty
-  // stretch of a level opens Build there. While a porter's route is open, a
-  // click adds a stop instead, and the editor stays in view.
+  // stretch of a level opens Build there, on whichever Build tab was open
+  // last. While a porter's route is open the Porters tab holds the editor,
+  // and a click on a room offers to add it as a stop instead; closing the
+  // route leaves the player on the Porters tab.
+  let wasEditing = null;
   selection.subscribe(({ instanceId, level, editing }) => {
-    if (editing || instanceId) show('inspect');
-    else if (level !== null) show('build');
+    const closed = wasEditing && !editing;
+    wasEditing = editing;
+    if (editing) show('porters');
+    else if (closed) return;
+    else if (instanceId) show('inspect');
+    else if (level !== null) show(lastOf.get(buildTab));
   });
 
   wireLog(state, ctx);
@@ -124,6 +168,8 @@ async function boot({ chapter = 1, seed = 1234, profile = 'default' } = {}) {
   engine.view = shaftView;
   engine.onFrame = (currentState) => {
     timeControls.update(currentState);
+    law.update(currentState, ctx);
+    cases.update(currentState, ctx);
     router.update(currentState, ctx);
     logPanel.update(currentState);
     resourceTip.update();
@@ -243,6 +289,23 @@ function wireLog(state, ctx) {
   });
 
   on('decision:window', () => record('Decision window open'));
+
+  // --- the law engine ----------------------------------------------------
+  const caseTitle = (id) => ctx.content.dilemmas.byId[id]?.title ?? id;
+  const lawTitle = (id) => ctx.content.lawCards.byId[id]?.title ?? id;
+  on('dilemma:raised', ({ dilemmaId }) => record(`A case for the Mayor: ${caseTitle(dilemmaId)}`, 'warn'));
+  on('dilemma:resolved', ({ label, leaning, codified }) => {
+    record(`Ruled (${leaning}): ${label}`);
+    if (codified) record(`${lawTitle(codified)} is now law, by your own precedent`);
+  });
+  on('promise:kept', ({ label }) => record(`Promise kept: ${label}. The Shaft will remember it.`));
+  on('promise:broken', ({ label }) => record(`Promise broken: ${label}. The Shaft will remember that too.`, 'critical'));
+  on('accord:sessionOpened', ({ authority }) => record(`The Accord is in session. Authority ${Math.floor(authority)}.`));
+  on('accord:sessionClosed', () => record('The Accord session has closed'));
+  on('accord:refused', ({ cardId, reason }) => {
+    const why = { closed: 'the Accord is not in session', authority: 'not enough Authority', requires: 'its requirements are not met', enacted: 'it is already law', unrepealable: 'it cannot be repealed' }[reason] ?? reason;
+    record(`${lawTitle(cardId)}: refused, ${why}`, 'warn');
+  });
 }
 
 boot().catch((err) => {

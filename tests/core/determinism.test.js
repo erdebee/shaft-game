@@ -177,12 +177,15 @@ test('save and reload resumes without diverging', async () => {
 });
 
 test('rng cursors advance and are recorded in state', async () => {
+  // Against an untouched twin, because the narrative system draws on its own
+  // first tick (scheduling the first dilemma check).
   const run = await newRun();
-  const before = { ...run.state.meta.rngCursors };
+  const twin = await newRun();
   run.ctx.rng.narrative.next();
   run.ctx.rng.narrative.next();
   stepOnce(run.engine);
-  assert.equal(run.state.meta.rngCursors.narrative, (before.narrative ?? 0) + 2);
+  stepOnce(twin.engine);
+  assert.equal(run.state.meta.rngCursors.narrative, twin.state.meta.rngCursors.narrative + 2);
 });
 
 test('state stays JSON-serializable after a long run', async () => {

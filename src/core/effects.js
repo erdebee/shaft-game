@@ -15,6 +15,12 @@
  *              would run morale to its cap in twenty seconds. That is
  *              collectModifiers().
  *
+ * A statute is both: the ops collectModifiers understands stand while it is
+ * law, and the rest (a doubt swing, a flag) happen once, on the day it is
+ * enacted — enactmentEffects() is that remainder. And `meter.shift` is a
+ * one-shot op whose result is standing: it moves where a meter settles, for
+ * good, which is what a kept promise earns and a broken one costs.
+ *
  * Both read the same op vocabulary from schema.js. A declared op with no
  * handler throws by design: silence is how content bugs become balance
  * mysteries three hours into a playtest.
@@ -26,6 +32,7 @@ import * as S from './selectors.js';
 import { workRate } from '../systems/society/meters.js';
 import { putInStorehouses, takeFromStorehouses } from '../systems/resources/stores.js';
 import { made, used } from '../systems/resources/ledger.js';
+import { earn as earnAuthority } from '../governance/authorityLedger.js';
 
 /**
  * Ops that describe a standing capability or modifier rather than an event.
@@ -52,6 +59,18 @@ const STANDING_OPS = new Set([
   'capability.enable',
 ]);
 
+/**
+ * Ops collectModifiers turns into standing modifiers. Wider than STANDING_OPS
+ * by faction.satisfaction, which is one-shot in a ruling and standing in a
+ * statute: a curfew angers Order for as long as it is law, not for a week.
+ */
+const COLLECTED_OPS = new Set([...STANDING_OPS, 'faction.satisfaction']);
+
+/** The part of a law card that happens once, on the day it is enacted. */
+export function enactmentEffects(card) {
+  return (card?.effects ?? []).filter((e) => !COLLECTED_OPS.has(e.op));
+}
+
 const HANDLERS = {
   // --- meters and resources -------------------------------------------
   'meter.add': (state, ctx, e) => {
@@ -59,6 +78,13 @@ const HANDLERS = {
     const min = def?.min ?? 0;
     const max = def?.max ?? 100;
     state.meters[e.target] = clamp((state.meters[e.target] ?? 0) + e.value, min, max);
+  },
+
+  // Where the meter settles, not where it is: collectModifiers adds this to
+  // the meter's target for the rest of the run, so it never drifts back.
+  'meter.shift': (state, ctx, e) => {
+    state.narrative.shifts ??= {};
+    state.narrative.shifts[e.target] = (state.narrative.shifts[e.target] ?? 0) + e.value;
   },
 
   // Goods are local: a gift lands in the common stores, and a loss comes out
@@ -76,9 +102,7 @@ const HANDLERS = {
   },
 
   'authority.add': (state, ctx, e) => {
-    state.governance.authority = clamp(
-      state.governance.authority + e.value, 0, ctx.config.governance.authorityCap,
-    );
+    earnAuthority(state, ctx, e.value);
   },
 
   // --- narrative bookkeeping -------------------------------------------
@@ -109,6 +133,10 @@ const HANDLERS = {
       startTick: state.clock.tick,
       expiresTick: state.clock.tick + e.ticks,
       condition: e.condition ?? null,
+      label: e.label ?? null,
+      promise: e.promise === true,
+      holdTicks: e.holdTicks ?? null,
+      heldTicks: 0,
       onMet: e.onMet ?? [],
       onExpire: e.onExpire ?? [],
     });
@@ -120,9 +148,16 @@ const HANDLERS = {
     theme[e.leaning] = (theme[e.leaning] ?? 0) + 1;
   },
 
+  // Payment and the session are the caller's business (governance/
+  // statuteEngine.js enact, or a codified ruling that paid in its own
+  // effects); this is the law taking force, however it got there.
   'statute.enact': (state, ctx, e) => {
     if (S.statuteActive(state, e.target)) return;
+    const card = ctx.content.lawCards.byId[e.target];
     state.governance.enacted.push({ id: e.target, enactedTick: state.clock.tick });
+    state.governance.history ??= [];
+    state.governance.history.push({ id: e.target, tick: state.clock.tick, act: 'enacted', via: e.via ?? 'effect' });
+    applyEffects(state, ctx, enactmentEffects(card), `statute:${e.target}`);
   },
 
   'faction.satisfaction': (state, ctx, e) => {
@@ -240,6 +275,7 @@ export function collectModifiers(state, ctx) {
     scrub: {},        // additive scrubbing, by flow id
     quality: {},      // additive treatment share, by flow id (1 = fully treated)
     multiply: {},     // multiplicative, by "kind:target"
+    faction: {},      // additive satisfaction target, by faction id
     capabilities: {}, // boolean
     recipes: {},      // boolean, by building id
     haulage: {},      // boolean, by method id
@@ -277,6 +313,7 @@ export function collectModifiers(state, ctx) {
     for (const e of effects) {
       switch (e.op) {
         case 'meter.add': add(mods.meter, e.target, e.value * scale); break;
+        case 'faction.satisfaction': add(mods.faction, e.target, e.value * scale); break;
         case 'risk.add': add(mods.risk, e.target, e.value * scale); break;
         case 'buffer.add': add(mods.buffer, e.target, e.value * scale); break;
         case 'network.capacity':
@@ -296,6 +333,9 @@ export function collectModifiers(state, ctx) {
       }
     }
   }
+
+  // Reputation: kept and broken promises move where a meter settles for good.
+  for (const [id, value] of Object.entries(state.narrative.shifts ?? {})) add(mods.meter, id, value);
 
   return mods;
 }

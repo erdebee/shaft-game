@@ -3,23 +3,33 @@
   "dilemmas": [
     {
       "id": "ration-theft",
+      "title": "The tins in the pipe access",
       "chapter": 1,
       "theme": "scarcity",
       "weight": 10,
-      "cooldownTicks": 2400,
+      "cooldownTicks": 1200,
+      "_cooldownNote": "Twenty days, down from forty for the law-engine prototype: codification needs three scarcity rulings, and at forty days a playtest never reaches the third.",
       "hardPause": true,
       "preconditions": {
         "pred": "all-of",
         "of": [
-          { "pred": "stock.belowDaysOfSupply", "target": "food", "value": 10 },
+          {
+            "pred": "any-of",
+            "of": [
+              { "pred": "stock.belowDaysOfSupply", "target": "food", "value": 1.2 },
+              { "pred": "need.below", "target": "food", "value": 0.98 }
+            ]
+          },
           { "pred": "tick.after", "value": 680 }
         ]
       },
+      "_foodNote": "Food amounts are the design document's +14 and +18 rescaled to the stock economy, where the Shaft eats about 4,400 a day: half a day's food for the double shifts, three quarters for the cut. What does not fit in the storehouses is not there.",
+      "_preconditionNote": "Rations tightening, or people already going hungry. Days of supply counts what the Shaft holds, and with goods kept locally it holds about five days at most and opens with under two — so the old 'below 10 days' was true from the first tick. 1.2 days is where the opening's stores stand a day or two before the first hunger.",
       "prompt": "A night-shift guard caught a cultivation hand slipping tins out through the pipe access. Under questioning he didn't deny it. His daughter has had a fever for six days, and he'd already given her his own rations twice.",
       "variants": [
         {
           "when": { "pred": "statute.active", "target": "rationing-quotas" },
-          "prompt": "",
+          "prompt": "A night-shift guard caught a cultivation hand slipping tins out through the pipe access. He had been living on the quota you set, and so had his daughter, who has had a fever for six days. He gave her his share twice before he took anyone else's. Nobody in the room says the word 'quota', but everyone is thinking it.",
           "removeOptions": ["cut-rations"],
           "_note": "With quotas already law, the player's own statute caused the strain. Flavour text acknowledges it and the harsh option is withdrawn — you cannot make an example of a man for a shortage you legislated."
         }
@@ -31,7 +41,7 @@
           "detail": "Push cultivation and mechanical to recover the shortfall. No charge brought.",
           "leaning": "pragmatic",
           "effects": [
-            { "op": "stock.add", "target": "food", "value": 14 },
+            { "op": "stock.add", "target": "food", "value": 2200 },
             { "op": "meter.add", "target": "productivity", "value": -6 },
             { "op": "meter.add", "target": "stability", "value": 3 },
             { "op": "precedent.record", "theme": "scarcity", "leaning": "pragmatic" }
@@ -44,7 +54,7 @@
           "leaning": "harsh",
           "requires": [{ "pred": "building.exists", "target": "holding-cells" }],
           "effects": [
-            { "op": "stock.add", "target": "food", "value": 18 },
+            { "op": "stock.add", "target": "food", "value": 3300 },
             { "op": "meter.add", "target": "trust", "value": -10 },
             { "op": "meter.add", "target": "freedom", "value": -4 },
             { "op": "precedent.record", "theme": "scarcity", "leaning": "harsh" }
@@ -61,25 +71,36 @@
             {
               "op": "timer.start",
               "target": "promise-rations",
+              "label": "The shortage ends within the month",
+              "promise": true,
               "ticks": 1800,
-              "condition": { "pred": "stock.aboveDaysOfSupply", "target": "food", "value": 14 },
+              "holdTicks": 180,
+              "condition": {
+                "pred": "all-of",
+                "of": [
+                  { "pred": "need.atLeast", "target": "food", "value": 0.98 },
+                  { "pred": "stock.aboveDaysOfSupply", "target": "food", "value": 1.5 }
+                ]
+              },
               "onMet": [
-                { "op": "meter.add", "target": "trust", "value": 8 },
+                { "op": "meter.shift", "target": "trust", "value": 8 },
                 { "op": "flag.set", "target": "keeps-promises" }
               ],
               "onExpire": [
                 { "op": "meter.add", "target": "trust", "value": -18 },
                 { "op": "meter.add", "target": "stability", "value": -6 },
+                { "op": "meter.shift", "target": "trust", "value": -4 },
                 { "op": "flag.set", "target": "broken-promise" }
               ]
             }
           ],
-          "_note": "The gamble. Kept, it beats every other option; missed, it costs more than 'cut the rations' would have. The timer's condition is what it means to keep the promise — it is checked at expiry, not assumed."
+          "_note": "The gamble. Kept, it beats every other option: meter.shift makes the Trust permanent, where every other ruling's gain drifts back. Missed, it costs more than 'cut the rations' would have, and some of it never comes back. The timer's condition is what it means to keep the promise — everyone fed, and the stores back above a day and a half — and it has to hold for three days running (holdTicks), or on the day the deadline falls; otherwise the promise is broken."
         }
       ]
     },
     {
       "id": "unaccounted-draw",
+      "title": "The ledger that does not balance",
       "chapter": 1,
       "theme": "dissent",
       "weight": 6,

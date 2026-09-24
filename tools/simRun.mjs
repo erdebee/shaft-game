@@ -11,6 +11,10 @@
  *   node tools/simRun.mjs --set population.foodPerCapitaPerTick=0.02
  *   node tools/simRun.mjs --profile deep-cold --seed 7
  *   node tools/simRun.mjs --events                also print the day's events
+ *   node tools/simRun.mjs --rule lenient          answer every case with the
+ *                         first ruling of that leaning that can be given
+ *                         (else the first that can); without --rule a case is
+ *                         left open, which holds every later one back
  *
  * Columns: pop (deaths/departures that day), health, food stock (days of
  * supply), water served to people, air (mean where people live / worst
@@ -30,6 +34,7 @@ import { loadDataset } from '../src/config/contentLoader.js';
 import { daysOfSupply } from '../src/core/selectors.js';
 import { residentsByLevel } from '../src/systems/population/housing.js';
 import { totals } from '../src/systems/resources/stores.js';
+import { present } from '../src/narrative/dilemmaEngine.js';
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '../resources/data');
 const readJson = async (rel) => JSON.parse(readFileSync(join(DATA, rel), 'utf8'));
@@ -56,6 +61,9 @@ on('unrest:riot', (p) => notes.push(`riot:${p.buildingId}`));
 on('unrest:demolished', (p) => notes.push(`DEMOLISHED:${p.buildingId}`));
 on('building:breakdown', (p) => notes.push(`broke:${p.buildingId}`));
 on('mining:seamExhausted', (p) => notes.push(`seam-out:${p.id}`));
+on('dilemma:resolved', (p) => notes.push(`RULED:${p.dilemmaId}=${p.optionId}${p.codified ? `(law:${p.codified})` : ''}`));
+on('promise:kept', (p) => notes.push(`kept:${p.id}`));
+on('promise:broken', (p) => notes.push(`BROKEN:${p.id}`));
 if (args.events) {
   for (const e of ['air:critical', 'maintenance:stalled', 'resource:shortfall', 'water:shortfall', 'labour:shortfall']) {
     on(e, (p) => events.push(`${e} ${JSON.stringify(p)}`));
@@ -64,7 +72,11 @@ if (args.events) {
 
 console.log(header());
 for (let day = 1; day <= days; day++) {
-  for (let t = 0; t < ticksPerDay; t++) stepOnce(engine);
+  for (let t = 0; t < ticksPerDay; t++) {
+    stepOnce(engine);
+    if (state.narrative.activeDilemma && args.rule) rule(args.rule);
+  }
+  if (state.narrative.activeDilemma && !args.rule) notes.push(`OPEN:${state.narrative.activeDilemma.id}`);
   // Notes and events carry over to the next printed day, so --every never
   // hides a strike that happened on a day it skipped.
   if (day % every !== 0 && day !== days) continue;
@@ -109,6 +121,14 @@ function row(day) {
     pad(`${Math.round(pop.labour.pool)}/${pop.labour.wanted}`, 9),
     [...pop.strikes.map((x) => `on-strike:${x.faction}`), ...new Set(notes)].join(' '),
   ].join(' ');
+}
+
+/** Answer the open case with a leaning, the way a consistent player would. */
+function rule(leaning) {
+  const view = present(state, ctx);
+  const open = view.options.filter((o) => o.available);
+  const choice = open.find((o) => o.id === 'codify') ?? open.find((o) => o.leaning === leaning) ?? open[0];
+  if (choice) dispatch(state, ctx, { type: 'player:resolveDilemma', dilemmaId: view.id, optionId: choice.id });
 }
 
 /** The worst air on any level where people actually live. */

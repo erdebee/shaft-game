@@ -191,6 +191,27 @@ export function renderFigures(layer, state, ctx, tick, alpha, viewport, art) {
 }
 
 /**
+ * Where one porter is this frame, in shaft units — their feet — for the view
+ * to follow them and mark them. Walking: on their trip. Otherwise: standing at
+ * the room they are working or waiting in. Null if they are nowhere drawable.
+ */
+export function porterSpot(state, art, porter, tick, alpha) {
+  const rooms = roomPlaces(state, null, art);
+  const trip = porter.tripId !== null ? state.haulage.trips.find((t) => t.id === porter.tripId) : null;
+  if (trip) {
+    const xOf = (id, pos) => (id ? standX(rooms, trip.workerId, id) : null) ?? floorX(pos);
+    const pos = tripPosition(trip, tick, alpha, xOf);
+    if (pos.onFloor) return { x: pos.x, y: floorAt(rooms, pos.level, pos.x), level: pos.level };
+    const step = stairWalk(pos.y, pos.descending);
+    return { x: step.x, y: step.y, level: pos.level };
+  }
+  const at = porter.handling?.instanceId ?? porter.at;
+  const place = rooms.get(at);
+  if (!place) return null;
+  return { x: standX(rooms, porter.id, at), y: place.rect.y + place.floorY, level: place.level };
+}
+
+/**
  * Every room's rectangle and floor row, by instance id, for this frame. A
  * porter walking a floor stands on the floor of whichever room it is passing,
  * and on the level's own floor row over the gaps and the stairhead.

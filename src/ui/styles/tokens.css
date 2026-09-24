@@ -165,6 +165,20 @@
   --sprite-mid:     steel-paint, steel-paint-lit, concrete-lit, concrete-bright, terminal;
   --sprite-shallow: brass, bronze, oxblood, wood-lacquer, cream;
 
+  /* ---- Route legs ------------------------------------------------------
+     One colour per leg of a porter's route (src/ui/routePlan.js), shared by
+     the panel, the shaft and the minimap. UI only — never in a sprite. Light
+     and far apart, so eight lines crossing the dark shaft stay tellable, and
+     none of them red: red is the alarm (principles §6). */
+  --route-1: var(--sodium-core);
+  --route-2: var(--cool-lit);
+  --route-3: var(--readout-ok);
+  --route-4: var(--sodium-spill);
+  --route-5: #b89ad8;
+  --route-6: var(--water-glint);
+  --route-7: var(--readout-warn);
+  --route-8: #7fd1bd;
+
   /* ---- Type ---- */
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --font-ui:   var(--font-mono);

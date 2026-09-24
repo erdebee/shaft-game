@@ -22,6 +22,15 @@ export function meterValue(state, id) {
   return state.meters[id] ?? 0;
 }
 
+/**
+ * How well a need is met right now (population.needs): food and water as the
+ * share of people served, 0–1; air and water quality 0–100. A need not yet
+ * computed reads as met, so a predicate on it cannot fire on tick zero.
+ */
+export function needOf(state, id) {
+  return state.population.needs?.[id] ?? 1;
+}
+
 export function flagSet(state, flag) {
   return state.narrative.flags[flag] === true;
 }

@@ -79,7 +79,9 @@ export function createGameState({ chapter, dataset, seed }) {
 
     governance: {
       enacted: [],
-      precedent: {},
+      history: [],   // every enactment and repeal, in order — never rewritten
+      precedent: {}, // ruling counts by theme and leaning
+      cases: [],     // one entry per ruling (governance/precedentTracker.js)
       authority: config.governance.authorityStart,
       priorityLadder: null, // null = fall back to config default
     },
@@ -89,12 +91,16 @@ export function createGameState({ chapter, dataset, seed }) {
       capabilities: {},
       unlocked: [],
       timers: [],
+      promiseRecord: { kept: 0, broken: 0 },
+      shifts: {},    // meter.shift: where a meter settles, moved for good
       scheduled: [],
       armedBeats: [],
       firedBeats: [],
       firedDirectives: [],
       activeDilemma: null,
+      nextDilemmaTick: null,
       dilemmaCooldowns: {},
+      firedDilemmas: [],
       moleId: null,
     },
 
@@ -125,7 +131,7 @@ function initialAbstracts(catalog, config) {
   return {
     labour: 0,
     focus: 0,
-    authority: config.governance.authorityStart,
+    // Authority is held in state.governance.authority (governance/authorityLedger.js).
   };
 }
 

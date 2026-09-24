@@ -1,9 +1,11 @@
 /**
  * build.js
- * The build menu for the selected level: every building, grouped by zone,
- * with what it takes (slots, power, crews, cost) and what it gives (housing,
- * output). One that cannot go here says why. Building goes through
- * player:placeBuilding like everything else.
+ * The build menu for the selected level, in two tabs: Buildings — the rooms
+ * people live, grow, make and govern in — and Infrastructure — what carries
+ * power, water, air, goods and freight between them. Each lists its
+ * buildings grouped by kind, with what they take (slots, power, crews, cost)
+ * and what they give (housing, output). One that cannot go here says why.
+ * Building goes through player:placeBuilding like everything else.
  *
  * Rebuilds its list only when something that decides it changes — the level,
  * the buildings on it, or whether the stores can pay — never per frame.
@@ -14,7 +16,29 @@ import { placement, buildCost, depthBandOf } from '../../core/commands.js';
 import { el, button } from '../components/dom.js';
 import { inStorehouses } from '../../systems/resources/stores.js';
 
-const ZONES = ['habitation', 'cultivation', 'water', 'air', 'power', 'mechanical', 'logistics', 'administration'];
+/** A lift serves several levels at once: it is infrastructure, whatever its zone. */
+const lift = (d) => d.spansLevels;
+
+/** Each tab's groups: a heading, and which buildings fall under it. */
+const MENUS = {
+  buildings: [
+    ['habitation', (d) => d.zone === 'habitation'],
+    ['cultivation', (d) => d.zone === 'cultivation'],
+    ['mechanical', (d) => d.zone === 'mechanical' && !lift(d)],
+    ['administration', (d) => d.zone === 'administration'],
+  ],
+  infrastructure: [
+    ['power', (d) => d.zone === 'power'],
+    ['water', (d) => d.zone === 'water'],
+    ['air', (d) => d.zone === 'air'],
+    ['logistics', (d) => d.zone === 'logistics'],
+    ['lifts', lift],
+  ],
+};
+
+/** The Buildings tab and the Infrastructure tab: the same menu over different groups. */
+export const buildings = { mount: (...args) => mount('buildings', ...args) };
+export const infrastructure = { mount: (...args) => mount('infrastructure', ...args) };
 
 const REASONS = {
   'wrong-depth': 'wrong depth',
@@ -25,7 +49,7 @@ const REASONS = {
   'no-level': 'no such level',
 };
 
-export function mount(root, state, ctx, dispatch) {
+function mount(kind, root, state, ctx, dispatch) {
   root.replaceChildren();
 
   const card = el('section', 'card build');
@@ -52,10 +76,10 @@ export function mount(root, state, ctx, dispatch) {
 
   function rebuild(currentState, currentCtx, level) {
     list.replaceChildren();
-    for (const zone of ZONES) {
-      const defs = currentCtx.catalog.buildings.all.filter((d) => d.zone === zone && !d.fixed);
+    for (const [heading, inGroup] of MENUS[kind]) {
+      const defs = currentCtx.catalog.buildings.all.filter((d) => inGroup(d) && !d.fixed);
       if (defs.length === 0) continue;
-      list.appendChild(el('h3', 'build-zone', zone));
+      list.appendChild(el('h3', 'build-zone', heading));
       for (const def of defs) list.appendChild(row(currentState, currentCtx, def, level));
     }
   }
@@ -83,7 +107,7 @@ export function mount(root, state, ctx, dispatch) {
     update(currentState, currentCtx) {
       const level = selection.get().level;
       if (level === null) {
-        title.textContent = 'Build';
+        title.textContent = kind === 'infrastructure' ? 'Infrastructure' : 'Buildings';
         summary.textContent = 'Click an empty part of a level in the Shaft to build on it.';
         list.replaceChildren();
         signature = null;

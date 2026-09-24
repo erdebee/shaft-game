@@ -1,29 +1,39 @@
 /**
  * authorityLedger.js
  * Authority is political capital, spent enacting Accord amendments and earned
- * back between amendment windows. Controversial laws cost more; contradicting
- * your own precedent costs more still, which is what makes consistency itself
- * a spendable resource.
+ * back as each amendment session opens (governance.authorityRegenPerWindow).
+ * Controversial laws cost more; contradicting your own precedent costs more
+ * still (statuteEngine.js costOf), which is what makes consistency itself a
+ * spendable resource.
  *
- * Separately tracks satisfaction with each of the four departments —
- * Cultivation, Engineering, Order, Archive (catalog/population/factions.json).
- * A dissatisfied faction slows output and becomes sabotage-prone; a satisfied
- * one is reliable and warns the player about trouble early.
- *
- * No faction can end the run on its own. Falling below a faction's
- * sabotageThreshold costs capability in that faction's domain, the same shape
- * as Board doubt — the failure states that do end a run are declared in
- * catalog/meters.json.
+ * Owns state.governance.authority, and nothing else. The four departments'
+ * satisfaction, which an earlier sketch of this file also carried, lives in
+ * systems/society/factions.js.
  */
 
-export function spend(state, faction, amount, reason) {
-  // TODO
+import { clamp } from '../utils/math.js';
+
+export function balance(state) {
+  return state.governance.authority;
 }
 
-export function earn(state, faction, amount, reason) {
-  // TODO
+export function canAfford(state, amount) {
+  return state.governance.authority >= amount;
 }
 
-export function canCompel(state, faction) {
-  // TODO: below a threshold, orders are ignored rather than refused
+/**
+ * Take `amount` if it is there. Returns whether it was: a law the Shaft
+ * cannot pay for is not enacted on credit.
+ */
+export function spend(state, amount) {
+  if (!canAfford(state, amount)) return false;
+  state.governance.authority -= amount;
+  return true;
+}
+
+/** Add (or, negative, remove) Authority, held between 0 and the cap. */
+export function earn(state, ctx, amount) {
+  state.governance.authority = clamp(
+    state.governance.authority + amount, 0, ctx.config.governance.authorityCap,
+  );
 }

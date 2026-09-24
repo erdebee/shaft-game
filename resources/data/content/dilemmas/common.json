@@ -3,6 +3,7 @@
   "dilemmas": [
     {
       "id": "clinic-or-workshop",
+      "title": "Eleven hours dark",
       "chapter": null,
       "theme": "health",
       "weight": 8,
@@ -60,6 +61,7 @@
     },
     {
       "id": "grove-conversion",
+      "title": "The grove, or ninety people",
       "chapter": null,
       "theme": "scarcity",
       "weight": 7,

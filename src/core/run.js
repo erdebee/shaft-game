@@ -23,10 +23,12 @@ import * as haulage from '../systems/haulage/haulageMethods.js';
 import * as buildings from '../systems/buildings/buildingRegistry.js';
 import * as population from '../systems/population/index.js';
 import * as society from '../systems/society/index.js';
+import * as governance from '../governance/index.js';
+import * as narrative from '../narrative/index.js';
 
 /** The system registry, keyed to match SYSTEM_ORDER in engine.js. */
 export function createSystems() {
-  return { power, resources, water, airQuality, haulage, buildings, population, society };
+  return { power, resources, water, airQuality, haulage, buildings, population, society, governance, narrative };
 }
 
 /**
@@ -126,7 +128,7 @@ export function stockOpening(state, ctx) {
  * A run is `seed + configHash + commandLog`, so this is the whole
  * reproducibility promise in one function: hand it a 2KB log and it rebuilds
  * the run tick for tick. Commands are applied at the tick they were recorded
- * on, before that tick's systems run, matching how dispatch() behaves live.
+ * on, after that tick's systems have run, matching how dispatch() behaves live.
  *
  * @param {Array} commandLog
  * @param {number} toTick  replay up to and including this tick
@@ -146,10 +148,13 @@ export async function replay(commandLog, toTick, options = {}) {
 
   for (const command of byTick.get(0) ?? []) applyRecorded(state, run.ctx, command);
 
+  // A command stamped T was dispatched live between frames with the clock
+  // reading T — after tick T's systems had run, before tick T+1's. So it is
+  // applied after stepping onto T, never before: applied first, a ruling
+  // stamped 20 would land on tick 19 and record the wrong day.
   while (state.clock.tick < toTick) {
-    const next = state.clock.tick + 1;
-    for (const command of byTick.get(next) ?? []) applyRecorded(state, run.ctx, command);
     stepOnce(engine);
+    for (const command of byTick.get(state.clock.tick) ?? []) applyRecorded(state, run.ctx, command);
   }
 
   return run;

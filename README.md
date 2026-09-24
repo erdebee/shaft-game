@@ -9,8 +9,11 @@ chapter, who is actually in charge.
 air, haulage, the population's body (food, health, deaths, births, labour),
 maintenance, the meters and discontent (strikes, demands, riots, departures)
 all run, and the player can build, crew, pin recipes and demolish from the
-panel. Governance, dilemmas, revelation staging and the chapter drivers are
-still stubs.
+panel. The law engine is prototyped: dilemmas are raised, ruled on and
+recorded as precedent; promises run on timers; law cards are enacted and
+repealed in amendment sessions for Authority; and a settled leaning can be
+made policy from the next case. Revelation staging, the Board and the chapter
+drivers are still stubs.
 
 ## Running it
 
@@ -36,6 +39,7 @@ the symptom is a change that appears to do nothing.
 npm test          # node --test
 npm run sim       # play the opening headlessly, one line per day
 npm run sim -- --days 60 --every 5 --set population.foodPerCapitaPerTick=0.02
+npm run sim -- --rule lenient   # answer every case with that leaning
 ```
 
 `tools/simRun.mjs` is the balance instrument: it builds a run exactly as the
@@ -180,20 +184,33 @@ if one ever does. Changing this is a narrative decision, not a balance tweak.
 The pipeline is proven, so each remaining system slots into a known shape:
 export `tick(state, ctx)`, write only your own domain, emit through `ctx.emit`.
 
-1. **Playtest the opening.** A first balance pass exists (`npm run sim`):
+1. **Playtest the law engine.** The prototype exists to find out whether
+   it is fun. Raise a case on demand from the console with
+   `game.dispatch({ type: 'debug:raiseDilemma', dilemmaId: 'ration-theft' })`.
+   Things to watch: whether the promise is a real gamble (it is kept once
+   everyone is fed and food stores are back above 1.5 days for three days),
+   whether the contradiction surcharge bites (three harsh dissent rulings
+   take assembly rights from 7 Authority to 18), and whether the flip-flop
+   penalty (4 per amendment window stood) makes repeal feel risky.
+2. **More cases per theme.** Codification needs a leaning three rulings
+   ahead, and Chapter 1 has only two scarcity cases, one dissent case and
+   one health case. The engine is content-driven; what is missing is
+   dilemmas.
+3. **The demands dilemma.** `unrest:demands` is raised when discontent
+   crosses its line; the case that answers it (pass a law, or promise
+   improvement by a deadline) now has everything it needs.
+4. **Law-card loose ends.** Cards that `consume` goods (paper for petitions)
+   and `governance.paperPerAmendment` are not charged yet; `risk.add` and
+   `zone.outputMultiply` are collected but nothing reads them; the Core
+   Mandate does not yet veto a card; and two themes codify to a card of a
+   different leaning (dissent-pragmatic to a harsh card, health-harsh to a
+   pragmatic one), which is worth a content decision.
+5. **Playtest the opening.** A first balance pass exists (`npm run sim`):
    untouched, the Shaft holds for about 30 days while the vats run out of
    scrap and the generator's repairs stall on electrical components, then
    famine, strikes, demands and riots. Whether that is the right difficulty
    is a playtest question, not a code one.
-2. **The demands dilemma.** `unrest:demands` is raised when discontent
-   crosses its line; the prompt that answers it (pass a law, or promise
-   improvement by a deadline) is the first job for the dilemma engine.
-3. **Governance**, starting with `statuteEngine.compile` so law cards produce
-   real standing modifiers, then the amendment window and precedent.
-4. **Dilemmas.** The content, the interpreters and the hard-pause path all
-   exist; `dilemmaEngine` needs to select and raise them, and `dilemmaModal`
-   needs to present them.
-5. **Lift cars.** The freight elevator and dumbwaiter carry trips in the sim
+6. **Lift cars.** The freight elevator and dumbwaiter carry trips in the sim
    but draw no moving car: the vector sheet that had one is gone, and the
    pixel rooms need a car sprite driven by `tripPosition`.
 

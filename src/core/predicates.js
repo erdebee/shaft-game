@@ -29,6 +29,10 @@ const HANDLERS = {
 
   'flow.shortfall': (state, ctx, p) => S.hasShortfall(state, p.target),
 
+  // How well the people are served, 0–1 for food and water (population.needs).
+  'need.below': (state, ctx, p) => S.needOf(state, p.target) < p.value,
+  'need.atLeast': (state, ctx, p) => S.needOf(state, p.target) >= p.value,
+
   'building.exists': (state, ctx, p) => S.instancesOf(state, p.target).length > 0,
   'buildings.noneBelowCondition': (state, ctx, p) =>
     state.buildings.every((b) => b.condition >= p.value),

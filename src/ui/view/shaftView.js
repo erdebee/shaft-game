@@ -26,6 +26,7 @@ import {
 import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
 import { createFigureLayer, renderFigures } from './figures.js';
 import { createShaftScroll } from './shaftScroll.js';
+import { createRouteLayer } from './routeLayer.js';
 import { shortages, inputsOf, nameOf } from '../../systems/resources/stores.js';
 import { SPEEDS } from '../../core/clock.js';
 import * as selection from '../selection.js';
@@ -55,9 +56,11 @@ const PLATE_H = PLATE_PAD + ICON + BAR_GAP + BAR_H + PLATE_PAD;
 const MAX_SLOTS = 4;
 
 /**
- * @param art  the result of roomArt.loadRoomArt()
+ * @param art       the result of roomArt.loadRoomArt()
+ * @param dispatch  sends a player command; used only by the open route's
+ *                  clicks (routeLayer.js)
  */
-export function createShaftView(root, state, ctx, art) {
+export function createShaftView(root, state, ctx, art, dispatch = () => {}) {
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('class', 'shaft');
   // No width/height attributes on purpose — CSS sizes the element and the
@@ -92,6 +95,10 @@ export function createShaftView(root, state, ctx, art) {
   // (tools/cutForeground.mjs), so a room without a cut simply has nothing here.
   layers.foreground = group(svg, 'layer-foreground');
 
+  // The open porter's route (routeLayer.js): over the rooms, the people and
+  // the stair rail, because it is a drawing ON the shaft, not part of it.
+  layers.routes = group(svg, 'layer-routes');
+
   // Above even that: the shortage popovers. They are the one thing in this
   // view that is not part of the world, and a handrail drawn over a person is
   // correct while a handrail drawn over a room's alarm is not.
@@ -118,6 +125,7 @@ export function createShaftView(root, state, ctx, art) {
   attachInteraction(view, state, ctx);
   root.appendChild(svg);
   view.scroll = createShaftScroll(root, view, state, ctx);
+  view.routes = createRouteLayer(view, root, dispatch, ctx);
 
   // Fit to the HOST, never to the svg: the svg's own width now derives from
   // the viewBox's intrinsic aspect ratio, so measuring it here would feed the
@@ -137,6 +145,8 @@ export function createShaftView(root, state, ctx, art) {
    * class toggles, and the figure transforms.
    */
   function render(currentState, currentCtx, tick, alpha) {
+    // First, because following a porter moves the viewport this frame.
+    view.routes.update(currentState, currentCtx, tick, alpha);
     svg.setAttribute('viewBox', viewBoxOf(view.viewport));
 
     // Ambient CSS loops stop with the simulation, so nobody keeps working
@@ -182,8 +192,6 @@ function syncSelection(view, state) {
     view.buildingMarker.setAttribute('height', String(r.height - 1));
   }
 
-  syncRouteMarkers(view, state);
-
   const showLevel = !instanceId && level !== null;
   view.levelMarker.style.display = showLevel ? '' : 'none';
   if (showLevel) {
@@ -192,44 +200,6 @@ function syncSelection(view, state) {
     view.levelMarker.setAttribute('width', String(SHAFT_WIDTH - BUILD_X));
     view.levelMarker.setAttribute('height', String(LEVEL_HEIGHT));
   }
-}
-
-/**
- * While a porter's route is open, number its stops on the rooms they visit,
- * so the loop can be read in the shaft rather than only in the panel.
- */
-function syncRouteMarkers(view, state) {
-  const { editing } = selection.get();
-  const porter = editing ? state.population.workers.find((w) => w.id === editing) : null;
-  const key = porter ? JSON.stringify([porter.route, state.buildings.length]) : '';
-  if (key === view.routeKey) return;
-  view.routeKey = key;
-  view.routeGroup?.remove();
-  view.routeGroup = document.createElementNS(SVG_NS, 'g');
-  view.routeGroup.setAttribute('class', 'route-markers');
-  view.layers.overlays.appendChild(view.routeGroup);
-  if (!porter) return;
-
-  const perRoom = new Map();
-  porter.route.forEach((stop, i) => {
-    const instance = state.buildings.find((b) => b.instanceId === stop.instanceId);
-    if (!instance) return;
-    const n = perRoom.get(instance.instanceId) ?? 0;
-    perRoom.set(instance.instanceId, n + 1);
-    const r = roomRect(instance, state.buildings);
-    const marker = document.createElementNS(SVG_NS, 'g');
-    marker.setAttribute('class', `route-marker route-${stop.action}`);
-    marker.setAttribute('transform', `translate(${r.x + 3 + n * 13} ${r.y + 3})`);
-    const box = document.createElementNS(SVG_NS, 'rect');
-    box.setAttribute('width', '12');
-    box.setAttribute('height', '11');
-    const text = document.createElementNS(SVG_NS, 'text');
-    text.setAttribute('x', '6');
-    text.setAttribute('y', '8.5');
-    text.textContent = String(i + 1);
-    marker.append(box, text);
-    view.routeGroup.appendChild(marker);
-  });
 }
 
 function group(parent, className) {
@@ -741,6 +711,7 @@ function attachInteraction(view, state, ctx) {
 
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
+    selection.stopFollowing();
     if (event.ctrlKey || event.metaKey) {
       // Continuous: a trackpad pinch arrives as a stream of small ctrl-wheel
       // deltas, a mouse wheel as a few large ones, and both should feel the
@@ -763,6 +734,7 @@ function attachInteraction(view, state, ctx) {
   });
   svg.addEventListener('pointermove', (event) => {
     if (!dragging) return;
+    if (Math.hypot(event.clientX - dragging.x, event.clientY - dragging.y) > 4) selection.stopFollowing();
     const rect = svg.getBoundingClientRect();
     const perPixel = view.viewport.visibleLevels / rect.height;
     view.viewport.topLevel = dragging.top - (event.clientY - dragging.y) * perPixel;
@@ -784,6 +756,9 @@ function attachInteraction(view, state, ctx) {
     const hit = document.elementFromPoint(event.clientX, event.clientY);
     const plate = hit?.closest?.('.stock-popover');
     const node = hit?.closest?.('.building') ?? (plate ? view.buildingNodes.get(plate.dataset.instance) : null);
+    // While a route is open, a room is a stop to add and a marker's ✕ a stop
+    // to remove (routeLayer.js), not something to inspect.
+    if (selection.get().editing && view.routes.pick(state, hit, node, event)) return;
     const level = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect());
     if (node) selection.select({ instanceId: node.dataset.instance, level: Number(node.dataset.level) });
     else if (level >= 1 && level <= state.levels.length) selection.select({ level });

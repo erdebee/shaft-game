@@ -1,6 +1,6 @@
 /**
  * dashboard.js
- * The Status tab: the settlement at a glance. Power, stores, people and what
+ * The Stats tab: the settlement at a glance. Power, stores, people and what
  * they lack, the meters, the departments, and the maintenance crews.
  *
  * Reads state, dispatches commands, writes nothing. update() runs every frame,

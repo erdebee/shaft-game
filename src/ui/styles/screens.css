@@ -246,6 +246,19 @@ body {
 .minimap-dot.warning { background: var(--readout-warn); }
 
 /* The part of the shaft on screen. */
+/* The open route (shaftScroll.js): the minimap stays out and widens to carry
+   it, beside the floor numbers. */
+.shaft-host.route-open .shaft-minimap { width: 9rem; }
+.minimap-route { position: absolute; top: 0; bottom: 0; left: calc(1.6rem + 1.9em); right: 2px; display: none; pointer-events: none; }
+.shaft-host.route-open .minimap-route { display: block; }
+.minimap-route svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.minimap-route .route-line-under { stroke-width: 3.5; }
+.minimap-route .route-line-over { stroke-width: 1.5; }
+.minimap-stop circle { stroke: var(--rock); stroke-width: 1; }
+.minimap-stop.route-pickup circle { fill: var(--amber); }
+.minimap-stop.route-dropoff circle { fill: var(--terminal-lit); }
+.minimap-stop text { font: 700 8px var(--font-mono); text-anchor: middle; fill: var(--rock); }
+
 .minimap-window {
   position: absolute;
   left: 0;
@@ -374,6 +387,13 @@ body {
 .icon-button:hover,
 .text-button:hover { color: var(--ink); border-color: var(--amber-dim); }
 .tabs button[aria-pressed="true"] { color: var(--rock); background: var(--amber); border-color: var(--amber); }
+.tabs[hidden] { display: none; }
+
+/* The open tab's sub-tabs: a quieter row under the main one, marked by an
+   amber underline rather than a fill, so the two rows never read as one. */
+.tabs-sub { margin-top: calc(-1 * var(--space-2)); }
+.tabs-sub button { background: transparent; border-color: transparent; border-bottom: 2px solid var(--panel-raised); font-size: var(--size-sm); }
+.tabs-sub button[aria-pressed="true"] { color: var(--amber); background: transparent; border-color: transparent; border-bottom-color: var(--amber); }
 .tabs button:focus-visible,
 .icon-button:focus-visible,
 .text-button:focus-visible,
@@ -608,31 +628,114 @@ body {
 .stock-slot.untitled .stock-icon { display: none; }
 .stock-slot.untitled .stock-text { fill: var(--ink); }
 
-.route-markers { pointer-events: none; }
+.route-layer { pointer-events: none; }
 .route-marker rect { stroke: var(--rock); stroke-width: 1; }
 .route-marker text { font: 700 8px var(--font-mono); text-anchor: middle; }
 .route-pickup rect { fill: var(--amber); }
 .route-pickup text { fill: var(--rock); }
 .route-dropoff rect { fill: var(--terminal-lit); }
 .route-dropoff text { fill: var(--rock); }
+.route-marker .route-marker-band { stroke: none; }
+.route-marker-remove { pointer-events: auto; cursor: pointer; }
+.route-marker-remove rect { fill: var(--panel); stroke: var(--rock); }
+.route-marker-remove path { stroke: var(--ink); stroke-width: 1.2; fill: none; }
+.route-marker-remove:hover rect { fill: var(--critical); }
+.route-marker-remove:hover path { stroke: var(--sign-ink); }
 
-/* ---- Routes and stores in the panel ---- */
+/* A leg of the open route on the minimap: a dark casing under a line in the
+   leg's colour, and chevrons riding it the way the porter walks
+   (shaftScroll.js). */
+.route-line-under { fill: none; stroke: var(--rock); stroke-width: 5; stroke-linejoin: round; stroke-linecap: round; opacity: 0.85; }
+.route-line-over  { fill: none; stroke: var(--seg); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.route-chevron    { fill: var(--seg); stroke: var(--rock); stroke-width: 1; stroke-linejoin: round; }
 
-.route-list { list-style: none; margin: var(--space-2) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); counter-reset: stop; }
+/* Over the porter whose route is open. */
+.porter-focus-mark { fill: var(--sodium-core); stroke: var(--rock); stroke-width: 1; }
+.porter-focus-mark[data-part="bob"] { animation: porter-bob 900ms ease-in-out infinite alternate; }
+@keyframes porter-bob { from { translate: 0 -2px; } to { translate: 0 1px; } }
+
+/* "Add this room as stop …", asked beside the click. */
+.route-chooser {
+  position: absolute;
+  z-index: 3;
+  max-width: 16rem;
+  padding: var(--space-2);
+  background: var(--panel);
+  border: 1px solid var(--steel-pale);
+  box-shadow: 0 2px 0 var(--rock);
+  font-size: var(--size-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.route-chooser[hidden] { display: none; }
+.route-chooser-head { display: flex; justify-content: space-between; gap: var(--space-2); align-items: center; color: var(--ink); }
+.route-chooser-places { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.route-chooser-place {
+  min-width: 1.6rem;
+  padding: 2px var(--space-1);
+  background: var(--panel-raised);
+  border: var(--border);
+  border-bottom: 2px solid var(--seg, var(--panel-edge));
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.route-chooser-place:hover, .route-chooser-place:focus-visible { border-color: var(--amber); color: var(--sign-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .porter-focus-mark[data-part="bob"] { animation: none; }
+}
+
+/* ---- Routes and stores in the panel ----
+   A column of stops, with the route running between them: each gap carries
+   the leg's colour, flowing downwards the way the porter goes, and a + that
+   opens a stop in that place. */
+
+.route-list { list-style: none; margin: var(--space-2) 0; padding: 0; display: flex; flex-direction: column; }
 .route-stop {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-1);
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
   padding: var(--space-1) var(--space-2);
   background: var(--panel-raised);
   border: var(--border);
-  counter-increment: stop;
+  border-left: 3px solid var(--seg, var(--panel-edge));
 }
-.route-stop.next { border-color: var(--amber-dim); }
-.route-where::before { content: counter(stop) ". "; color: var(--amber); }
-.route-where { font-size: var(--size-sm); }
+.route-stop.next { border-top-color: var(--amber-dim); border-right-color: var(--amber-dim); border-bottom-color: var(--amber-dim); }
+.route-draft { border-style: dashed; border-left-style: solid; }
+.route-num { display: flex; align-items: center; gap: 2px; }
+.route-n {
+  min-width: 1.2rem;
+  padding: 0 2px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--size-xs);
+  background: var(--steel-lit);
+  color: var(--rock);
+}
+.route-n.route-pickup { background: var(--amber); }
+.route-n.route-dropoff { background: var(--terminal-lit); }
+.route-remove {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.route-remove:hover, .route-remove:focus-visible { color: var(--sign-ink); background: var(--critical); }
+.route-pick { display: flex; gap: var(--space-1); min-width: 0; }
+.route-pick .route-floor { flex: 0 0 auto; }
+.route-pick .route-room { flex: 1 1 auto; min-width: 0; }
 .route-controls { display: flex; gap: var(--space-1); }
 .route-controls .icon-button { min-width: 1.5rem; padding: 0 var(--space-1); }
+.route-what { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .route-stop .inspect-select { font-size: var(--size-xs); }
 .route-qty {
   width: 4rem;
@@ -642,7 +745,86 @@ body {
   font: inherit;
   font-size: var(--size-xs);
 }
-.route-held { grid-column: 1 / -1; }
+.route-held { grid-column: 2 / -1; }
+
+.route-gap {
+  position: relative;
+  height: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: calc(var(--space-2) + 0.3rem);
+}
+/* The leg: dashes in its colour marching down, ending in an arrowhead. */
+.route-flow {
+  position: absolute;
+  left: calc(var(--space-2) + 0.85rem);
+  top: 0;
+  bottom: 4px;
+  width: 3px;
+  background: repeating-linear-gradient(to bottom, var(--seg) 0 5px, transparent 5px 9px);
+}
+.route-flow[data-part="flow"] { animation: route-flow 700ms linear infinite; }
+.route-flow::after {
+  content: '';
+  position: absolute;
+  left: -3px;
+  bottom: -4px;
+  border: 4.5px solid transparent;
+  border-bottom: 0;
+  border-top: 5px solid var(--seg);
+}
+@keyframes route-flow { to { background-position: 0 9px; } }
+.route-add {
+  position: relative;
+  z-index: 1;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 1.6rem;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--steel-lit);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.route-add:hover, .route-add:focus-visible { opacity: 1; color: var(--sign-ink); border-color: var(--amber); }
+.route-back { font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+  .route-flow[data-part="flow"] { animation: none; }
+}
+
+/* The porters whose routes call at the inspected building. */
+.inspect-visitors { margin: var(--space-2) 0; }
+.visitor-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 2px var(--space-2);
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: var(--border);
+}
+.visitor-name {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--amber);
+  font: inherit;
+  font-size: var(--size-sm);
+  text-align: left;
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+.visitor-name:hover, .visitor-name:focus-visible { color: var(--sign-ink); }
+.visitor-goods { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; justify-self: end; }
+.visitor-goods .meter-label:not(:first-child) { margin-left: var(--space-1); }
+.visitor-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+.visitor-icon-missing { font-size: 9px; color: var(--ink); }
+.visitor-doing { grid-column: 1 / -1; }
 .inspect-store, .inspect-station { margin: var(--space-2) 0; }
 .porter-row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-1); align-items: center; margin-bottom: var(--space-1); }
 .porter-name { font-size: var(--size-sm); }
@@ -662,3 +844,145 @@ body {
 .waiting-row.blocked { color: var(--warn); }
 .waiting-row:hover { border-color: var(--amber); }
 .waiting-row:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+/* ---- The law engine ----
+   The ruling modal (components/dilemmaModal.js), the Accord tab
+   (screens/accordScreen.js) and the law status in the top bar. Law is the
+   Crown's business, so it borrows the shallow band's brass for what is law
+   or about to be; amber stays reserved for power. */
+
+.law-status {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel-raised);
+  border: var(--border);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: var(--size-xs);
+  cursor: pointer;
+}
+.law-status:hover { color: var(--ink); border-color: var(--brass-dark); }
+.law-status:focus-visible { outline: 2px solid var(--cool); outline-offset: 1px; }
+.law-status-authority { color: var(--ink); }
+.law-status-session[data-open="true"] { color: var(--brass); }
+.law-status-promise { color: var(--readout-warn); }
+
+.law-effects { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.law-effect {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--panel-edge);
+  color: var(--ink-dim);
+  font-size: var(--size-xs);
+  font-variant-numeric: tabular-nums;
+}
+.law-effect[data-tone="up"]      { color: var(--readout-ok); }
+.law-effect[data-tone="down"]    { color: var(--readout-warn); }
+.law-effect[data-tone="promise"] { color: var(--sign-ink); border-color: var(--readout-warn); }
+.law-effect[data-tone="law"]     { color: var(--sign-ink); border-color: var(--brass); }
+
+/* The case. Over everything, because a hard-pausing case holds the clock
+   and there is nothing else to do until it is ruled on. */
+.case-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--rock) 72%, transparent);
+}
+.case-overlay[hidden] { display: none; }
+.case {
+  width: min(38rem, 100%);
+  max-height: calc(100vh - 2 * var(--space-4));
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: var(--space-4);
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-top: 2px solid var(--brass-dark);
+  box-shadow: 0 0 0 1px var(--rock), 0 8px 0 var(--rock);
+}
+.case-kicker {
+  font-size: var(--size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.case-title { margin: var(--space-1) 0 var(--space-3); font-size: var(--size-lg); font-weight: 500; color: var(--sign-ink); }
+.case-prompt { margin: 0 0 var(--space-3); font-size: var(--size-md); line-height: 1.55; color: var(--ink); }
+.case-record {
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  background: var(--panel-raised);
+  border-left: 2px solid var(--panel-edge);
+  color: var(--ink-dim);
+  font-size: var(--size-xs);
+}
+.case-last { margin-top: var(--space-1); }
+.case-count { margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
+.case-count.lead { color: var(--sign-ink); }
+.case-options { display: grid; gap: var(--space-2); }
+.case-option {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--panel-raised);
+  border: 1px solid var(--panel-edge);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.case-option:hover:not([disabled]) { border-color: var(--steel-bright); }
+.case-option:focus-visible { outline: 2px solid var(--cool-lit); outline-offset: 1px; }
+.case-option[disabled] { cursor: not-allowed; opacity: 0.55; }
+.case-option.codify { border-color: var(--brass-dark); border-left: 3px solid var(--brass); }
+.case-option.codify:hover:not([disabled]) { border-color: var(--brass); }
+.case-option-head { display: flex; justify-content: space-between; gap: var(--space-2); align-items: baseline; }
+.case-option-label { font-size: var(--size-md); font-weight: 700; }
+.case-leaning { font-size: var(--size-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.case-option-detail { color: var(--ink-dim); }
+.case-codify-note { font-size: var(--size-xs); color: var(--brass); }
+.case-why { font-size: var(--size-xs); color: var(--readout-warn); }
+.case-foot { margin: var(--space-3) 0 0; font-size: var(--size-xs); color: var(--ink-faint); }
+
+/* The Accord tab. */
+.accord-session { font-size: var(--size-xs); color: var(--ink-dim); }
+.accord-session[data-open="true"] { color: var(--brass); }
+.accord-conflict { margin-top: var(--space-2); font-size: var(--size-xs); color: var(--readout-warn); }
+.accord-list { display: grid; gap: var(--space-2); }
+.accord-law, .accord-promise, .accord-theme {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--panel-raised);
+  border: 1px solid var(--panel-edge);
+}
+.accord-row-head { display: flex; justify-content: space-between; gap: var(--space-2); align-items: baseline; }
+.accord-title { color: var(--ink); font-weight: 700; }
+.accord-days, .accord-cost { font-size: var(--size-xs); color: var(--ink-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.accord-cost { color: var(--brass); }
+.accord-note { font-size: var(--size-xs); color: var(--ink-dim); }
+.accord-note.surcharge { color: var(--readout-warn); }
+.accord-note.settled { color: var(--brass); }
+.accord-note.holding { color: var(--readout-ok); }
+.accord-counts { font-size: var(--size-xs); color: var(--ink-dim); }
+.accord-bar { display: block; height: 3px; background: var(--dead); }
+.accord-bar-fill { display: block; height: 100%; background: var(--readout-warn); }
+.accord-action {
+  justify-self: start;
+  padding: var(--space-1) var(--space-2);
+  background: var(--panel);
+  border: var(--border);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--size-xs);
+  cursor: pointer;
+}
+.accord-action:hover:not([disabled]) { border-color: var(--brass); }
+.accord-action:focus-visible { outline: 2px solid var(--cool); outline-offset: 1px; }
+.accord-action[disabled] { color: var(--ink-faint); cursor: not-allowed; }

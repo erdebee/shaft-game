@@ -3,8 +3,13 @@
  * The selected building: what it is, whether it is working and — if not —
  * why, what it consumes and produces and how much of each is on hand, and what the player can do about it: crew it,
  * point it at a recipe, or tear it down. A porter station also lists its
- * porters, hires new ones and opens their routes; while a route is open this
- * tab is the route editor instead (routeEditor.js).
+ * porters, hires new ones and opens their routes, the same roster the Porters
+ * tab shows (porters.js). Inspect has no tab of its own: it opens when a room
+ * is clicked in the shaft.
+ *
+ * Every building also lists the porters whose routes call at it, and what
+ * each brings and takes away. Clicking one opens their route and brings them
+ * into view.
  *
  * The frame is built when the selection changes; per frame only the readouts
  * are refreshed.
@@ -18,8 +23,10 @@ import { factionOf } from '../../systems/population/staffing.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
 import { amount, capacity, inputsOf, outputsOf, isStorage, bandOf, nameOf } from '../../systems/resources/stores.js';
 import * as routeEditor from './routeEditor.js';
+import { renderStation } from './porters.js';
 import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
+import { visitorsOf } from '../routePlan.js';
 
 export function mount(root, state, ctx, dispatch) {
   root.replaceChildren();
@@ -28,7 +35,6 @@ export function mount(root, state, ctx, dispatch) {
 
   let shownId = undefined;
   let refresh = () => {};
-  let editor = null;
 
   function build(instance, currentCtx) {
     host.replaceChildren();
@@ -76,6 +82,11 @@ export function mount(root, state, ctx, dispatch) {
     const storeCard = el('div', 'inspect-store');
     host.appendChild(storeCard);
     const storeKey = { value: null };
+
+    // The porters whose routes call here.
+    const visitors = el('div', 'inspect-visitors');
+    host.appendChild(visitors);
+    const visitorsKey = { value: null };
 
     // A porter station: its porters, and the hiring.
     let station = null;
@@ -138,6 +149,7 @@ export function mount(root, state, ctx, dispatch) {
       facts.replaceChildren(...lines.map((line) => el('div', 'meter-label', line)));
 
       renderStore(storeCard, storeKey, current, def, ctxNow);
+      renderVisitors(visitors, visitorsKey, currentState, ctxNow, current);
       if (station) renderStation(station, stationKey, currentState, ctxNow, current, def, dispatch);
 
       if (batch) {
@@ -150,20 +162,6 @@ export function mount(root, state, ctx, dispatch) {
 
   return {
     update(currentState, currentCtx) {
-      const { editing } = selection.get();
-      if (editing) {
-        if (editor?.workerId !== editing) {
-          editor?.destroy();
-          editor = { workerId: editing, ...routeEditor.mount(host, currentState, currentCtx, dispatch, editing) };
-          shownId = undefined;
-        }
-        editor.update();
-        return;
-      }
-      if (editor) {
-        editor.destroy();
-        editor = null;
-      }
       const instance = selectedInstance(currentState);
       const id = instance?.instanceId ?? null;
       if (id !== shownId) {
@@ -287,39 +285,48 @@ function rateOf(def, ctx, id, role) {
   return rate ? `${name} · ${role === 'in' ? 'uses' : 'makes'} ${rate} a tick` : name;
 }
 
-/** A station's porters, each with what they are doing, and the hiring. */
-function renderStation(root, key, state, ctx, instance, def, dispatch) {
-  const living = state.population.workers.filter((w) => w.stationId === instance.instanceId);
-  const beds = def.porterStation.porters;
-  const sig = living.map((w) => w.id).join(',');
+/**
+ * The porters whose routes call at this building: each a button that opens
+ * their route and follows them, with the goods they bring here and the goods
+ * they take away, as icons that open the resource card.
+ */
+function renderVisitors(root, key, state, ctx, instance) {
+  const visits = visitorsOf(state, instance.instanceId);
+  const sig = JSON.stringify(visits.map((v) => [v.porter.id, v.stops, v.brings, v.takes]));
   if (key.value !== sig) {
     key.value = sig;
     root.replaceChildren();
-    const head = el('div', 'inspect-row');
-    root.count = el('span', 'meter-label');
-    head.append(root.count, button('Hire porter', 'Hire a porter from the labour pool', () => dispatch({ type: 'player:hirePorter', instanceId: instance.instanceId }), 'text-button'));
-    root.appendChild(head);
-    root.rows = living.map((w) => {
-      const row = el('div', 'porter-row');
-      const name = el('span', 'porter-name', w.name);
-      const doing = el('span', 'meter-label porter-doing');
-      let armed = false;
-      const dismiss = button('Dismiss', `Dismiss ${w.name}`, () => {
-        if (!armed) {
-          armed = true;
-          dismiss.textContent = 'Sure?';
-          setTimeout(() => { armed = false; dismiss.textContent = 'Dismiss'; }, 3000);
-          return;
-        }
-        dispatch({ type: 'player:dismissPorter', workerId: w.id });
-      }, 'text-button danger');
-      row.append(name, button('Route', `Edit ${w.name}'s route`, () => selection.editRoute(w.id), 'text-button'), dismiss, doing);
+    root.rows = [];
+    if (!visits.length) return;
+    root.appendChild(el('h3', 'build-zone', 'Porters calling here'));
+    for (const { porter, stops, brings, takes } of visits) {
+      const row = el('div', 'visitor-row');
+      const name = button(porter.name, `Open ${porter.name}'s route and follow them`, () => selection.editRoute(porter.id, { follow: true }), 'visitor-name');
+      const where = el('span', 'meter-label', `stop ${stops.map((i) => i + 1).join(', ')}`);
+      const goods = el('span', 'visitor-goods');
+      if (brings.length) goods.append(el('span', 'meter-label', 'brings'), ...brings.map((id) => goodIcon(ctx, id)));
+      if (takes.length) goods.append(el('span', 'meter-label', 'takes'), ...takes.map((id) => goodIcon(ctx, id)));
+      const doing = el('span', 'meter-label visitor-doing');
+      row.append(name, where, goods, doing);
       root.appendChild(row);
-      return { w, doing };
-    });
+      root.rows.push({ porter, doing });
+    }
   }
-  root.count.textContent = `Porters ${living.length} of ${beds}`;
-  for (const { w, doing } of root.rows) doing.textContent = routeEditor.describe(state, ctx, w);
+  for (const { porter, doing } of root.rows ?? []) doing.textContent = routeEditor.describe(state, ctx, porter);
+}
+
+/** A good's icon, small, opening the resource card; its name if it has none. */
+function goodIcon(ctx, id) {
+  const icon = iconOf(id);
+  const node = icon ? el('img', 'visitor-icon') : el('span', 'visitor-icon visitor-icon-missing', nameOf(ctx, id).slice(0, 3));
+  if (icon) {
+    node.src = icon.href;
+    node.alt = nameOf(ctx, id);
+  }
+  node.dataset.resource = id;
+  node.tabIndex = 0;
+  node.title = nameOf(ctx, id);
+  return node;
 }
 
 function selectedInstance(state) {

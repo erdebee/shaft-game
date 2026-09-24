@@ -3,6 +3,7 @@
   "dilemmas": [
     {
       "id": "inquiry-demand",
+      "title": "The volume on the table",
       "chapter": 2,
       "theme": "dissent",
       "weight": 12,
@@ -61,6 +62,7 @@
     },
     {
       "id": "catalyst-interruption",
+      "title": "The stores did not open",
       "chapter": 2,
       "theme": "scarcity",
       "weight": 14,

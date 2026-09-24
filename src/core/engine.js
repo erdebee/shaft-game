@@ -68,7 +68,7 @@ export function createContext({ dataset, streams, cursors, outbox }) {
     shaft: dataset.shaft,
     rng: streams,
     cursors,
-    modifiers: { meter: {}, risk: {}, buffer: {}, network: {}, scrub: {}, quality: {}, multiply: {}, capabilities: {}, recipes: {}, haulage: {} },
+    modifiers: { meter: {}, faction: {}, risk: {}, buffer: {}, network: {}, scrub: {}, quality: {}, multiply: {}, capabilities: {}, recipes: {}, haulage: {} },
     pauseRequested: false,
     /** Systems emit here; the engine drains it in the Resolve phase. */
     emit(event, payload) {

@@ -17,8 +17,16 @@
  */
 
 import { pan, panX, focusLevel, overflowsX } from './viewport.js';
-import { SHAFT_WIDTH } from './interpolate.js';
+import { SHAFT_WIDTH, BUILD_X, roomRect } from './interpolate.js';
 import { severityOf } from '../buildingStatus.js';
+import * as selection from '../selection.js';
+import { segmentsOf } from '../routePlan.js';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Pixels a route chevron travels per second, and the spacing between them. */
+const FLOW_SPEED = 18;
+const CHEVRON_EVERY = 22;
 
 /** How long the minimap lingers after the view stops moving, in ms. */
 const LINGER_MS = 1200;
@@ -44,6 +52,10 @@ export function createShaftScroll(host, view, state, ctx) {
   const bands = div(map, 'minimap-bands');
   const rows = div(map, 'minimap-rows');
   const window_ = div(map, 'minimap-window');
+  const routeBox = div(map, 'minimap-route');
+  const routeSvg = document.createElementNS(SVG_NS, 'svg');
+  routeBox.appendChild(routeSvg);
+  let routeKey = null;
 
   for (const band of ctx.tables?.levels?.depthBands ?? []) {
     const to = Math.min(band.toLevel ?? levelCount, levelCount);
@@ -76,12 +88,14 @@ export function createShaftScroll(host, view, state, ctx) {
   };
 
   for (const el of [map, vbar, hbar]) {
+    el.addEventListener('pointerdown', () => selection.stopFollowing());
     el.addEventListener('pointerenter', () => { scroll.hover = true; });
     el.addEventListener('pointerleave', () => { scroll.hover = false; });
     // The wheel over the chrome scrolls the shaft under it, as it would over
     // a native scrollbar.
     el.addEventListener('wheel', (event) => {
       event.preventDefault();
+      selection.stopFollowing();
       pan(viewport, event.deltaY * 0.02);
       panX(viewport, event.deltaX / viewport.scale);
     }, { passive: false });
@@ -153,7 +167,12 @@ export function createShaftScroll(host, view, state, ctx) {
       hthumb.style.width = pct(viewWidth / SHAFT_WIDTH);
     }
 
-    const show = scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
+    const { editing } = selection.get();
+    const porter = editing ? currentState.population.workers.find((w) => w.id === editing) : null;
+    host.classList.toggle('route-open', !!porter);
+    syncRoute(currentState, porter);
+
+    const show = !!porter || scroll.hover || scroll.dragging || now - scroll.movedAt < LINGER_MS;
     if (show !== scroll.shown) {
       scroll.shown = show;
       host.classList.toggle('scrolling', show);
@@ -169,6 +188,72 @@ export function createShaftScroll(host, view, state, ctx) {
       scroll.statusTick = tick;
       syncStatus(currentState, currentCtx);
     }
+  }
+
+  /**
+   * The open route on the minimap, redrawn when the route, the rooms or the
+   * minimap's size change. Drawn in the overlay's own pixels, so the numbers
+   * and chevrons keep their size however tall the shaft is.
+   */
+  function syncRoute(currentState, porter) {
+    const w = routeBox.clientWidth;
+    const h = routeBox.clientHeight;
+    const key = porter ? JSON.stringify([porter.route, view.builtSignature, w, h]) : '';
+    if (key === routeKey) return;
+    routeKey = key;
+    routeSvg.replaceChildren();
+    if (!porter || w <= 0 || h <= 0) return;
+    routeSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+    // Each stop goes where its room is, then moves to the nearest spot clear
+    // of every stop already placed: sideways along its floor first, and off
+    // the floor's line only when the row is full — a storehouse the route
+    // calls at seven times has more stops than one row has room for.
+    const pad = 7;
+    const clear = 15;
+    const at = new Map();
+    const placed = [];
+    const free = (x, y) => x >= pad && x <= w - pad && y >= pad && y <= h - pad
+      && placed.every(([px, py]) => Math.hypot(px - x, py - y) >= clear);
+    const offsets = [];
+    for (let dy = -3 * clear; dy <= 3 * clear; dy++) {
+      for (let dx = -w; dx <= w; dx++) offsets.push([dx, dy, dx * dx + 4 * dy * dy]);
+    }
+    offsets.sort((a, b) => a[2] - b[2]);
+    porter.route.forEach((stop, i) => {
+      const b = currentState.buildings.find((x) => x.instanceId === stop.instanceId);
+      if (!b) return;
+      const r = roomRect(b, currentState.buildings);
+      const x0 = pad + ((r.x + r.width / 2 - BUILD_X) / (SHAFT_WIDTH - BUILD_X)) * (w - pad * 2);
+      const y0 = ((b.level - 0.5) / levelCount) * h;
+      const hit = offsets.find(([dx, dy]) => free(x0 + dx, y0 + dy));
+      const spot = hit ? [x0 + hit[0], y0 + hit[1]] : [x0, y0];
+      placed.push(spot);
+      at.set(i, spot);
+    });
+
+    const calm = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (const seg of segmentsOf(currentState, porter.route)) {
+      const a = at.get(seg.i);
+      const b = at.get(seg.to);
+      if (!a || !b || Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) continue;
+      const d = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+      const g = svgEl(routeSvg, 'g', 'route-line');
+      g.style.setProperty('--seg', seg.color);
+      svgEl(g, 'path', 'route-line-under').setAttribute('d', d);
+      svgEl(g, 'path', 'route-line-over').setAttribute('d', d);
+      chevrons(g, d, Math.hypot(b[0] - a[0], b[1] - a[1]), calm);
+    }
+    porter.route.forEach((stop, i) => {
+      const p = at.get(i);
+      if (!p) return;
+      const g = svgEl(routeSvg, 'g', `minimap-stop route-${stop.action}`);
+      g.setAttribute('transform', `translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`);
+      svgEl(g, 'circle').setAttribute('r', '5.5');
+      const t = svgEl(g, 'text');
+      t.setAttribute('y', '3');
+      t.textContent = String(i + 1);
+    });
   }
 
   function syncStatus(currentState, currentCtx) {
@@ -214,6 +299,43 @@ function div(parent, className) {
   d.className = className;
   parent.appendChild(d);
   return d;
+}
+
+/**
+ * Chevrons riding a path in its direction, evenly spaced and all moving at one
+ * speed however long the leg. With reduced motion they stand still, spread
+ * along the path, which still says which way it runs.
+ */
+function chevrons(parent, d, length, calm) {
+  const count = Math.max(1, Math.round(length / CHEVRON_EVERY));
+  const dur = Math.max(0.5, length / FLOW_SPEED);
+  for (let k = 0; k < count; k++) {
+    const c = svgEl(parent, 'path', 'route-chevron');
+    c.setAttribute('d', 'M-3 -3L2 0L-3 3z');
+    const motion = svgEl(c, 'animateMotion');
+    motion.setAttribute('path', d);
+    motion.setAttribute('rotate', 'auto');
+    motion.setAttribute('calcMode', 'linear');
+    if (calm) {
+      // Frozen at its share of the way along.
+      const at = ((k + 0.5) / count).toFixed(3);
+      motion.setAttribute('keyPoints', `${at};${at}`);
+      motion.setAttribute('keyTimes', '0;1');
+      motion.setAttribute('dur', '1s');
+      motion.setAttribute('fill', 'freeze');
+    } else {
+      motion.setAttribute('dur', `${dur.toFixed(2)}s`);
+      motion.setAttribute('begin', `${(-(k / count) * dur).toFixed(2)}s`);
+      motion.setAttribute('repeatCount', 'indefinite');
+    }
+  }
+}
+
+function svgEl(parent, tag, className = '') {
+  const node = document.createElementNS(SVG_NS, tag);
+  if (className) node.setAttribute('class', className);
+  parent.appendChild(node);
+  return node;
 }
 
 function pct(fraction) {

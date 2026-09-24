@@ -1,19 +1,31 @@
 /**
  * routeEditor.js
- * A porter's route, as a list of stops the player edits in place. While it is
- * open, clicking a building in the shaft adds that building as the next stop,
- * with a sensible guess at what to do there: pick up what it makes (the good
- * it holds most of), or drop off what it lacks most. Every stop's action,
- * good and quantity can then be changed, and stops moved or removed.
+ * A porter's route, as a column of stops the player edits in place.
+ *
+ * Each stop names its building by floor and then by building on that floor,
+ * and says what to do there: the action, the good and the quantity. Between
+ * the stops runs the route itself — a line in the colour that leg has in the
+ * shaft and on the minimap (routePlan.segmentColor), flowing the way the
+ * porter walks it — and on every gap, and above the first stop, a + that
+ * opens a new stop in that place. The last line runs back to the first stop,
+ * because a route is a loop.
+ *
+ * While the editor is open, a click on a building in the shaft offers to add
+ * it at a position of the player's choosing (view/routeLayer.js).
  *
  * Every change goes through player:setRoute, so a route is part of the
- * command log like everything else.
+ * command log like everything else. A stop being picked — a floor chosen but
+ * no building yet — is the editor's own, and reaches the route only once it
+ * names a building.
  */
 
 import * as selection from '../selection.js';
 import { el, button } from '../components/dom.js';
-import { amount, capacity, inputsOf, outputsOf, isStorage } from '../../systems/resources/stores.js';
+import { amount, nameOf } from '../../systems/resources/stores.js';
 import { porterStatus, load } from '../../systems/haulage/haulageMethods.js';
+import {
+  segmentColor, insertStop, removeStop, stopFor, goodsFor, builtLevels, buildingsOn,
+} from '../routePlan.js';
 
 export function mount(host, state, ctx, dispatch, workerId) {
   host.replaceChildren();
@@ -23,50 +35,111 @@ export function mount(host, state, ctx, dispatch, workerId) {
   const head = el('div', 'build-head');
   head.append(el('h2', '', `Route · ${who?.name ?? 'porter'}`), button('Done', 'Finish editing the route', () => selection.editRoute(null), 'text-button'));
   const status = el('div', 'inspect-status');
-  const hint = el('div', 'meter-label', 'Click a building in the Shaft to add it as the next stop.');
+  const hint = el('div', 'meter-label', 'Click a building in the Shaft to add it, or + to add a stop in that place.');
   const list = el('ol', 'route-list');
   const clearAll = button('Clear route', 'Remove every stop', () => setStops([]), 'text-button danger');
   host.append(head, status, hint, list, clearAll);
 
   let signature = null;
+  /**
+   * A stop being picked: `insert` a new one before `index`, or re-point the
+   * stop at `index` to a building on `level`.
+   */
+  let draft = null;
 
   function setStops(stops) {
     dispatch({ type: 'player:setRoute', workerId, stops });
+    draft = null;
     signature = null;
   }
 
-  // A click on a building while editing adds a stop rather than inspecting it.
-  const unsubscribe = selection.subscribe(({ instanceId, editing }) => {
-    if (editing !== workerId || !instanceId) return;
-    const current = porter();
-    if (!current) return;
-    const building = state.buildings.find((b) => b.instanceId === instanceId);
-    const stop = building && guessStop(state, ctx, building, current.route);
-    if (stop) setStops([...current.route, stop]);
-  });
+  function setDraft(next) {
+    draft = next;
+    signature = null;
+  }
 
   function rows() {
     const current = porter();
     list.replaceChildren();
     if (!current) return;
-    current.route.forEach((stop, i) => list.appendChild(row(current, stop, i)));
-    if (current.route.length === 0) list.appendChild(el('li', 'meter-label', 'No stops: this porter waits at the station.'));
+    const route = current.route;
+    const next = current.stop % Math.max(1, route.length);
+
+    list.appendChild(gap(null, 0));
+    route.forEach((stop, i) => {
+      if (draft?.insert && draft.index === i) list.appendChild(draftRow(current));
+      list.appendChild(row(current, stop, i, i === next));
+      const last = i === route.length - 1;
+      list.appendChild(gap(route.length > 1 ? segmentColor(i) : null, i + 1, last && route.length > 1 ? 'back to stop 1' : ''));
+    });
+    if (draft?.insert && draft.index >= route.length) list.append(draftRow(current));
+    if (route.length === 0 && !draft) list.appendChild(el('li', 'meter-label', 'No stops: this porter waits at the station.'));
   }
 
-  function row(current, stop, i) {
-    const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
-    const def = building && ctx.catalog.buildings.byId[building.buildingId];
-    const item = el('li', 'route-stop');
-    if (i === current.stop % Math.max(1, current.route.length)) item.classList.add('next');
+  /** The line between two stops, and the + that opens a stop in that gap. */
+  function gap(color, index, note = '') {
+    const item = el('li', 'route-gap');
+    if (color) {
+      const flow = el('span', 'route-flow');
+      flow.dataset.part = 'flow';
+      flow.style.setProperty('--seg', color);
+      item.appendChild(flow);
+    }
+    item.appendChild(button('+', `Add a stop at position ${index + 1}`, () => setDraft({ insert: true, index, level: null }), 'route-add'));
+    if (note) item.appendChild(el('span', 'meter-label route-back', note));
+    return item;
+  }
 
-    const where = el('span', 'route-where', building ? `L${building.level} ${def.name}` : '(gone)');
+  /** A new stop, before it has a building: floor first, then which building. */
+  function draftRow(current) {
+    const item = el('li', 'route-stop route-draft');
+    const num = el('span', 'route-num');
+    num.append(el('span', 'route-n', String(draft.index + 1)), button('✕', 'Cancel this stop', () => setDraft(null), 'route-remove'));
+    const pick = placePicker(draft.level, null, (level) => {
+      const here = buildingsOn(state, level);
+      if (here.length === 1) setStops(insertStop(current.route, draft.index, stopFor(state, ctx, here[0], current.route)));
+      else setDraft({ ...draft, level });
+    }, (building) => setStops(insertStop(current.route, draft.index, stopFor(state, ctx, building, current.route))));
+    item.append(num, pick, el('span', 'meter-label route-held', 'Choose a floor, then a building.'));
+    return item;
+  }
+
+  function row(current, stop, i, isNext) {
+    const building = state.buildings.find((b) => b.instanceId === stop.instanceId);
+    const item = el('li', 'route-stop');
+    item.classList.toggle('next', isNext);
+    if (current.route.length > 1) item.style.setProperty('--seg', segmentColor(i));
+
+    const num = el('span', 'route-num');
+    num.append(el('span', `route-n route-${stop.action}`, String(i + 1)), button('✕', `Remove stop ${i + 1}`, () => setStops(removeStop(current.route, i)), 'route-remove'));
+
+    // Re-pointing a stop at another building keeps what it does there when
+    // that building deals in the same good, and guesses afresh when not.
+    const repoint = (target) => {
+      const keep = goodsFor(ctx, target).includes(stop.goodId);
+      const next = keep ? { ...stop, instanceId: target.instanceId } : stopFor(state, ctx, target, current.route);
+      const stops = [...current.route];
+      stops[i] = next;
+      setStops(stops);
+    };
+    const editingHere = draft && !draft.insert && draft.index === i;
+    const level = editingHere ? draft.level : building?.level ?? null;
+    const pick = placePicker(level, editingHere ? null : building, (lvl) => {
+      if (lvl === building?.level) return setDraft(null);
+      const here = buildingsOn(state, lvl);
+      if (here.length === 1) repoint(here[0]);
+      else setDraft({ insert: false, index: i, level: lvl });
+    }, repoint);
+
     const action = el('select', 'inspect-select');
     action.append(new Option('pick up', 'pickup'), new Option('drop off', 'dropoff'));
     action.value = stop.action;
+    action.setAttribute('aria-label', 'Action');
 
     const good = el('select', 'inspect-select');
-    for (const id of goodsFor(ctx, building, def, stop.goodId)) good.appendChild(new Option(id, id));
+    for (const id of goodsFor(ctx, building, stop.goodId)) good.appendChild(new Option(nameOf(ctx, id).toLowerCase(), id));
     good.value = stop.goodId;
+    good.setAttribute('aria-label', 'Good');
 
     const qty = el('input', 'route-qty');
     qty.type = 'text';
@@ -94,15 +167,47 @@ export function mount(host, state, ctx, dispatch, workerId) {
       setStops(stops);
     };
     const controls = el('span', 'route-controls');
-    controls.append(
-      button('▲', 'Move stop earlier', () => move(-1)),
-      button('▼', 'Move stop later', () => move(1)),
-      button('✕', 'Remove stop', () => setStops(current.route.filter((_, k) => k !== i))),
-    );
+    controls.append(button('▲', 'Move stop earlier', () => move(-1)), button('▼', 'Move stop later', () => move(1)));
 
-    const held = building ? ` · here ${Math.round(amount(building, stop.goodId))}` : '';
-    item.append(where, controls, action, good, qty, el('span', 'meter-label route-held', held));
+    const what = el('span', 'route-what');
+    what.append(action, good, qty);
+    const held = building ? `here ${Math.round(amount(building, stop.goodId))}` : 'this building is gone';
+    item.append(num, pick, controls, what, el('span', 'meter-label route-held', held));
     return item;
+  }
+
+  /**
+   * Floor, then building on that floor. `building` is the one chosen, or
+   * null while the floor is picked but the building is not.
+   */
+  function placePicker(level, building, onLevel, onBuilding) {
+    const pick = el('span', 'route-pick');
+    const floor = el('select', 'inspect-select route-floor');
+    floor.setAttribute('aria-label', 'Floor');
+    if (level === null) floor.appendChild(new Option('Floor…', ''));
+    for (const l of builtLevels(state)) floor.appendChild(new Option(`L${l}`, String(l)));
+    floor.value = level === null ? '' : String(level);
+    floor.addEventListener('change', () => { if (floor.value) onLevel(Number(floor.value)); });
+
+    const room = el('select', 'inspect-select route-room');
+    room.setAttribute('aria-label', 'Building');
+    const here = level === null ? [] : buildingsOn(state, level);
+    if (!building) room.appendChild(new Option(level === null ? '—' : 'Building…', ''));
+    const named = new Map();
+    for (const b of here) {
+      const name = ctx.catalog.buildings.byId[b.buildingId]?.name ?? b.buildingId;
+      const n = (named.get(name) ?? 0) + 1;
+      named.set(name, n);
+      room.appendChild(new Option(n > 1 ? `${name} ${n}` : name, b.instanceId));
+    }
+    room.disabled = here.length === 0;
+    room.value = building?.instanceId ?? '';
+    room.addEventListener('change', () => {
+      const target = state.buildings.find((b) => b.instanceId === room.value);
+      if (target && target !== building) onBuilding(target);
+    });
+    pick.append(floor, room);
+    return pick;
   }
 
   return {
@@ -113,16 +218,16 @@ export function mount(host, state, ctx, dispatch, workerId) {
         list.replaceChildren();
         return;
       }
-      const key = JSON.stringify([current.route, current.stop % Math.max(1, current.route.length), state.buildings.length]);
+      // A select the player has open would close under a rebuild, so the list
+      // is rebuilt only when what it shows has changed.
+      const key = JSON.stringify([current.route, current.stop % Math.max(1, current.route.length), state.buildings.length, draft]);
       if (key !== signature) {
         signature = key;
         rows();
       }
       status.textContent = describe(state, ctx, current);
     },
-    destroy() {
-      unsubscribe();
-    },
+    destroy() {},
   };
 }
 
@@ -139,46 +244,4 @@ export function describe(state, ctx, porter) {
     case 'idle': return `Waiting at the station — no route${hands}`;
     default: return `At level ${porter.level}, stop ${porter.stop + 1} of ${porter.route.length}${hands} · load ${Math.round(load(porter))}/${ctx.config.haulage.porterCapacity}`;
   }
-}
-
-/**
- * The stop a click on a building most likely means. A building with goods to
- * collect: pick up the one it holds most of. Otherwise one that needs goods:
- * drop off the one it is shortest of. A depot or storehouse: drop off what the
- * route already picks up elsewhere, or else pick up what it holds most of.
- */
-function guessStop(state, ctx, building, route) {
-  const def = ctx.catalog.buildings.byId[building.buildingId];
-  const base = { instanceId: building.instanceId, qty: 'all' };
-  const most = (ids) => [...ids].sort((a, b) => amount(building, b) - amount(building, a))[0];
-
-  if (isStorage(def)) {
-    const carried = route.filter((s) => s.action === 'pickup' && s.instanceId !== building.instanceId).map((s) => s.goodId);
-    if (carried.length) return { ...base, action: 'dropoff', goodId: carried.at(-1) };
-    const held = Object.keys(building.stock ?? {});
-    return held.length ? { ...base, action: 'pickup', goodId: most(held) } : null;
-  }
-  const outputs = outputsOf(def, ctx);
-  if (outputs.size) return { ...base, action: 'pickup', goodId: most(outputs) };
-  const inputs = [...inputsOf(def, ctx), ...Object.keys(def.storeCapacity ?? {})];
-  if (inputs.length) {
-    const fill = (id) => amount(building, id) / Math.max(1e-9, capacity(building, def, ctx, id));
-    return { ...base, action: 'dropoff', goodId: inputs.sort((a, b) => fill(a) - fill(b))[0] };
-  }
-  return null;
-}
-
-/** Goods worth offering for a stop at this building. */
-function goodsFor(ctx, building, def, current) {
-  const ids = new Set([current]);
-  if (def) {
-    if (isStorage(def)) {
-      for (const id of [...ctx.catalog.stocks.ids, ...ctx.catalog.components.ids, ...ctx.catalog.minerals.ids]) ids.add(id);
-    } else {
-      for (const id of inputsOf(def, ctx)) ids.add(id);
-      for (const id of outputsOf(def, ctx)) ids.add(id);
-      for (const id of Object.keys(def.storeCapacity ?? {})) ids.add(id);
-    }
-  }
-  return [...ids];
 }
