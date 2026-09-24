@@ -12,6 +12,10 @@
  *   <id>-<state>-fg            optional cut of the parts of that render a
  *                              person stands behind, drawn over the figures
  *
+ * An `-on` entry with `"foregroundFor": "held"` has a cut only the people
+ * held in the room stand behind — cell bars. Everyone else, the guards and
+ * the porters passing through, walks in front of them (shaftView's layers).
+ *
  * Presentation only. Nothing here reads or writes simulation state, and the
  * flicker draws from visualJitter rather than an RNG stream, for the same
  * reason interpolate.js gives: decoration must never shift the economy.
@@ -47,8 +51,8 @@ export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
       dim: href(byId.get(`${id}-dim`)),
       anim: anim ? { href: href(anim), ...anim.animation } : null,
       fg: foreground(byId, id),
+      fgFor: entry.foregroundFor ?? 'all',
       floorY: entry.floorY,
-      seats: entry.seats ?? null,
     });
   }
 
@@ -67,6 +71,10 @@ export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
     }
     figures.set(role.role, clips);
   }
+  // How each room stages its people: posts, work clips, desks, stools (crew.js).
+  const stages = new Map(
+    Object.entries(manifest.figures?.rooms ?? {}).filter(([id]) => !id.startsWith('_')),
+  );
 
   // Goods icons, by catalogue id (16 x 16): what the porters' bubbles show.
   const icons = new Map((manifest.icons ?? []).map((i) => [i.id, { href: ASSET_ROOT + i.path, w: i.w ?? 16, h: i.h ?? 16 }]));
@@ -74,6 +82,7 @@ export async function loadRoomArt(manifestPath = `${ASSET_ROOT}manifest.json`) {
   return {
     rooms,
     figures,
+    stages,
     icons,
     stairwell: stair
       ? { href: href(stair), fg: href(stairFg), signPlate: stair.signPlate, ...stair.tile }

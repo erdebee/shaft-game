@@ -250,29 +250,6 @@ export function roomRect(instance, buildings) {
 }
 
 /**
- * Where ambient worker figures stand inside a building's rectangle.
- * Positions are derived from the index, not randomised, so a worker does not
- * teleport between frames and the same building always looks the same.
- */
-export function workerSlot(rect, index, count, floorY = FLOOR_Y, seats = null) {
-  const margin = 14; // clear of the slanted side walls
-  const usable = rect.width - margin * 2;
-  const spacing = count <= 1 ? 0 : usable / (count - 1);
-  return {
-    // A room that names seats puts its people on them instead of spreading
-    // them evenly: the auditorium's stools are drawn in the render at fixed
-    // columns, and a speaker two pixels off the lectern reads as a mistake.
-    // Everywhere else there is nothing to line up with, so the spread stands.
-    x: seats?.length
-      ? rect.x + seats[index % seats.length]
-      : Math.round(rect.x + margin + (count <= 1 ? usable / 2 : index * spacing)),
-    // On the room's own floor line (manifest floorY), not floating in it —
-    // figures are anchored at the feet, so this is the y their feet sit at.
-    y: rect.y + floorY,
-  };
-}
-
-/**
  * Stable pseudo-random value in 0..1 from a string key. Used only for visual
  * variation — an ambient animation's phase offset, say.
  *

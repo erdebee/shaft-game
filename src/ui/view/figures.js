@@ -13,8 +13,11 @@
  */
 
 import {
-  tripPosition, stairWalk, roomRect, workerSlot, visualJitter, simTime, levelY, floorX, FLOOR_Y,
+  tripPosition, stairWalk, roomRect, visualJitter, simTime, levelY, floorX, FLOOR_Y,
 } from './interpolate.js';
+import {
+  laneOf, wanderAt, workClip, fillOrder, audienceSize, pupilCount,
+} from './crew.js';
 import { isLevelVisible } from './viewport.js';
 import { SPEEDS } from '../../core/clock.js';
 
@@ -84,12 +87,18 @@ function show(node) {
   node.style.display = '';
 }
 
-export function createFigureLayer(parent) {
+/**
+ * `held` is the group for people held in a cell. It sits under the cage bars
+ * while this layer sits over them (shaftView), so a figure drawn there is
+ * behind the bars and every other figure is in front. Nobody is held in the
+ * simulation yet; when detainees exist, they are drawn into it.
+ */
+export function createFigureLayer(parent, held = null) {
   const group = document.createElementNS(SVG_NS, 'g');
   group.setAttribute('class', 'figure-layer');
   parent.appendChild(group);
 
-  return { group, porters: [], workers: [], bubbles: [], parent };
+  return { group, held, porters: [], workers: [], bubbles: [], parent };
 }
 
 // ---- Pixel figures ---------------------------------------------------------
@@ -178,7 +187,7 @@ function placeSprite(entry, clip, x, y, facing) {
 export function renderFigures(layer, state, ctx, tick, alpha, viewport, art) {
   const rooms = roomPlaces(state, ctx, art);
   renderSpritePorters(layer, state, tick, alpha, viewport, art, rooms);
-  renderSpriteWorkers(layer, state, ctx, viewport, art);
+  renderSpriteWorkers(layer, state, ctx, simTime(tick, alpha), viewport, art);
 }
 
 /**
@@ -379,34 +388,80 @@ function renderBubbles(layer, bubbles, icons) {
 }
 
 /**
- * Workers inside buildings: the roles the catalogue says work there, standing
- * on the room's own floor row and playing their work loop if they have one.
+ * Everyone inside the buildings. A room that is dark or broken is empty.
+ *
+ * The crew are the roles the catalogue says work there. A room's staging in
+ * the manifest (`figures.rooms`, see crew.js) can pin its first people to
+ * posts, pick the clip a role works with there, and cap how many are drawn;
+ * everyone not on a post works in their own lane and now and then walks to
+ * another spot in it. The school adds its pupils and the auditorium its
+ * audience, both while the room has staff to run it.
  */
-function renderSpriteWorkers(layer, state, ctx, viewport, art) {
+function renderSpriteWorkers(layer, state, ctx, t, viewport, art) {
   const placements = [];
+  const stages = art.stages ?? new Map();
 
   for (const instance of state.buildings) {
     if (!isLevelVisible(viewport, instance.level)) continue;
-    if (instance.powered === false) continue; // dark building, nobody working
+    if (instance.powered === false || instance.brokenDown === true) continue; // nobody working
 
     const def = ctx.catalog.buildings.byId[instance.buildingId];
     if (!def) continue;
 
     // A porter station shows the porters waiting in it, not a crew.
-    const count = def.porterStation ? idlePorters(state, instance) : workerFigureCount(instance, def);
+    const stage = def.porterStation ? null : stages.get(def.id);
+    let count = def.porterStation ? idlePorters(state, instance) : workerFigureCount(instance, def);
+    if (stage?.crew != null) count = Math.min(count, stage.crew);
     if (count === 0) continue;
 
     const roles = def.porterStation ? ['porter'] : rolesForBuilding(def, ctx);
     const rect = roomRect(instance, state.buildings);
-    const room = art.rooms.get(def.id);
-    const floorY = room?.floorY;
+    const floor = rect.y + (art.rooms.get(def.id)?.floorY ?? FLOOR_Y);
+    const posts = stage?.posts ?? [];
+    const key = instance.instanceId;
 
+    // Posts take the first people; the lanes are shared by the rest.
+    const wanderers = Math.max(0, count - posts.length);
     for (let i = 0; i < count; i++) {
-      const role = roles[i % roles.length];
+      const post = posts[i];
+      const role = post?.role ?? roles[i % roles.length];
       const clips = art.figures.get(role);
       if (!clips) continue;
-      const spot = workerSlot(rect, i, count, floorY, room?.seats);
-      placements.push({ ...spot, clips, key: `${instance.instanceId}:${i}`, role });
+      const working = post?.clip ? clips[post.clip] ?? workClip(clips, stage, role) : workClip(clips, stage, role);
+      const who = `${key}:${i}`;
+
+      if (post) {
+        placements.push({ clip: working, x: rect.x + post.x, y: floor, facing: post.facing ?? 1, key: who, role });
+        continue;
+      }
+      const lane = laneOf(rect, i - posts.length, wanderers);
+      const at = wanderAt(who, lane, t);
+      const clip = at.walking ? clips.walk ?? working : working;
+      placements.push({ clip, x: at.x, y: floor, facing: at.facing, key: who, role });
+    }
+
+    if (stage?.pupils) {
+      const { role, clip, at, seatY } = stage.pupils;
+      const clips = art.figures.get(role);
+      const n = pupilCount(at.length, state.population.cohorts?.children);
+      for (const seat of clips?.[clip] ? fillOrder(`${key}:desk`, at, n) : []) {
+        placements.push({ clip: clips[clip], x: rect.x + seat.x, y: seatY != null ? rect.y + seatY : floor, facing: 1, key: `${key}:p${seat.i}`, role });
+      }
+    }
+
+    if (stage?.audience) {
+      const { roles: seated, clip, at, seatY } = stage.audience;
+      const n = audienceSize(at.length, state.population.labour);
+      for (const seat of fillOrder(`${key}:seat`, at, n)) {
+        const who = `${key}:a${seat.i}`;
+        const role = seated[Math.floor(visualJitter(`${who}:role`) * seated.length)];
+        const clips = art.figures.get(role);
+        if (!clips?.[clip]) continue;
+        // Seen from behind, a mirrored back is just another back: flip half
+        // of them so a full row is not one person repeated.
+        const facing = visualJitter(`${who}:face`) < 0.5 ? -1 : 1;
+        placements.push({ clip: clips[clip], x: rect.x + seat.x, y: rect.y + seatY, facing, key: who, role });
+      }
     }
   }
 
@@ -415,11 +470,10 @@ function renderSpriteWorkers(layer, state, ctx, viewport, art) {
   placements.forEach((spot, i) => {
     const entry = pool[i];
     show(entry.node);
-    const clip = spot.clips.work ?? spot.clips.idle ?? spot.clips.still;
-    setClip(entry, clip, spot.role);
-    // Facing and loop phase are hashed from the placement, so a room reads as
-    // a group of people rather than a rank, and never twitches between frames.
-    placeSprite(entry, clip, spot.x, spot.y, visualJitter(`${spot.key}:face`) < 0.4 ? -1 : 1);
+    setClip(entry, spot.clip, spot.role);
+    placeSprite(entry, spot.clip, spot.x, spot.y, spot.facing);
+    // Loop phase is hashed from the person, so a room's workers are never in
+    // lockstep and a figure never twitches between frames.
     entry.strip.style.setProperty('--phase', `${(visualJitter(spot.key) * -2.4).toFixed(2)}s`);
   });
 

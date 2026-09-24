@@ -1,15 +1,17 @@
 /**
  * Shaft geometry: rooms land on whole sprite pixels, one seam apart, and the
- * default zoom is a whole number (asset-production-spec §1, §2).
+ * default zoom fills the host's width but never drops below 1x.
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  roomRect, stairAt, stairWalk, tripPosition, workerSlot,
+  roomRect, stairAt, stairWalk, tripPosition,
   SHAFT_WIDTH, SEAM, BUILD_X, LEVEL_HEIGHT, STAIR_WIDTH, FLOOR_Y, levelFloorY, floorX, STAIRHEAD_X,
 } from '../../src/ui/view/interpolate.js';
-import { createViewport, fitToElement, zoom, viewBoxOf } from '../../src/ui/view/viewport.js';
+import {
+  createViewport, fitToElement, zoom, viewBoxOf, panX, overflowsX, MAX_SCALE,
+} from '../../src/ui/view/viewport.js';
 
 const room = (instanceId, level, slot, slots) => ({ instanceId, level, slot, slots });
 
@@ -30,22 +32,44 @@ test('a full level of 1-slot rooms fills the shaft exactly', () => {
   assert.equal(last.x + last.width, SHAFT_WIDTH);
 });
 
-test('default zoom is the largest whole scale that fits, and zoom steps stay whole', () => {
+test('default zoom fills the width, at whatever scale that takes', () => {
   const vp = createViewport({ levelCount: 42 });
   fitToElement(vp, { width: 1600, height: 900 });
-  assert.equal(vp.scale, 2);
-  assert.equal(vp.viewWidth, 800);
-
-  zoom(vp, 1);
-  assert.equal(vp.scale, 3);
-  const [x, y] = viewBoxOf(vp).split(' ').map(Number);
-  assert.ok(Number.isInteger(x) && Number.isInteger(y), 'viewBox origin on whole pixels');
+  assert.equal(vp.scale, 1600 / SHAFT_WIDTH);
+  assert.equal(vp.viewWidth, SHAFT_WIDTH);
+  assert.equal(overflowsX(vp), false);
 });
 
-test('a host narrower than the shaft fits its width rather than cropping', () => {
+test('zoom is continuous, stops at the fitted width going out, and pans on screen pixels', () => {
+  const vp = createViewport({ levelCount: 42 });
+  fitToElement(vp, { width: 1600, height: 900 });
+  const fitted = vp.scale;
+
+  zoom(vp, 1.3);
+  assert.ok(Math.abs(vp.scale - fitted * 1.3) < 1e-9);
+  assert.ok(overflowsX(vp), 'zoomed past the width, the shaft scrolls sideways');
+
+  zoom(vp, 0.1);
+  assert.equal(vp.scale, fitted, 'never narrower than the host');
+
+  zoom(vp, 100);
+  assert.equal(vp.scale, MAX_SCALE);
+
+  vp.topLevel = 3.37;
+  const [x, y] = viewBoxOf(vp).split(' ').map(Number);
+  assert.ok(Number.isInteger(Math.round(x * vp.scale * 1e6) / 1e6), 'x origin on a whole screen pixel');
+  assert.ok(Number.isInteger(Math.round(y * vp.scale * 1e6) / 1e6), 'y origin on a whole screen pixel');
+});
+
+test('a host narrower than the shaft stays at 1x and scrolls sideways', () => {
   const vp = createViewport({ levelCount: 42 });
   fitToElement(vp, { width: 500, height: 700 });
-  assert.equal(vp.viewWidth, SHAFT_WIDTH);
+  assert.equal(vp.scale, 1);
+  assert.equal(vp.viewWidth, 500);
+  assert.ok(overflowsX(vp));
+
+  panX(vp, 10_000);
+  assert.equal(vp.left, SHAFT_WIDTH - 500, 'stops at the far wall');
 });
 
 /* ---- The stair (asset-production-spec §2.6 is the foreground; this is the walk) ---- */
@@ -87,23 +111,6 @@ test('a walker arriving on a level is on that level\'s floor row', () => {
   const end = tripPosition(trip, 4, 0);
   assert.equal(end.y, levelFloorY(6));
   assert.equal(end.y % LEVEL_HEIGHT, FLOOR_Y);
-});
-
-test('a room that names seats stands its people on them, and everything else spreads', () => {
-  const rect = { x: 130, y: 0, width: 384, height: 96 };
-  const seats = [355, 40, 74];
-
-  // Seat 0 is the lectern: the speaker is on it exactly, not near it.
-  assert.equal(workerSlot(rect, 0, 3, 93, seats).x, rect.x + 355);
-  assert.equal(workerSlot(rect, 1, 3, 93, seats).x, rect.x + 40);
-  // More people than seats fill the room again rather than falling off the end.
-  assert.equal(workerSlot(rect, 4, 5, 93, seats).x, rect.x + 40);
-  // The seat table does not move anybody vertically.
-  assert.equal(workerSlot(rect, 0, 3, 93, seats).y, rect.y + 93);
-
-  // A room without one is untouched: two people, one at each end of the span.
-  const spread = [0, 1].map((i) => workerSlot(rect, i, 2, 93).x);
-  assert.deepEqual(spread, [rect.x + 14, rect.x + rect.width - 14]);
 });
 
 test('a porter walks the floor to the stairhead, takes the stair, and walks the floor to the room', () => {

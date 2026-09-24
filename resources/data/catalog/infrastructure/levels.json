@@ -4,6 +4,7 @@
   "depthBands": [
     {
       "id": "shallow",
+      "short": "UP",
       "name": "Upper levels",
       "fromLevel": 1,
       "toLevel": 12,
@@ -11,6 +12,7 @@
     },
     {
       "id": "mid",
+      "short": "MID",
       "name": "Mid levels",
       "fromLevel": 13,
       "toLevel": 28,
@@ -18,6 +20,7 @@
     },
     {
       "id": "deep",
+      "short": "LOW",
       "name": "Lower levels",
       "fromLevel": 29,
       "toLevel": null,

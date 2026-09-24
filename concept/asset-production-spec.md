@@ -28,7 +28,7 @@ Figures            48 × 48 canvas      adult ≈ 36 px, child ≈ 24 px, soles 
 Floor line         row 88 of a room    top of the floor band; figures stand on it (§2.1)
 Animated rooms     full-room strip      frames side by side, played over the `on` state (§2.5)
 
-Zoom               integer only — 1× · 2× · 3×, nearest-neighbour
+Zoom               continuous, fills the view's width, never below 1× — nearest-neighbour
 ```
 
 **Pixel size is 1×.** A sprite's pixels are screen pixels at 1× zoom: a 192×96
@@ -60,15 +60,20 @@ slot is the simulation's own quantum. A `deep` machine room is a 3-slot build an
 is generated as one 192×96 composition rather than three separate sprites — the
 density comes from composing the whole bay at once.
 
-### Why integer zoom
+### Why continuous zoom (and why not below 1×)
 
-Pixel art scaled by a fractional factor shimmers: pixel rows land on different
-numbers of screen pixels and the image crawls as it pans. The viewport therefore
-snaps to whole multiples, and the visible level count is *derived* from the chosen
-scale rather than the scale being derived from the element height.
+The shaft fills the width of the view at whatever factor that takes, and the
+player can zoom in from there; the visible level count is *derived* from that
+scale. Below 1× it stops — a sprite drawn smaller than its own pixels loses
+the detail it was authored for — and a view narrower than the shaft at 1×
+scrolls sideways instead.
 
-At 2× on a 1080p window that is about 7 levels visible, which matches the current
-default.
+> **Changed from integer-only (2026-09-24).** Snapping to 1×·2×·3× left a
+> wide band of empty rock or cropped rooms at most window sizes. A fractional
+> factor gives some sprite pixels one screen pixel more than their neighbours;
+> nearest-neighbour keeps them hard-edged, and the viewBox origin is snapped to
+> whole *screen* pixels (viewport.js) so the uneven rows stay put while
+> panning rather than crawling. The unevenness itself is the accepted cost.
 
 ---
 
@@ -694,10 +699,82 @@ miner's trousers went green mid-swing). `probe/v24/shaft/fixpalette.py` snaps
 every off-palette pixel to the nearest colour in the reference frame, which
 repairs the drift without touching the drawing.
 
+**Work loops, settled 2026-09-24 in `probe/v32`.** Every staffed role now has one:
+v3 custom action, east, 8 frames plus the reference (1 generation each), with the
+action worded as motion only and the tool named ("turning a wrench on a machine
+at waist height in front of him"). About two in three takes were usable first
+time. Two failure modes: the generator **draws the object the action implies**
+into the sprite (the medic's first take brought a bed and a patient along, and
+cropped them at the frame edge), and **a long tool grows** (a ladle became a
+paddle). Re-roll with the object left out of the wording. `probe/v32/build.py`
+holds each take to its first frame's palette, drops lone specks, measures it and
+installs it; `probe/v32/pull.py` fetches every `work-*` and `sit-*` animation from
+the character zips.
+
+**Work faces the work.** A worker at a machine, a tank, a counter or a bed is
+drawn from behind (the character's north rotation), so the player looks over their
+shoulder at what they are doing: engineer, pump tech, kitchen hand, medic, the
+grower in hydroponics and the vats, the miner at the smelter, recycler and salvage
+post. Walking stays in profile. From behind the hands are hidden by the body, so
+the wording has to put the motion where it shows: arms at shoulder height, elbows
+out, a tool raised above the shoulder. The first round of back views, worded like
+the side views, barely moved.
+
+**Trim to the working part.** Every take starts from the standing reference pose,
+so a loop that plays all of it drops the arms to the hips and lifts them again
+each cycle, which reads as a twitch. `build.py` takes an optional frame range per
+take and keeps only the frames where the hands are at the work (the grower keeps
+frames 3–6 of 9). Two more failure modes, from behind in particular: the model
+**draws the furniture in** (a shelf of bottles round the medic, a machine panel
+round the engineer) and **holds a stray prop** (the kitchen hand's first stirring
+take looked like she held a cloth). Settled: engineer turns a spanner at shoulder
+height, kitchen hand stirs with the right elbow, medic writes on a clipboard.
+
+The miner's reference sprite holds a pickaxe, and every take from it starts and
+ends with one, even mid-shovel. Pin the loop instead: `custom_start_frame` and
+`end_frame` set to the same key frame, so the take closes on it. The shovel loop
+starts from a crouched frame of an earlier take that already holds the shovel; the
+sorting loop starts from his back rotation with the pickaxe erased by hand. A
+pinned take can come back on a non-square canvas, which `pull.py` pads square.
+
+A role can carry more than one loop, named by what it does: the grower's `back`
+beside the side-on watering `work` (the grove), the miner's `shovel` and `sort`
+beside the pickaxe `work` (the dig face). Which one a room plays is the room's
+staging (below).
+
+**Seated poses are built, not animated.** v3 `sitting down` from the south or
+north rotation, keep the frame where the figure is seated, and add a second frame
+with everything above the shoulders' base dropped 1 px: a breath. `child/seated`
+faces the room from behind a desk; `resident/seated-back` faces away, for the
+auditorium. The generator drew a stool under the resident; it is cut at the seat
+row so the room's own stool, in the foreground cut, takes its place, and that row
+is the clip's `feet`. `animate_image` gave a nicer idle loop but its frames only
+come back as inline previews, with nothing to download.
+
+#### Staging a room
+
+`figures.rooms` in the manifest says how a room puts its people, because the
+numbers line up with pixels in its render (`src/ui/view/crew.js`):
+
+```
+clips      role -> loop played there          smelter: miner -> shovel
+posts      the first people stand here        school: the teacher at x 112, facing west
+crew       cap on staff drawn                 school, auditorium: 1
+pupils     role, clip, desk columns           school: 3 children, seated
+audience   roles, clip, stool columns, seatY  auditorium: 14 stools at y 83
+```
+
+Staff who are not on a post each get a lane of the room and work in it, and every
+22–44 s of sim time walk to another spot in the lane. The spot sequence is a
+hash of the figure and the spell number, so it is a function of time and nothing
+is stored. Pupils fill the desks while there are children; the audience is the
+stools times the idle share of the labour pool (`population.labour`), so a fully
+employed shaft leaves the speaker talking to an empty hall.
+
 #### In the manifest
 
 `resources/assets/manifest.json` holds a `figures` block: one entry per role, with
-a `still` and any of `walk`, `idle`, `work`. Each clip is a horizontal strip of
+a `still` and any of `walk`, `idle`, `work`, plus named loops and poses. Each clip is a horizontal strip of
 square cells and carries its own measurements, so the renderer never inspects the
 image:
 
@@ -747,7 +824,10 @@ light (principles §6).
 
 #### Still open
 
-- **Work loops** beyond the miner's swing: carry, tend, read, repair.
+- **Audience variety.** One seated resident, mirrored at random. The second
+  resident and the elder did not sit convincingly from behind (probe/v32 raw/).
+- **Constables and investigators** still idle; the security post and holding
+  cells have no work loop yet.
 - **Directions.** Only east is generated; a figure that should face the viewer
   (a portrait, a cutscene) needs its other rotations fetched, which cost nothing
   extra — they are already generated.

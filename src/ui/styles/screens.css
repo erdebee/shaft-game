@@ -106,6 +106,7 @@ body {
 /* The shaft is a column, so it is centred in whatever space it gets and the
    surrounding rock is the page itself. */
 .shaft-host {
+  position: relative; /* the scrollbars and minimap sit over it (shaftScroll.js) */
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -128,11 +129,120 @@ body {
 }
 .shaft:active { cursor: grabbing; }
 
-/* Pixel art: never smooth it. The viewport keeps the zoom a whole number
-   (viewport.js), so nearest-neighbour lands every sprite pixel on screen
-   pixels. */
+/* Pixel art: never smooth it. The zoom is continuous (viewport.js), so at a
+   fractional scale some sprite pixels get one screen pixel more than their
+   neighbours — nearest-neighbour keeps them hard-edged either way, and the
+   viewBox origin is snapped to screen pixels so they do not crawl. */
 .shaft image { image-rendering: optimizeSpeed; image-rendering: pixelated; }
 .shaft rect, .shaft .level-number { shape-rendering: crispEdges; }
+
+/* ---- Shaft scrollbars and minimap (shaftScroll.js) ----
+   Chrome over the shaft, not part of it. The bars are always there; the
+   minimap appears while the view moves and fades once it stops. */
+
+.shaft-scroll {
+  position: absolute;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  touch-action: none;
+  z-index: 2;
+}
+.shaft-scroll-y { top: 0; right: 0; bottom: 0; width: 10px; border-left: var(--border); }
+.shaft-scroll-x { left: 0; right: 10px; bottom: 0; height: 10px; border-top: var(--border); display: none; }
+.shaft-host.overflow-x .shaft-scroll-x { display: block; }
+.shaft-host.overflow-x .shaft-scroll-y { bottom: 10px; }
+
+.shaft-thumb {
+  position: absolute;
+  background: var(--steel-lit);
+  border: 1px solid var(--steel-pale);
+  cursor: grab;
+}
+.shaft-scroll-y .shaft-thumb { left: 1px; right: 1px; min-height: 16px; }
+.shaft-scroll-x .shaft-thumb { top: 1px; bottom: 1px; min-width: 16px; }
+.shaft-scroll:hover .shaft-thumb,
+.shaft-thumb:active { background: var(--steel-bright); border-color: var(--steel-highlight); }
+
+.shaft-minimap {
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  right: calc(10px + var(--space-2));
+  width: 5.5rem;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  border: var(--border);
+  font: 10px/1 var(--font-mono);
+  color: var(--ink-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease-out;
+  cursor: pointer;
+  touch-action: none;
+  z-index: 2;
+}
+.shaft-host.scrolling .shaft-minimap { opacity: 1; pointer-events: auto; transition-duration: 80ms; }
+.shaft-host.overflow-x .shaft-minimap { bottom: calc(10px + var(--space-2)); }
+
+/* The depth bands run down the left edge, each labelled at its top. */
+.minimap-bands { position: absolute; top: 0; bottom: 0; left: 0; width: 1.6rem; }
+.minimap-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid var(--panel-edge);
+  border-right: 2px solid var(--steel-pale);
+}
+.minimap-band[data-band="shallow"] { border-right-color: var(--brass); }
+.minimap-band[data-band="mid"]     { border-right-color: var(--steel-paint-lit); }
+.minimap-band[data-band="deep"]    { border-right-color: var(--rust); }
+.minimap-band:last-child { border-bottom: none; }
+.minimap-band-label {
+  padding: 3px 2px 0;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.minimap-rows {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1.6rem;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+}
+.minimap-row {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-left: 4px;
+  overflow: hidden;
+}
+.minimap-num { flex: 0 0 1.4em; text-align: right; font-variant-numeric: tabular-nums; }
+.shaft-minimap.dense .minimap-row:not(.major) .minimap-num { visibility: hidden; }
+.minimap-row.stalled .minimap-num { color: var(--readout-critical); }
+.minimap-row.warning .minimap-num { color: var(--readout-warn); }
+
+.minimap-dots { display: flex; gap: 2px; }
+.minimap-dot { width: 5px; height: 5px; border-radius: 50%; }
+.minimap-dot.stalled { background: var(--readout-critical); }
+.minimap-dot.warning { background: var(--readout-warn); }
+
+/* The part of the shaft on screen. */
+.minimap-window {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 1px solid var(--sign-ink);
+  background: color-mix(in srgb, var(--sign-ink) 8%, transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shaft-minimap { transition: none; }
+}
 
 .level-rock       { fill: var(--rock-cut); }
 .level-floor      { fill: var(--slab); }
@@ -163,10 +273,11 @@ body {
 .building.flicker:not(.unpowered):not(.broken) .room-dim { display: inline; }
 
 /* The foreground layer draws after the figures, so a person can stand behind
-   a stair rail, cell bars, a canteen table or a school desk. It is a copy of
-   pixels the room render already contains, and it is never a hit target — a
-   click on the bars is a click on the room behind them. */
-.layer-foreground { pointer-events: none; }
+   a stair rail, a canteen table or a school desk. Cell bars are in the cages
+   layer instead, under the figures and over only the held ones. Both are
+   copies of pixels the room render already contains, and never a hit target —
+   a click on the bars is a click on the room behind them. */
+.layer-foreground, .layer-cages, .layer-held { pointer-events: none; }
 /* Pattern-filled by JS. Without this an unfilled rect would default to black
    and bury the stairwell. */
 .stairwell-fg { fill: none; }

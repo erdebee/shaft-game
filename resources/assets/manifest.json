@@ -657,7 +657,8 @@
    "path": "sprites/buildings/holding-cells-on.png",
    "preloadGroup": "lazy",
    "chapter": null,
-   "floorY": 86
+   "floorY": 86,
+   "foregroundFor": "held"
   },
   {
    "id": "holding-cells-on-fg",
@@ -741,7 +742,8 @@
    "path": "sprites/buildings/shaft-exit-on.png",
    "preloadGroup": "lazy",
    "chapter": null,
-   "floorY": 88
+   "floorY": 88,
+   "foregroundFor": "held"
   },
   {
    "id": "shaft-exit-on-fg",
@@ -1654,7 +1656,7 @@
   }
  },
  "figures": {
-  "_note": "One entry per role (catalog ids from population/jobs.json, plus councillor, resident, elder and child). Every clip is a horizontal strip of `frames` square cells: `still` is one cell, `walk` and `idle` are template loops, `work` is the role's task loop. `feet` is the lowest opaque row and `cx` the body's centre column, so the renderer stands a figure on a room's floorY without measuring the image (asset-production-spec 4.2).",
+  "_note": "One entry per role (catalog ids from population/jobs.json, plus councillor, resident, elder and child). Every clip is a horizontal strip of `frames` square cells: `still` is one cell, `walk` and `idle` are template loops, `work` is the role's task loop, and a role can carry more task loops by name (the miner's `shovel`, the engineer's `wrench`) and poses (`seated`, `seated-back`). `feet` is the floor line \u2014 one below the lowest opaque row, or for a seated pose the row the seat meets \u2014 and `cx` the body's centre column, so the renderer stands a figure on a room's floorY without measuring the image (asset-production-spec 4.2). `rooms` stages the people in a room whose render asks for it (src/ui/view/crew.js): `clips` picks the loop a role works with there, `posts` pins the first people to a spot (x from the room's left edge, facing 1 east / -1 west, optionally a role and clip of its own), `crew` caps how many staff are drawn, `pupils` and `audience` seat people at desk and stool columns. x values line up with pixels in the render, which is why they live beside it.",
   "roles": [
    {
     "id": "figure-engineer",
@@ -1690,6 +1692,16 @@
       "cx": 20,
       "height": 38,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/engineer-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 7,
+      "feet": 47,
+      "cx": 27,
+      "height": 37,
+      "frameMs": 150
      }
     }
    },
@@ -1774,6 +1786,16 @@
       "cx": 28,
       "height": 39,
       "frameMs": 180
+     },
+     "present": {
+      "path": "sprites/figures/councillor-present.png",
+      "w": 56,
+      "h": 56,
+      "frames": 9,
+      "feet": 47,
+      "cx": 28,
+      "height": 38,
+      "frameMs": 160
      }
     }
    },
@@ -1821,6 +1843,26 @@
       "cx": 25,
       "height": 37,
       "frameMs": 95
+     },
+     "shovel": {
+      "path": "sprites/figures/miner-shovel.png",
+      "w": 52,
+      "h": 52,
+      "frames": 11,
+      "feet": 43,
+      "cx": 26,
+      "height": 31,
+      "frameMs": 110
+     },
+     "sort": {
+      "path": "sprites/figures/miner-sort.png",
+      "w": 56,
+      "h": 56,
+      "frames": 9,
+      "feet": 45,
+      "cx": 28,
+      "height": 35,
+      "frameMs": 140
      }
     }
    },
@@ -1858,6 +1900,26 @@
       "cx": 20,
       "height": 38,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/grower-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 9,
+      "feet": 47,
+      "cx": 27,
+      "height": 38,
+      "frameMs": 150
+     },
+     "back": {
+      "path": "sprites/figures/grower-back.png",
+      "w": 56,
+      "h": 56,
+      "frames": 4,
+      "feet": 47,
+      "cx": 28,
+      "height": 39,
+      "frameMs": 220
      }
     }
    },
@@ -1895,6 +1957,16 @@
       "cx": 20,
       "height": 38,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/kitchen-hand-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 5,
+      "feet": 47,
+      "cx": 28,
+      "height": 38,
+      "frameMs": 150
      }
     }
    },
@@ -1932,6 +2004,16 @@
       "cx": 20,
       "height": 38,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/pump-tech-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 9,
+      "feet": 47,
+      "cx": 28,
+      "height": 39,
+      "frameMs": 140
      }
     }
    },
@@ -1969,6 +2051,16 @@
       "cx": 21,
       "height": 36,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/air-tech-work.png",
+      "w": 52,
+      "h": 52,
+      "frames": 9,
+      "feet": 44,
+      "cx": 28,
+      "height": 36,
+      "frameMs": 180
      }
     }
    },
@@ -2006,6 +2098,16 @@
       "cx": 20,
       "height": 37,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/medic-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 6,
+      "feet": 47,
+      "cx": 28,
+      "height": 37,
+      "frameMs": 200
      }
     }
    },
@@ -2043,6 +2145,16 @@
       "cx": 20,
       "height": 36,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/teacher-work.png",
+      "w": 52,
+      "h": 52,
+      "frames": 9,
+      "feet": 44,
+      "cx": 26,
+      "height": 36,
+      "frameMs": 160
      }
     }
    },
@@ -2117,6 +2229,16 @@
       "cx": 20,
       "height": 38,
       "frameMs": 260
+     },
+     "work": {
+      "path": "sprites/figures/archivist-work.png",
+      "w": 56,
+      "h": 56,
+      "frames": 9,
+      "feet": 47,
+      "cx": 30,
+      "height": 39,
+      "frameMs": 220
      }
     }
    },
@@ -2191,6 +2313,16 @@
       "cx": 20,
       "height": 36,
       "frameMs": 260
+     },
+     "seated-back": {
+      "path": "sprites/figures/resident-seated-back.png",
+      "w": 52,
+      "h": 52,
+      "frames": 2,
+      "feet": 34,
+      "cx": 26,
+      "height": 27,
+      "frameMs": 750
      }
     }
    },
@@ -2265,9 +2397,100 @@
       "cx": 17,
       "height": 29,
       "frameMs": 260
+     },
+     "seated": {
+      "path": "sprites/figures/child-seated.png",
+      "w": 44,
+      "h": 44,
+      "frames": 2,
+      "feet": 37,
+      "cx": 24,
+      "height": 27,
+      "frameMs": 650
      }
     }
    }
-  ]
+  ],
+  "rooms": {
+   "_note": "Everyone not on a post works in a lane of the room and now and then walks to another spot in it. seatY is the row a seated group's feet (or seat) land on, from the room's top; without it they stand on the room's floorY.",
+   "hydroponics-bay": {
+    "clips": {
+     "grower": "back"
+    }
+   },
+   "protein-vats": {
+    "clips": {
+     "grower": "back"
+    }
+   },
+   "smelter": {
+    "clips": {
+     "miner": "shovel"
+    }
+   },
+   "recycler": {
+    "clips": {
+     "miner": "sort"
+    }
+   },
+   "salvage-post": {
+    "clips": {
+     "miner": "sort"
+    }
+   },
+   "school": {
+    "crew": 1,
+    "posts": [
+     {
+      "x": 112,
+      "facing": -1
+     }
+    ],
+    "pupils": {
+     "role": "child",
+     "clip": "seated",
+     "at": [
+      41,
+      67,
+      92
+     ],
+     "seatY": 81
+    }
+   },
+   "auditorium": {
+    "crew": 1,
+    "posts": [
+     {
+      "x": 355,
+      "facing": -1,
+      "role": "councillor",
+      "clip": "present"
+     }
+    ],
+    "audience": {
+     "roles": [
+      "resident"
+     ],
+     "clip": "seated-back",
+     "at": [
+      33,
+      56,
+      79,
+      102,
+      125,
+      148,
+      171,
+      194,
+      217,
+      240,
+      263,
+      286,
+      309,
+      332
+     ],
+     "seatY": 83
+    }
+   }
+  }
  }
 }

@@ -4,7 +4,7 @@
  *
  * Depth is the primary spatial idea, so this is a column, not a grid. All
  * geometry is in shaft units — 1:1 with sprite pixels — and mapped to the
- * screen by viewBox at a whole-number zoom (viewport.js).
+ * screen by viewBox at a zoom that fills the host's width (viewport.js).
  *
  * Rooms are the approved pixel renders from the asset manifest (roomArt.js),
  * one <image> per state with CSS choosing which shows. A building with no
@@ -25,6 +25,7 @@ import {
 } from './interpolate.js';
 import { imageEdge, seamImage, roomState, createFlicker } from './roomArt.js';
 import { createFigureLayer, renderFigures } from './figures.js';
+import { createShaftScroll } from './shaftScroll.js';
 import { shortages, inputsOf, nameOf } from '../../systems/resources/stores.js';
 import { SPEEDS } from '../../core/clock.js';
 import * as selection from '../selection.js';
@@ -77,13 +78,18 @@ export function createShaftView(root, state, ctx, art) {
   };
 
   const viewport = createViewport({ levelCount: state.levels.length });
-  const figureLayer = createFigureLayer(svg);
 
-  // The first of the two layers that draw AFTER the figures: the stair rail a
-  // porter holds,
-  // the bars a prisoner stands behind, the table a cook stands at. It is a
-  // copy of pixels the room render already contains (tools/cutForeground.mjs),
-  // so a room without a cut simply has nothing here.
+  // Cell bars sit BETWEEN the figures: over the people held behind them, under
+  // everyone else. A guard or a porter walking along the Exit's floor passes
+  // in front of the cage, so its cut cannot share the layer the stair rail is
+  // in, which is over every figure.
+  layers.held = group(svg, 'layer-held');
+  layers.cages = group(svg, 'layer-cages');
+  const figureLayer = createFigureLayer(svg, layers.held);
+
+  // Drawn AFTER the figures: the stair rail a porter holds, the table a cook
+  // stands at. It is a copy of pixels the room render already contains
+  // (tools/cutForeground.mjs), so a room without a cut simply has nothing here.
   layers.foreground = group(svg, 'layer-foreground');
 
   // Above even that: the shortage popovers. They are the one thing in this
@@ -111,6 +117,7 @@ export function createShaftView(root, state, ctx, art) {
   buildStructure(view, state, ctx);
   attachInteraction(view, state, ctx);
   root.appendChild(svg);
+  view.scroll = createShaftScroll(root, view, state, ctx);
 
   // Fit to the HOST, never to the svg: the svg's own width now derives from
   // the viewBox's intrinsic aspect ratio, so measuring it here would feed the
@@ -146,6 +153,7 @@ export function createShaftView(root, state, ctx, art) {
     syncSeams(view, currentState);
     syncLevels(view, currentState);
     renderFigures(view.figureLayer, currentState, currentCtx, tick, alpha, view.viewport, view.art);
+    view.scroll.update(currentState, currentCtx, tick);
   }
 }
 
@@ -531,7 +539,7 @@ function createBuildingNode(view, ctx, instance) {
     g.appendChild(block);
   }
 
-  if (art?.fg) g.foreground = foregroundNode(view, def, art.fg, width);
+  if (art?.fg) g.foreground = foregroundNode(view, def, art.fg, width, art.fgFor === 'held' ? view.layers.cages : view.layers.foreground);
 
   // Real DOM nodes mean accessibility and hit-testing come free — one of the
   // reasons this view is SVG rather than canvas.
@@ -637,16 +645,17 @@ function popoverNode(view, width) {
 /**
  * A room's foreground: the same four state renders, cut down to what stands in
  * front of a person. It is a sibling of the building rather than a child
- * because it belongs to a different layer — the one after the figures — and
- * syncBuildings moves and classes the two together.
+ * because it belongs to a different layer — after the figures, or for cell
+ * bars after only the held ones — and syncBuildings moves and classes the two
+ * together.
  */
-function foregroundNode(view, def, fg, width) {
+function foregroundNode(view, def, fg, width, layer) {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('class', `building building-foreground zone-${def.zone}`);
   for (const state of ['on', 'off', 'broken', 'dim']) {
     if (fg[state]) image(g, `room room-${state}`, fg[state], 0, 0, width, ROOM_HEIGHT);
   }
-  view.layers.foreground.appendChild(g);
+  layer.appendChild(g);
   return g;
 }
 
@@ -733,13 +742,14 @@ function attachInteraction(view, state, ctx) {
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
     if (event.ctrlKey || event.metaKey) {
-      // One whole zoom step per wheel gesture burst; the viewport keeps the
-      // chosen scale across resizes.
-      const now = performance.now();
-      if (now - (view.lastZoom ?? 0) < 180) return;
-      view.lastZoom = now;
-      const anchor = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect());
-      zoom(view.viewport, event.deltaY > 0 ? -1 : 1, anchor);
+      // Continuous: a trackpad pinch arrives as a stream of small ctrl-wheel
+      // deltas, a mouse wheel as a few large ones, and both should feel the
+      // same. The viewport keeps the zoom across resizes.
+      const anchor = levelAtClientY(view.viewport, event.clientY, svg.getBoundingClientRect(), true);
+      zoom(view.viewport, Math.exp(-event.deltaY * 0.01), anchor);
+    } else if (event.shiftKey && !event.deltaX) {
+      // A mouse has no sideways wheel; shift turns the one it has.
+      panX(view.viewport, event.deltaY / view.viewport.scale);
     } else {
       pan(view.viewport, event.deltaY * 0.02);
       panX(view.viewport, event.deltaX / view.viewport.scale);

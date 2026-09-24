@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Silo Music Lab</title>
+<!--
+  Prototype of a generative ambient score built on the Web Audio API alone.
+  Nothing here is wired to the game yet: the "Game state" sliders stand in for
+  what the simulation would feed the music at runtime.
+-->
+<style>
+  :root { --bg:#1b1a22; --panel:#25232e; --ink:#ece6d8; --muted:#a39d91; --accent:#e0a458; --accent2:#7fb7a4; --line:#3a3745; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif; }
+  header { padding:14px 16px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; border-bottom:1px solid var(--line); }
+  h1 { font-size:18px; margin:0; font-weight:600; letter-spacing:.02em; }
+  .now { font-variant-numeric:tabular-nums; color:var(--muted); }
+  .now b { color:var(--ink); }
+  button { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:6px 11px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); color:#1b1a22; border-color:var(--accent); font-weight:600; min-width:84px; }
+  .bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); }
+  .bar span { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-right:4px; }
+  .bar .gap { width:14px; }
+  canvas { display:block; width:100%; height:70px; background:#15141a; }
+  main { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:12px; padding:14px 16px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  section h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); margin:0 0 2px; }
+  section p.hint { margin:0 0 8px; color:var(--muted); font-size:12px; }
+  .row { display:grid; grid-template-columns:104px 1fr 42px; align-items:center; gap:8px; margin:5px 0; }
+  .row label { color:var(--muted); display:flex; gap:6px; align-items:center; }
+  .row output { text-align:right; font-variant-numeric:tabular-nums; font-size:12px; }
+  .row small { grid-column:1 / -1; color:#7d776d; font-size:11px; margin:-4px 0 2px; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  select { background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:4px; padding:3px; font:inherit; width:100%; }
+  details { padding:0 16px 20px; color:var(--muted); }
+  pre { background:#15141a; padding:10px; border-radius:6px; overflow:auto; font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <button class="primary" id="play">▶ Play</button>
+  <h1>Silo Music Lab</h1>
+  <div class="now" id="now">stopped</div>
+</header>
+<div class="bar" id="presets"><span>Presets</span></div>
+<div class="bar" id="events"><span>Game events</span></div>
+<canvas id="scope"></canvas>
+<main id="controls"></main>
+<details><summary>Current settings (JSON)</summary><pre id="json"></pre></details>
+
+<script>
+'use strict';
+
+// ---------------------------------------------------------------- settings
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+const SCALES = {
+  'Lydian — wonder':      [0, 2, 4, 6, 7, 9, 11],
+  'Ionian — bright':      [0, 2, 4, 5, 7, 9, 11],
+  'Mixolydian — warm':    [0, 2, 4, 5, 7, 9, 10],
+  'Dorian — wistful':     [0, 2, 3, 5, 7, 9, 10],
+  'Aeolian — melancholy': [0, 2, 3, 5, 7, 8, 10],
+  'Phrygian — uneasy':    [0, 1, 3, 5, 7, 8, 10],
+};
+const LAYERS = ['pad', 'bass', 'keys', 'arp', 'texture', 'machine', 'stings'];
+
+const S = {
+  depth: 0.3, activity: 0.4, tension: 0,
+  root: 2, scale: 'Dorian — wistful', bpm: 72, chordBars: 2, sevenths: 0.6,
+  warmth: 0.55, space: 0.5, wobble: 0.3, drive: 0.2, timbre: 0.35,
+  vol: { pad: 0.7, bass: 0.6, keys: 0.6, arp: 0.45, texture: 0.5, machine: 0.5, stings: 0.7, master: 0.8 },
+  mute: {},
+};
+
+const PRESETS = {
+  'Surface morning': { depth: 0.08, activity: 0.35, tension: 0, root: 2, scale: 'Lydian — wonder', bpm: 80, chordBars: 2, warmth: 0.75, space: 0.45, wobble: 0.25, drive: 0.15, timbre: 0.3 },
+  'Busy works':      { depth: 0.3, activity: 0.85, tension: 0.1, root: 7, scale: 'Mixolydian — warm', bpm: 92, chordBars: 1, warmth: 0.6, space: 0.35, wobble: 0.2, drive: 0.3, timbre: 0.2 },
+  'Night shift':     { depth: 0.45, activity: 0.22, tension: 0.1, root: 4, scale: 'Dorian — wistful', bpm: 64, chordBars: 2, warmth: 0.4, space: 0.6, wobble: 0.55, drive: 0.4, timbre: 0.45 },
+  'Deep shaft':      { depth: 0.9, activity: 0.2, tension: 0.3, root: 9, scale: 'Aeolian — melancholy', bpm: 58, chordBars: 4, warmth: 0.35, space: 0.85, wobble: 0.3, drive: 0.2, timbre: 0.8 },
+  'Shortage':        { depth: 0.5, activity: 0.6, tension: 0.8, root: 11, scale: 'Phrygian — uneasy', bpm: 76, chordBars: 2, warmth: 0.45, space: 0.55, wobble: 0.35, drive: 0.35, timbre: 0.6 },
+};
+
+const pct = v => Math.round(v * 100) + '%';
+const CONTROLS = [
+  { title: 'Game state', hint: 'What the simulation would drive at runtime. Try dragging these while it plays.', items: [
+    { key: 'depth', label: 'Depth', min: 0, max: 1, step: 0.01, note: 'darker filters, lower register, more echo, more drips, lower wind' },
+    { key: 'activity', label: 'Activity', min: 0, max: 1, step: 0.01, note: 'melody density, arpeggio, machinery hum and clanks' },
+    { key: 'tension', label: 'Tension', min: 0, max: 1, step: 0.01, note: 'pedal bass, clashing notes, diminished chords, beating pads' },
+  ] },
+  { title: 'Music', hint: 'Key and mode changes land on the next chord.', items: [
+    { key: 'root', label: 'Key', type: 'select', num: true, options: NOTE_NAMES.map((n, i) => [i, n]) },
+    { key: 'scale', label: 'Mode', type: 'select', options: Object.keys(SCALES).map(k => [k, k]) },
+    { key: 'bpm', label: 'Tempo', min: 40, max: 120, step: 1, fmt: v => v },
+    { key: 'chordBars', label: 'Bars / chord', min: 1, max: 4, step: 1, fmt: v => v },
+    { key: 'sevenths', label: '7th chords', min: 0, max: 1, step: 0.01 },
+  ] },
+  { title: 'Sound', hint: 'The overall colour: from warm and lo-fi to clean.', items: [
+    { key: 'warmth', label: 'Brightness', min: 0, max: 1, step: 0.01 },
+    { key: 'space', label: 'Space', min: 0, max: 1, step: 0.01, note: 'reverb and echo' },
+    { key: 'wobble', label: 'Tape wobble', min: 0, max: 1, step: 0.01, note: 'slow pitch drift and flutter' },
+    { key: 'drive', label: 'Lo-fi drive', min: 0, max: 1, step: 0.01, note: 'saturation and hiss' },
+    { key: 'timbre', label: 'Keys timbre', min: 0, max: 1, step: 0.01, note: 'electric piano ← → glass bell' },
+  ] },
+  { title: 'Mix', hint: 'Untick a layer to mute it.', items: [
+    ...LAYERS.map(l => ({ key: 'vol.' + l, label: l[0].toUpperCase() + l.slice(1), mute: l, min: 0, max: 1, step: 0.01 })),
+    { key: 'vol.master', label: 'Master', min: 0, max: 1, step: 0.01 },
+  ] },
+];
+
+// ---------------------------------------------------------------- helpers
+
+const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const mtof = m => 440 * 2 ** ((m - 69) / 12);
+const mod = (n, m) => ((n % m) + m) % m;
+const getPath = k => k.split('.').reduce((o, p) => o[p], S);
+function setPath(k, v) { const ps = k.split('.'); const last = ps.pop(); ps.reduce((o, p) => o[p], S)[last] = v; }
+
+// ---------------------------------------------------------------- audio graph
+
+let ctx = null;
+const G = {};
+const bus = {};
+
+function gain(v = 1) { const g = ctx.createGain(); g.gain.value = v; return g; }
+function filter(type, freq, q = 0.7) { const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; return f; }
+
+function makeImpulse(seconds) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-6.9 * i / len);
+  }
+  return buf;
+}
+
+function makePinkNoise(seconds) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) {
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.099046;
+    b1 = 0.963 * b1 + w * 0.2965164;
+    b2 = 0.57 * b2 + w * 1.0526913;
+    d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.11;
+  }
+  return buf;
+}
+
+function driveCurve(amount) {
+  const k = 1 + amount * 10, n = 1024, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(k * x) / Math.tanh(k); }
+  return c;
+}
+
+function initAudio() {
+  ctx = new AudioContext();
+
+  // master chain: mix -> saturation -> compressor -> master -> analyser -> out
+  G.mix = gain();
+  G.shaper = ctx.createWaveShaper(); G.shaper.oversample = '2x';
+  G.postDrive = gain();
+  G.comp = ctx.createDynamicsCompressor();
+  G.comp.threshold.value = -18; G.comp.ratio.value = 3; G.comp.attack.value = 0.02; G.comp.release.value = 0.3;
+  G.master = gain(S.vol.master);
+  G.analyser = ctx.createAnalyser(); G.analyser.fftSize = 2048; G.analyser.smoothingTimeConstant = 0.85;
+  G.mix.connect(G.shaper).connect(G.postDrive).connect(G.comp).connect(G.master).connect(G.analyser).connect(ctx.destination);
+
+  // reverb
+  G.revIn = gain();
+  G.revTone = filter('lowpass', 6000);
+  G.rev = ctx.createConvolver(); G.rev.buffer = makeImpulse(5);
+  G.revOut = gain(0.5);
+  G.revIn.connect(G.revTone).connect(G.rev).connect(G.revOut).connect(G.mix);
+
+  // tape-style echo, dotted eighth
+  G.dlyIn = gain();
+  G.dly = ctx.createDelay(3);
+  G.dlyTone = filter('lowpass', 2200);
+  G.dlyFb = gain(0.4);
+  G.dlyOut = gain(0.5);
+  G.dlyIn.connect(G.dly).connect(G.dlyTone).connect(G.dlyFb).connect(G.dly);
+  G.dlyTone.connect(G.dlyOut).connect(G.mix);
+  G.dlyOut.connect(G.revIn);
+
+  // one bus per layer, each with its own reverb and echo sends
+  const revSend = { pad: 0.5, bass: 0.1, keys: 0.6, arp: 0.4, texture: 0.8, machine: 0.3, stings: 0.6 };
+  const dlySend = { keys: 0.25, arp: 0.45, stings: 0.3 };
+  for (const l of LAYERS) {
+    bus[l] = gain(0);
+    bus[l].connect(G.mix);
+    bus[l].connect(gain(revSend[l])).connect(G.revIn);
+    if (dlySend[l]) bus[l].connect(gain(dlySend[l])).connect(G.dlyIn);
+  }
+
+  // wobble: a slow wow plus a fast flutter, summed into one node that drives oscillator detune
+  G.wobble = gain(1);
+  G.wow = ctx.createOscillator(); G.wow.frequency.value = 0.45;
+  G.wowDepth = gain(0);
+  G.flutter = ctx.createOscillator(); G.flutter.frequency.value = 6.3;
+  G.flutterDepth = gain(0);
+  G.wow.connect(G.wowDepth).connect(G.wobble);
+  G.flutter.connect(G.flutterDepth).connect(G.wobble);
+  G.wow.start(); G.flutter.start();
+
+  // texture: wind (band-passed pink noise with a slow sweep) and tape hiss
+  G.noise = makePinkNoise(6);
+  G.wind = ctx.createBufferSource(); G.wind.buffer = G.noise; G.wind.loop = true;
+  G.windBp = filter('bandpass', 600, 1.4);
+  G.windGain = gain(0.2);
+  G.windLfo = ctx.createOscillator(); G.windLfo.frequency.value = 0.06;
+  G.windLfoDepth = gain(250);
+  G.windLfo.connect(G.windLfoDepth).connect(G.windBp.frequency);
+  G.wind.connect(G.windBp).connect(G.windGain).connect(bus.texture);
+  G.hiss = ctx.createBufferSource(); G.hiss.buffer = G.noise; G.hiss.loop = true;
+  G.hissGain = gain(0);
+  G.hiss.connect(filter('highpass', 5000)).connect(G.hissGain).connect(bus.texture);
+  G.wind.start(0, 0); G.hiss.start(0, 3); G.windLfo.start();
+
+  // machinery: a hum tuned to the key, so the silo drones in tune with the score
+  G.hum1 = ctx.createOscillator(); G.hum1.type = 'sawtooth';
+  G.hum2 = ctx.createOscillator(); G.hum2.type = 'sawtooth';
+  G.humLp = filter('lowpass', 160);
+  G.humGain = gain(0);
+  G.hum1.connect(G.humLp); G.hum2.connect(gain(0.4)).connect(G.humLp);
+  G.humLp.connect(G.humGain).connect(bus.machine);
+  G.hum1.start(); G.hum2.start();
+
+  G.lastDrive = -1;
+  applyParams(true);
+}
+
+// Push the current settings onto every continuous parameter, smoothly.
+function applyParams(instant = false) {
+  if (!ctx) return;
+  const now = ctx.currentTime, tc = instant ? 0.001 : 0.15;
+  const to = (param, v, t = tc) => param.setTargetAtTime(v, now, t);
+
+  for (const l of LAYERS) to(bus[l].gain, S.mute[l] ? 0 : S.vol[l]);
+  to(G.master.gain, S.vol.master);
+
+  to(G.revOut.gain, S.space * (0.6 + S.depth * 0.9));
+  to(G.revTone.frequency, 2500 + (1 - S.depth) * 6000);
+  to(G.dly.delayTime, stepDur() * 3, 0.3);
+  to(G.dlyFb.gain, 0.2 + S.space * 0.4);
+  to(G.dlyOut.gain, 0.2 + S.space * 0.5);
+
+  to(G.wowDepth.gain, S.wobble * 22);
+  to(G.flutterDepth.gain, S.wobble * 4);
+
+  if (Math.abs(S.drive - G.lastDrive) > 0.02) { G.shaper.curve = driveCurve(S.drive); G.lastDrive = S.drive; }
+  to(G.postDrive.gain, 1 / (1 + S.drive * 1.3));
+  to(G.hissGain.gain, S.drive * 0.05 + S.wobble * 0.012);
+
+  const windCenter = 900 - S.depth * 650;
+  to(G.windBp.frequency, windCenter, 1);
+  to(G.windLfoDepth.gain, windCenter * 0.5, 1);
+  to(G.windGain.gain, 0.12 + S.depth * 0.45, 1);
+
+  const humHz = mtof(24 + S.root + (S.root > 6 ? 0 : 12));
+  to(G.hum1.frequency, humHz, 0.5);
+  to(G.hum2.frequency, humHz * 2 * 1.003, 0.5);
+  to(G.humLp.frequency, 110 + S.activity * 220);
+  to(G.humGain.gain, S.activity * 0.3, 0.6);
+}
+
+// ---------------------------------------------------------------- voices
+
+// Hook an oscillator's pitch to the wobble LFO, and let go of it when it ends.
+function wobbled(osc) {
+  G.wobble.connect(osc.detune);
+  osc.addEventListener('ended', () => { try { G.wobble.disconnect(osc.detune); } catch (e) {} });
+  return osc;
+}
+
+function padCutoff() { return (250 + S.warmth ** 1.5 * 3200) * (1 - S.depth * 0.55); }
+
+function playPad(midi, t, dur, level) {
+  const attack = Math.min(2.5, dur * 0.4), release = 2.5, end = t + dur + release;
+  const f = filter('lowpass', 100, 0.5 + S.tension * 5);
+  const cut = padCutoff();
+  f.frequency.setValueAtTime(cut * 0.4, t);
+  f.frequency.linearRampToValueAtTime(cut, t + attack);
+  f.frequency.linearRampToValueAtTime(cut * 0.5, end);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + attack);
+  g.gain.setValueAtTime(level, t + dur);
+  g.gain.linearRampToValueAtTime(0, end);
+  const p = ctx.createStereoPanner(); p.pan.value = rand(-0.5, 0.5);
+  f.connect(g).connect(p).connect(bus.pad);
+  const detune = 6 + S.tension * 16;
+  for (const d of [-detune, detune]) {
+    const o = wobbled(ctx.createOscillator());
+    o.type = 'sawtooth'; o.frequency.value = mtof(midi); o.detune.value = d;
+    o.connect(f); o.start(t); o.stop(end + 0.05);
+  }
+}
+
+function playBass(midi, t, dur, level) {
+  const release = 1.5, end = t + dur + release;
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.4);
+  g.gain.setValueAtTime(level, t + dur);
+  g.gain.linearRampToValueAtTime(0, end);
+  const f = filter('lowpass', 380 + S.warmth * 400 - S.depth * 150);
+  f.connect(g).connect(bus.bass);
+  const o1 = wobbled(ctx.createOscillator()); o1.frequency.value = mtof(midi);
+  const o2 = wobbled(ctx.createOscillator()); o2.type = 'triangle'; o2.frequency.value = mtof(midi + 12);
+  o1.connect(f); o2.connect(gain(0.3)).connect(f);
+  for (const o of [o1, o2]) { o.start(t); o.stop(end + 0.05); }
+}
+
+// Two-operator FM: ratio 1 with a small index reads as an electric piano, a high ratio as glass or a bell.
+function playKey(midi, t, level, target = bus.keys, timbre = S.timbre) {
+  const hz = mtof(midi);
+  const ratio = 1 + timbre * 2.5;
+  const decay = 1.4 + timbre * 2.4;
+  const car = wobbled(ctx.createOscillator()); car.frequency.value = hz;
+  const modO = ctx.createOscillator(); modO.frequency.value = hz * ratio;
+  const index = gain(0);
+  index.gain.setValueAtTime(hz * (1.2 + timbre * 3) * (0.6 + S.warmth * 0.8), t);
+  index.gain.exponentialRampToValueAtTime(hz * 0.04, t + decay * 0.4);
+  modO.connect(index).connect(car.frequency);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  const p = ctx.createStereoPanner(); p.pan.value = rand(-0.6, 0.6);
+  car.connect(g).connect(p).connect(target);
+  for (const o of [car, modO]) { o.start(t); o.stop(t + decay + 0.05); }
+}
+
+function playPluck(midi, t, level, pan) {
+  const o = wobbled(ctx.createOscillator()); o.type = 'triangle'; o.frequency.value = mtof(midi);
+  const f = filter('lowpass', 100, 2);
+  f.frequency.setValueAtTime(600 + S.warmth * 3500, t);
+  f.frequency.exponentialRampToValueAtTime(250, t + 0.25);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+  const p = ctx.createStereoPanner(); p.pan.value = pan;
+  o.connect(f).connect(g).connect(p).connect(bus.arp);
+  o.start(t); o.stop(t + 0.45);
+}
+
+function playDrip(t) {
+  const o = ctx.createOscillator();
+  const hz = rand(1100, 2300) * (1 - S.depth * 0.45);
+  o.frequency.setValueAtTime(hz, t);
+  o.frequency.exponentialRampToValueAtTime(hz * 0.55, t + 0.07);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.18, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  const p = ctx.createStereoPanner(); p.pan.value = rand(-0.9, 0.9);
+  o.connect(g).connect(p).connect(bus.texture);
+  o.start(t); o.stop(t + 0.2);
+}
+
+function playThump(t, level) {
+  const o = ctx.createOscillator();
+  o.frequency.setValueAtTime(95, t);
+  o.frequency.exponentialRampToValueAtTime(38, t + 0.22);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+  o.connect(g).connect(bus.machine);
+  o.start(t); o.stop(t + 0.4);
+}
+
+function playClank(t, level) {
+  const src = ctx.createBufferSource(); src.buffer = G.noise;
+  const f = filter('bandpass', rand(1400, 3600), 12);
+  const g = gain(0);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(level, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+  const p = ctx.createStereoPanner(); p.pan.value = rand(-0.7, 0.7);
+  src.connect(f).connect(g).connect(p).connect(bus.machine);
+  src.start(t, rand(0, 5), 0.2);
+}
+
+// ---------------------------------------------------------------- composer
+
+const M = { step: 0, next: 0, timer: null, chordDeg: 0, chordTones: [0, 2, 4], melody: 7, arpIdx: 0, first: true };
+
+// Where each chord (scale degree) likes to go next.
+const NEXT = { 0: [3, 5, 4, 1, 2], 1: [4, 6, 0], 2: [5, 3], 3: [0, 4, 1, 6], 4: [0, 5, 3], 5: [3, 1, 4, 2], 6: [0, 2, 5] };
+
+const scale = () => SCALES[S.scale];
+const stepDur = () => 60 / S.bpm / 4; // one sixteenth
+const lowRoot = () => S.root - (S.root > 6 ? 12 : 0);
+const keysBase = () => 60 + lowRoot() - (S.depth > 0.66 ? 12 : 0);
+
+function degMidi(deg, base) {
+  const sc = scale();
+  return base + Math.floor(deg / 7) * 12 + sc[mod(deg, 7)];
+}
+
+function isDiminished(deg) {
+  const sc = scale();
+  return mod(sc[mod(deg + 4, 7)] - sc[mod(deg, 7)], 12) === 6;
+}
+
+function nextChord() {
+  for (let tries = 0; tries < 10; tries++) {
+    const d = Math.random() < 0.12 ? 0 : pick(NEXT[M.chordDeg]);
+    if (!isDiminished(d) || Math.random() < S.tension) return d;
+  }
+  return 0;
+}
+
+function chordName(deg, seventh) {
+  const sc = scale();
+  const iv = n => mod(sc[mod(deg + n, 7)] - sc[mod(deg, 7)], 12);
+  const minor = iv(2) === 3, dim = iv(4) === 6;
+  let name = NOTE_NAMES[mod(S.root + sc[mod(deg, 7)], 12)] + (dim ? 'dim' : minor ? 'm' : '');
+  if (seventh) name += iv(6) === 11 ? 'maj7' : '7';
+  return name;
+}
+
+function newChord(t, dur) {
+  M.chordDeg = M.first ? 0 : nextChord();
+  M.first = false;
+  const d = M.chordDeg;
+  const seventh = Math.random() < S.sevenths;
+  M.chordTones = [d, d + 2, d + 4].concat(seventh ? [d + 6] : []);
+
+  // Close voicing: each tone lands in the octave nearest the middle of the pad register.
+  const centre = 55 + lowRoot() - S.depth * 7;
+  const padBase = 48 + lowRoot();
+  const notes = M.chordTones.map(deg => {
+    let m = degMidi(deg, padBase);
+    while (m - centre > 6) m -= 12;
+    while (centre - m > 6) m += 12;
+    return m;
+  });
+  if (Math.random() < S.tension * 0.8) notes.push(degMidi(d, padBase) + 13); // a flat-nine rub
+  for (const m of notes) playPad(m, t, dur, 0.055);
+
+  // Under tension the bass holds the tonic while the harmony moves: a pedal point.
+  const pedal = Math.random() < S.tension * 0.7;
+  let bass = degMidi(pedal ? 0 : d, 36 + lowRoot());
+  if (bass > 45) bass -= 12;
+  playBass(bass, t, dur, 0.32);
+
+  const label = `<b>${chordName(d, seventh)}</b>${pedal ? ' / ' + NOTE_NAMES[S.root] : ''} · ${S.scale.split(' ')[0]} · bar ${Math.floor(M.step / 16) + 1}`;
+  setTimeout(() => { if (ctx.state === 'running') document.getElementById('now').innerHTML = label; }, Math.max(0, (t - ctx.currentTime) * 1000));
+}
+
+function moveMelody(strong) {
+  M.melody += pick([-2, -1, -1, 0, 1, 1, 2, -3, 3]);
+  if (strong) {
+    // Land on the nearest chord tone on strong beats so the tune agrees with the harmony.
+    let best = M.melody, bestDist = 99;
+    for (const tone of M.chordTones) for (let o = -14; o <= 14; o += 7) {
+      const cand = mod(tone, 7) + Math.floor(M.melody / 7) * 7 + o;
+      if (Math.abs(cand - M.melody) < bestDist) { best = cand; bestDist = Math.abs(cand - M.melody); }
+    }
+    M.melody = best;
+  }
+  if (M.melody < 0) M.melody += 3;
+  if (M.melody > 11) M.melody -= 3;
+}
+
+function playStep(step, t) {
+  const sd = stepDur();
+  const chordLen = S.chordBars * 16;
+  const pos = step % 16;
+  const swing = step % 2 ? sd * 0.08 : 0;
+
+  if (step % chordLen === 0) newChord(t, chordLen * sd);
+
+  // melody on eighths
+  if (pos % 2 === 0) {
+    const strong = pos % 8 === 0;
+    const p = (0.06 + S.activity * 0.45) * (strong ? 1.4 : 0.7) * (1 - S.depth * 0.3);
+    if (Math.random() < p) {
+      moveMelody(strong);
+      let m = degMidi(M.melody, keysBase());
+      if (!strong && Math.random() < S.tension * 0.3) m += 1;
+      playKey(m, t + rand(0, 0.015), rand(0.1, 0.17));
+    }
+  }
+
+  // arpeggio thickens with activity: quarters, then eighths, then sixteenths
+  const dens = (S.activity - 0.3) / 0.7;
+  if (dens > 0 && (pos % 4 === 0 || (dens > 0.35 && pos % 2 === 0) || dens > 0.7)) {
+    const tones = M.chordTones.slice(0, 3);
+    const seq = [...tones, ...tones.map(x => x + 7)];
+    const upDown = [...seq, ...seq.slice(1, -1).reverse()];
+    const m = degMidi(upDown[M.arpIdx++ % upDown.length], keysBase() - 12);
+    playPluck(m, t + swing, 0.09 * (pos % 4 === 0 ? 1 : 0.7), (M.arpIdx % 2 ? -0.35 : 0.35));
+  }
+
+  // drips from the rock
+  if (Math.random() < 0.008 + S.depth * 0.045) playDrip(t + rand(0, sd));
+
+  // machinery
+  if (pos % 8 === 0 && Math.random() < S.activity * 0.9) playThump(t, 0.25 + S.activity * 0.35);
+  if (pos % 4 === 2 && Math.random() < S.activity * 0.45) playClank(t + swing, 0.2 + S.activity * 0.2);
+}
+
+function scheduler() {
+  while (M.next < ctx.currentTime + 0.2) {
+    playStep(M.step, M.next);
+    M.next += stepDur();
+    M.step++;
+  }
+}
+
+// ---------------------------------------------------------------- game-event stings
+
+const EVENTS = {
+  'New day': () => {
+    const t = ctx.currentTime + 0.03, base = 72 + lowRoot();
+    [0, 2, 4, 7, 9].forEach((deg, i) => playKey(degMidi(deg, base), t + i * 0.11, 0.16, bus.stings, 0.8));
+  },
+  'Room built': () => {
+    const t = ctx.currentTime + 0.03, base = 72 + lowRoot();
+    playKey(degMidi(4, base), t, 0.18, bus.stings, 0.55);
+    playKey(degMidi(7, base), t + 0.09, 0.18, bus.stings, 0.55);
+  },
+  'Shortage': () => {
+    const t = ctx.currentTime + 0.03, base = 48 + lowRoot();
+    playKey(base + 7, t, 0.25, bus.stings, 0.9);
+    playKey(base + 6, t + 0.22, 0.25, bus.stings, 0.9);
+    playKey(base + 1, t + 0.44, 0.22, bus.stings, 0.9);
+  },
+};
+
+// ---------------------------------------------------------------- UI
+
+const refreshers = [];
+
+function changed() {
+  applyParams();
+  document.getElementById('json').textContent = JSON.stringify(S, null, 2);
+}
+
+function buildUI() {
+  const main = document.getElementById('controls');
+  for (const group of CONTROLS) {
+    const sec = document.createElement('section');
+    sec.innerHTML = `<h2>${group.title}</h2><p class="hint">${group.hint}</p>`;
+    for (const c of group.items) {
+      const row = document.createElement('div'); row.className = 'row';
+      const lab = document.createElement('label'); lab.textContent = c.label;
+      const out = document.createElement('output');
+      if (c.mute) {
+        const cb = document.createElement('input'); cb.type = 'checkbox';
+        cb.onchange = () => { S.mute[c.mute] = !cb.checked; changed(); };
+        refreshers.push(() => { cb.checked = !S.mute[c.mute]; });
+        lab.prepend(cb);
+      }
+      let input;
+      if (c.type === 'select') {
+        input = document.createElement('select');
+        for (const [v, text] of c.options) input.add(new Option(text, v));
+        input.onchange = () => { setPath(c.key, c.num ? +input.value : input.value); changed(); };
+        refreshers.push(() => { input.value = getPath(c.key); });
+      } else {
+        input = document.createElement('input'); input.type = 'range';
+        Object.assign(input, { min: c.min, max: c.max, step: c.step });
+        const fmt = c.fmt || pct;
+        input.oninput = () => { setPath(c.key, +input.value); out.textContent = fmt(+input.value); changed(); };
+        refreshers.push(() => { input.value = getPath(c.key); out.textContent = fmt(getPath(c.key)); });
+      }
+      row.append(lab, input, out);
+      if (c.note) { const small = document.createElement('small'); small.textContent = c.note; row.append(small); }
+      sec.append(row);
+    }
+    main.append(sec);
+  }
+
+  const presetBar = document.getElementById('presets');
+  for (const [name, p] of Object.entries(PRESETS)) {
+    const b = document.createElement('button'); b.textContent = name;
+    b.onclick = () => { Object.assign(S, p); refreshers.forEach(f => f()); changed(); };
+    presetBar.append(b);
+  }
+  const eventBar = document.getElementById('events');
+  for (const [name, fn] of Object.entries(EVENTS)) {
+    const b = document.createElement('button'); b.textContent = name;
+    b.onclick = () => { if (ctx && ctx.state === 'running') fn(); };
+    eventBar.append(b);
+  }
+
+  refreshers.forEach(f => f());
+  changed();
+}
+
+document.getElementById('play').onclick = async e => {
+  const btn = e.currentTarget;
+  if (!ctx) {
+    initAudio();
+    M.next = ctx.currentTime + 0.1;
+    M.timer = setInterval(scheduler, 25);
+    btn.textContent = '❚❚ Pause';
+    return;
+  }
+  if (ctx.state === 'running') { await ctx.suspend(); btn.textContent = '▶ Play'; document.getElementById('now').textContent = 'paused'; }
+  else { await ctx.resume(); btn.textContent = '❚❚ Pause'; }
+};
+
+// spectrum
+const canvas = document.getElementById('scope');
+const c2d = canvas.getContext('2d');
+function draw() {
+  requestAnimationFrame(draw);
+  const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+  const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+  if (!ctx) return;
+  const data = new Uint8Array(G.analyser.frequencyBinCount);
+  G.analyser.getByteFrequencyData(data);
+  const bars = 96, bw = w / bars;
+  for (let i = 0; i < bars; i++) {
+    const bin = Math.floor(2 * Math.pow(400, i / bars));
+    const v = data[bin] / 255;
+    c2d.fillStyle = `hsl(${32 + i * 1.2}, 60%, ${35 + v * 30}%)`;
+    c2d.fillRect(i * bw + 1, h - v * h, bw - 2, v * h);
+  }
+}
+draw();
+buildUI();
+</script>
+</body>
+</html>

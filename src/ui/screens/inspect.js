@@ -18,6 +18,7 @@ import { factionOf } from '../../systems/population/staffing.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
 import { amount, capacity, inputsOf, outputsOf, isStorage, bandOf, nameOf } from '../../systems/resources/stores.js';
 import * as routeEditor from './routeEditor.js';
+import { problemsOf } from '../buildingStatus.js';
 import { iconOf } from '../icons.js';
 
 export function mount(root, state, ctx, dispatch) {
@@ -324,33 +325,6 @@ function renderStation(root, key, state, ctx, instance, def, dispatch) {
 function selectedInstance(state) {
   const { instanceId } = selection.get();
   return instanceId ? state.buildings.find((b) => b.instanceId === instanceId) ?? null : null;
-}
-
-/**
- * What is stopping the building, worst first, as [message, band] pairs — or
- * a single "Working" when nothing is. Every problem is listed, not just the
- * first: a smelter can be out of coal AND have nowhere to put its steel, and
- * fixing one only to find the other is the thing to spare the player.
- */
-function problemsOf(instance, def, state, ctx) {
-  const problems = [];
-  const good = (id) => nameOf(ctx, id).toLowerCase();
-  const faction = factionOf(ctx, def.id);
-  if (faction && state.population.strikes.some((s) => s.faction === faction)) problems.push(['Production stalled, on strike', 'critical']);
-  if (instance.brokenDown) problems.push(['Production stalled, broken down — waiting for repairs', 'critical']);
-  if (instance.powered === false) problems.push(['Production stalled, no power', 'critical']);
-  if (def.staffing && (instance.staffing ?? 0) === 0) problems.push(['Production stalled, no workers', 'critical']);
-  if (instance.starved) {
-    for (const id of instance.missing?.length ? instance.missing : []) problems.push([`Production stalled, ran out of ${good(id)}`, 'critical']);
-    if (!instance.missing?.length) problems.push(['Production stalled, ran out of its inputs', 'critical']);
-  }
-  if (instance.blocked) {
-    for (const id of instance.full ?? []) problems.push([`Production stalled, no space to store ${good(id)}`, 'critical']);
-  }
-  if ((instance.waterShare ?? 1) < 1) problems.push([`Short of water — rationed to ${Math.round((instance.waterShare ?? 0) * 100)}%`, 'warn']);
-  if (def.staffing && instance.staffing > 0 && instance.staffing < def.staffing) problems.push([`Short-handed: ${instance.staffing} of ${def.staffing} crews`, 'warn']);
-  if (!problems.length && recipesFor(def.id, ctx).length && !instance.job) problems.push(['Idle — nothing needed, or no inputs', 'warn']);
-  return problems.length ? problems : [['Working', 'ok']];
 }
 
 /** Draw the problem lines, rebuilding only when they change. */
