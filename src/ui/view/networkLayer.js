@@ -21,9 +21,10 @@
 
 import { roomRect, levelY, ROOM_HEIGHT, BUILD_X, SHAFT_WIDTH } from './interpolate.js';
 import {
-  tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, airflow, plate, sagPath, sagOf, svg,
+  tileRoute, riserRoute, hangingPath, trunkCable, wire, clamp, plate, sagPath, sagOf, svg,
 } from './conduits.js';
 import { fanMode, SUCK } from '../../systems/airQuality/airflow.js';
+import { createAirParticles } from './airParticles.js';
 import { graphOf, hubFor } from '../../systems/infrastructure/networkGraph.js';
 import { powerDemand } from '../../systems/buildings/buildingRegistry.js';
 import * as selection from '../selection.js';
@@ -58,6 +59,7 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   const lines = svg(layer, 'g', 'net-lines');
   const flows = svg(layer, 'g', 'net-flows');
   const outlines = svg(layer, 'g', 'net-outlines');
+  const particles = createAirParticles(layer);
   const preview = svg(layer, 'path', 'net-preview');
   preview.style.display = 'none';
 
@@ -86,9 +88,11 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     const { network, linkFrom } = selection.get();
     layer.style.display = network ? '' : 'none';
     if (!network) {
+      particles.clear();
       layerState.key = null;
       return;
     }
+    if (network === 'duct-network') particles.frame(view.ambient);
     const net = readNetwork(state, currentCtx, network);
     const key = JSON.stringify([
       network, linkFrom, view.builtSignature,
@@ -99,7 +103,8 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
       network === 'power-grid' ? state.buildings.map((b) => `${b.priority ?? ''}${b.powered === false ? 'x' : ''}`).join() : null,
       network === 'duct-network' ? [
         state.buildings.map((b) => b.fanMode ?? '').join(),
-        Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow)}:${airBand(l)}`),
+        Object.entries(state.resources.flows.air?.links ?? {}).map(([id, l]) => `${id}:${l.to}:${Math.round(l.flow)}`),
+        (state.resources.flows.air?.paths ?? []).map((p) => `${p.from}>${p.to}:${Math.round(p.flow)}:${Math.round(p.blown.airQuality / 2)}:${Math.round(p.drawn.airQuality / 2)}`),
         (state.resources.flows.air?.levelIn ?? []).map(Math.round).join(),
         (state.resources.flows.air?.levelOut ?? []).map(Math.round).join(),
       ] : null,
@@ -112,6 +117,7 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
 
   function draw(state, currentCtx, network, net, linkFrom) {
     for (const g of [defs, bars, washes, lines, flows, outlines]) g.replaceChildren();
+    particles.clear();
     layer.style.setProperty('--net', colorOf(network));
     const def = networkDef(currentCtx, network);
 
@@ -200,26 +206,35 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
   }
 
   /**
-   * The air ducts, and the air in them: chevrons riding each duct the way
-   * the air goes, as fast as it goes, coloured by how clean it is, with the
-   * flow on a plate; and on every room a sucking or blowing fan reaches, how
-   * much air is drawn off or blown onto its level.
+   * The air ducts, and the air moving through the rooms: particles from
+   * every blowing fan to the sucking fans it feeds, blue where the air is
+   * clean and brown where it has picked up the Shaft's dirt (airParticles.js).
+   * Each duct carries a plate with the air it moves; each sucking fan, the
+   * pollution its streams bring back to it a tick; and every room on a
+   * ventilated level, the air blown onto or drawn off it.
    */
   function drawDucts(state, currentCtx, net) {
     const network = 'duct-network';
     const tiles = tilesOf('duct');
-    const air = state.resources.flows.air ?? { links: {}, levelIn: [], levelOut: [] };
+    const air = state.resources.flows.air ?? { links: {}, paths: [], levelIn: [], levelOut: [] };
     net.links.forEach((link, i) => {
-      let route = riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i));
+      const route = riserRoute(port(network, link.a, state), port(network, link.b, state), laneOf(network, i));
       tileRoute(lines, defs, tiles, route);
       const flow = air.links?.[link.id];
       if (!flow || flow.flow < 0.5) return;
-      // Run the chevrons from the upstream end.
-      if (flow.to === link.a.instanceId) route = riserRoute(port(network, link.b, state), port(network, link.a, state), laneOf(network, i));
-      airflow(flows, route, { speed: 12 + flow.flow * 0.35, band: airBand(flow) });
       const mid = midpoint(route);
-      plate(flows, mid.x, mid.y, `${Math.round(flow.flow)}`, `airflow-plate air-${airBand(flow)}`);
+      plate(flows, mid.x, mid.y, `${Math.round(flow.flow)}`, 'airflow-plate');
     });
+    particles.build(state, air.paths);
+
+    const pickup = new Map();
+    for (const p of air.paths ?? []) pickup.set(p.to, (pickup.get(p.to) ?? 0) + p.pickup);
+    for (const [id, dirt] of pickup) {
+      const fan = state.buildings.find((b) => b.instanceId === id);
+      if (!fan) continue;
+      const r = roomRect(fan, state.buildings);
+      plate(flows, r.x + r.width / 2, r.y + 30, `+${dirt.toFixed(1)} pollution`, 'airflow-pickup');
+    }
     for (const b of state.buildings) {
       const blown = air.levelIn?.[b.level] ?? 0;
       const drawn = air.levelOut?.[b.level] ?? 0;
@@ -349,12 +364,6 @@ export function createNetworkLayer(view, root, dispatch, ctx) {
     layerState.key = null;
     return true;
   }
-}
-
-/** How clean the air in a duct is, as a band for its colour. */
-function airBand(link) {
-  const q = Math.min(link.airQuality ?? 100, link.oxygen ?? 100);
-  return q >= 85 ? 'fresh' : q >= 65 ? 'clean' : q >= 40 ? 'stale' : 'foul';
 }
 
 /** Half way along a route, by length. */

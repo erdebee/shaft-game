@@ -11,8 +11,6 @@
  *                    junctions, sagging where it hangs across a room
  *   wires            the thin lines a junction hangs out to every room it
  *                    feeds, drooping between the rooms like washing lines
- *   airflow          chevrons riding down a duct's centre, the way and the
- *                    speed the air is going, coloured by how clean it is
  *
  * Everything here is in shaft units and draws into the SVG group it is
  * given. Nothing reads state.
@@ -161,28 +159,6 @@ export function clamp(parent, x, y) {
   c.setAttribute('width', '4');
   c.setAttribute('height', '4');
   return c;
-}
-
-/**
- * Air moving along a route: chevrons riding the duct's centre from the
- * first point to the last. `speed` is shaft units a second; the chevrons
- * are CSS-animated on a [data-part] so they stop when the clock does.
- */
-export function airflow(parent, route, { speed, band }) {
-  let d = `M${route[0].x} ${route[0].y}`;
-  for (let i = 1; i < route.length; i++) d += `L${route[i].x} ${route[i].y}`;
-  // One dash cycle is 14 units; a cycle's duration sets the speed. A dark
-  // casing rides under each dash, so it reads on the rusted duct.
-  const duration = `${Math.max(0.15, 14 / Math.max(1, speed)).toFixed(2)}s`;
-  let flow = null;
-  for (const className of ['airflow airflow-casing', 'airflow']) {
-    flow = svg(parent, 'path', className);
-    flow.setAttribute('d', d);
-    flow.dataset.part = 'airflow';
-    flow.dataset.air = band;
-    flow.style.animationDuration = duration;
-  }
-  return flow;
 }
 
 /** A small plate with a figure on it, centred on a point. */

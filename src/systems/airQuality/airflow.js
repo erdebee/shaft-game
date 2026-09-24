@@ -23,8 +23,10 @@
  *
  * Writes level.airQuality and level.oxygen (the air system's own) and
  * state.resources.flows.air: the flow on every duct, what passes every
- * node, and how much air is blown into and drawn out of every level, which
- * is what the view draws.
+ * node, how much air is blown into and drawn out of every level, and every
+ * stream through the rooms from a blower back to a sucker — how clean it
+ * left, how foul it came back, and the pollution it carried off — which is
+ * what the view draws.
  */
 
 import { clamp } from '../../utils/math.js';
@@ -39,7 +41,7 @@ export function fanMode(instance) {
 }
 
 export function initialAir() {
-  return { links: {}, nodes: {}, levelIn: [], levelOut: [], moved: 0 };
+  return { links: {}, nodes: {}, paths: [], levelIn: [], levelOut: [], moved: 0 };
 }
 
 /**
@@ -105,6 +107,7 @@ export function settleAirflow(state, ctx, graph, scaleOf) {
       const arriving = new Map(); // blower -> { flow, airQuality, oxygen } weighted sums
       for (const p of pairs) {
         const air = { airQuality: mean(p.s.levels, 'airQuality'), oxygen: mean(p.s.levels, 'oxygen') };
+        p.intake = { ...air };
         for (let k = 0; k < p.route.nodes.length; k++) {
           const id = p.route.nodes[k];
           const node = graph.byId.get(id);
@@ -144,6 +147,22 @@ export function settleAirflow(state, ctx, graph, scaleOf) {
       for (const [id, t] of through) {
         record.nodes[id] ??= { mode: null, flow: 0, capacity: 0, through: 0 };
         record.nodes[id].through = t;
+      }
+      // The other half of the loop, through the rooms: what each blower
+      // pushes out comes back, dirtied by the levels it crosses, to the
+      // suckers. Blown clean, drawn in foul — the difference, in pollution
+      // a tick, is what that stream carried off.
+      for (const p of pairs) {
+        const arrive = arriving.get(p.b);
+        const blown = { airQuality: arrive.airQuality / arrive.flow, oxygen: arrive.oxygen / arrive.flow };
+        record.paths.push({
+          from: p.b.node.instanceId,
+          to: p.s.node.instanceId,
+          flow: p.flow,
+          blown,
+          drawn: p.intake,
+          pickup: Math.max(0, ((blown.airQuality - p.intake.airQuality) * p.flow) / volume),
+        });
       }
       // Out into the blowers' levels, and in to the suckers' from the stairwell.
       for (const [b, arrive] of arriving) {

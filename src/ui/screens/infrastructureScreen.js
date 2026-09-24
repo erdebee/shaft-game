@@ -339,7 +339,9 @@ function readingOf(state, ctx, networkId, node) {
       if (reach) {
         if (outputScale(node, def, ctx) <= 0) return 'not running';
         const moving = air?.flow ?? 0;
-        return `${fanMode(node) === SUCK ? 'sucks' : 'blows'} ${Math.round(moving)} of ${Math.round(air?.capacity ?? 0)} · ${span}`;
+        const pickup = (state.resources.flows.air?.paths ?? []).filter((p) => p.to === node.instanceId).reduce((t, p) => t + p.pickup, 0);
+        const carried = fanMode(node) === SUCK && pickup > 0 ? ` · takes ${pickup.toFixed(1)} pollution a tick` : '';
+        return `${fanMode(node) === SUCK ? 'sucks' : 'blows'} ${Math.round(moving)} of ${Math.round(air?.capacity ?? 0)}${carried} · ${span}`;
       }
       if (outputScale(node, def, ctx) <= 0) return 'not working';
       return air?.through ? `${Math.round(air.through)} a tick passing through` : 'no air passing — works its own level';

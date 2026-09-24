@@ -194,6 +194,11 @@
   --net-sewer:        var(--brass);
   --net-duct-network: var(--rust-bright);
 
+  /* The air moving through the rooms: clean air blue, air that has picked
+     up the Shaft's dirt brown (view/airParticles.js blends between them). */
+  --air-fresh: var(--water-lit);
+  --air-dirty: var(--rust-bright);
+
   /* ---- Type ---- */
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --font-ui:   var(--font-mono);

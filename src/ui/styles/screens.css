@@ -1170,30 +1170,13 @@ body {
 .wire[data-lit="false"] { stroke: var(--steel-dark); }
 .wire-clamp { fill: var(--steel-pale); stroke: var(--rock); stroke-width: 1; }
 
-/* The air in the ducts: chevrons riding the duct, as fast as the air goes,
-   coloured by how clean it is. On a [data-part] so they stop with the clock. */
-.airflow[data-part="airflow"] {
-  fill: none;
-  stroke-width: 3.5;
-  stroke-linecap: round;
-  stroke-dasharray: 5 9;
-  animation: airflow-run 1s linear infinite;
-}
-.airflow.airflow-casing[data-part="airflow"] { stroke: var(--rock); stroke-width: 6.5; }
-.airflow:not(.airflow-casing)[data-air="fresh"] { stroke: var(--water-glint); }
-.airflow:not(.airflow-casing)[data-air="clean"] { stroke: var(--readout-ok); }
-.airflow:not(.airflow-casing)[data-air="stale"] { stroke: var(--readout-warn); }
-.airflow:not(.airflow-casing)[data-air="foul"]  { stroke: var(--readout-critical); }
-@keyframes airflow-run { to { stroke-dashoffset: -14; } }
-@media (prefers-reduced-motion: reduce) {
-  .airflow[data-part="airflow"] { animation: none; }
-}
+/* The air moving through the rooms (view/airParticles.js): particles from
+   blowing fans to sucking fans, coloured in script from --air-fresh to
+   --air-dirty by how clean the air is where they are. */
+.air-particle { stroke: var(--rock); stroke-width: 0.8; opacity: 0.95; shape-rendering: crispEdges; }
 .net-plate rect { fill: var(--panel); stroke: var(--rock); stroke-width: 1; }
 .net-plate text { fill: var(--ink); font: 700 8px var(--font-mono); text-anchor: middle; }
-.airflow-plate.air-fresh text { fill: var(--water-glint); }
-.airflow-plate.air-clean text { fill: var(--readout-ok); }
-.airflow-plate.air-stale text { fill: var(--readout-warn); }
-.airflow-plate.air-foul text  { fill: var(--readout-critical); }
+.airflow-pickup text { fill: var(--sodium-spill); }
 .airflow-in text  { fill: var(--water-glint); }
 .airflow-out text { fill: var(--readout-warn); }
 .net-chevron { fill: none; stroke: var(--net); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }

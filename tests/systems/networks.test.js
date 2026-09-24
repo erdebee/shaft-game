@@ -245,6 +245,12 @@ test('the flow on each duct is recorded, running from sucker to blower', async (
   assert.ok(Math.abs(air.links[outOfScrubber.id].flow - cap) < 1e-9);
   assert.ok(air.levelIn[25] > 0 && air.levelOut[36] > 0);
   assert.ok(air.links[outOfScrubber.id].airQuality >= air.links[intoScrubber.id].airQuality);
+  // And back through the rooms, blower to sucker, carrying the dirt off.
+  const [stream] = air.paths;
+  assert.equal(stream.from, fan(run, 25));
+  assert.equal(stream.to, fan(run, 36));
+  assert.ok(Math.abs(stream.flow - cap) < 1e-9);
+  assert.ok(stream.blown.airQuality >= stream.drawn.airQuality);
 
   // Turn them round, and the air runs the other way.
   setFan(run, 36, 'blow');
